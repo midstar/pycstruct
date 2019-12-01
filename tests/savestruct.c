@@ -71,6 +71,7 @@ typedef struct {
 
 void main() {
    Data d;
+   memset(&d, 0, sizeof(Data));
 
    d.int8_low     = -128;
    d.int8_high    = 127;

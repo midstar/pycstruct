@@ -1,4 +1,4 @@
-import struct, ctypes, collections
+import struct, collections
 
 _TYPE = {
   'int8'    : {'format' : 'b', 'bytes' : 1},
@@ -79,7 +79,7 @@ class StructDef:
     return result
 
   def serialize(self, data):
-    buffer = ctypes.create_string_buffer(self.size())
+    buffer = bytearray(self.size())
     offset = 0
     for name, field in self.__fields.items():
       typeinfo = _TYPE[field['type']]
@@ -109,6 +109,6 @@ class StructDef:
     return buffer
 
   def create_empty_data(self):
-    buffer = ctypes.create_string_buffer(self.size())
+    buffer = bytearray(self.size())
     return self.deserialize(buffer)
 
