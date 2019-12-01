@@ -12,9 +12,9 @@ _TYPE = {
   'uint32'  : {'format' : 'I', 'bytes' : 4},
   'bool32'  : {'format' : 'I', 'bytes' : 4},
   'float32' : {'format' : 'f', 'bytes' : 4},
-  'int64'   : {'format' : 'i', 'bytes' : 8},
-  'uint64'  : {'format' : 'I', 'bytes' : 8},
-  'bool64'  : {'format' : 'I', 'bytes' : 8},
+  'int64'   : {'format' : 'q', 'bytes' : 8},
+  'uint64'  : {'format' : 'Q', 'bytes' : 8},
+  'bool64'  : {'format' : 'Q', 'bytes' : 8},
   'float64' : {'format' : 'd', 'bytes' : 8},
   'utf-8'   : {'format' : 'B', 'bytes' : 1},
 }
@@ -111,33 +111,4 @@ class StructDef:
   def create_empty_data(self):
     buffer = ctypes.create_string_buffer(self.size())
     return self.deserialize(buffer)
-'''
-m = StructDef('little')
-m.add('uint32', 'header')
-m.add('uint32', 'length')
-m.add('int32',  'signedInt')
-m.add('uint32', 'unsignedInt')
-m.add('uint32', 'array', 10)
-m.add('utf-8', 'utf8', 100)
-m.add('utf-8', 'utf8_no_term', 4)
-m.add('utf-8', 'utf8_specials', 40)
-
-print("In Size: " + str(m.size()))
-f = open("struct.dat","rb")
-result = m.deserialize(f.read())
-print("Out Size: " + str(len(result)))
-for name, value in result.items():
-  print("{0} = {1}".format(name,value))
-
-b = m.serialize(result)
-result2 = m.deserialize(b)
-print("\n\nNew result:")
-for name, value in result2.items():
-  print("{0} = {1}".format(name,value))
-
-empty = m.create_empty_data()
-print("\n\nEmpty result:")
-for name, value in empty.items():
-  print("{0} = {1}".format(name,value))
-'''
 
