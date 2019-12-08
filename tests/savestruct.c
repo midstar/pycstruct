@@ -1,3 +1,6 @@
+/**
+ * This code assumes using tcc on a windows platform (little endian native)
+ */
 #pragma pack(1)
 
 #include <stdio.h>
@@ -5,6 +8,9 @@
 
 #define TRUE 1
 #define FALSE 0
+
+#define SWAP16(x) (x << 8 & 0xFF00) | (x >> 8 & 0x00FF)
+#define SWAP32(x) (x << 24 & 0xFF000000) | (x << 8 & 0x00FF0000) | (x >> 8 & 0x0000FF00) | (x >> 16 & 0x000000FF)
 
 typedef signed char   INT8;
 typedef unsigned char UINT8;
@@ -63,6 +69,9 @@ typedef struct {
    FLOAT64 float64_low;
    FLOAT64 float64_high;
 
+   // Array
+   INT32  int32_array[5];
+
    // UTF-8 strings
    char utf8_ascii[100];
    char utf8_nonascii[80];
@@ -105,6 +114,9 @@ void main() {
    d.float64_low   = 1.23456789;
    d.float64_high  = 12345678.9;
 
+   for (int i=0 ; i < 5; i++)
+      d.int32_array[i] = i;
+
    strcpy(d.utf8_ascii, "This is a normal ASCII string!");
    strcpy(d.utf8_nonascii, "This string has special characters ÅÄÖü");
    d.utf8_no_term[0] = 'A';
@@ -112,8 +124,32 @@ void main() {
    d.utf8_no_term[2] = 'C';
    d.utf8_no_term[3] = 'D';
 
-   printf("Saving struct to struct.dat\n");
-   FILE *f = fopen("struct.dat", "w");
+   printf("Saving struct_little.dat\n");
+   FILE *f = fopen("struct_little.dat", "w");
    fwrite(&d, sizeof(Data), 1, f);
    fclose(f);
+
+   // Create a big endian version
+
+   d.int16_low     = SWAP16(d.int16_low);
+   d.int16_high    = SWAP16(d.int16_high);
+   d.uint16_low    = SWAP16(d.uint16_low);
+   d.uint16_high   = SWAP16(d.uint16_high);
+   d.bool16_false  = SWAP16(d.bool16_false);
+   d.bool16_true   = SWAP16(d.bool16_true);  
+
+   d.int32_low     = SWAP32(d.int32_low);
+   d.int32_high    = SWAP32(d.int32_high);
+   d.uint32_low    = SWAP32(d.uint32_low);
+   d.uint32_high   = SWAP32(d.uint32_high);
+   d.bool32_false  = SWAP32(d.bool32_false);
+   d.bool32_true   = SWAP32(d.bool32_true); 
+   d.float32_low   = SWAP32(d.float32_low);
+   d.float32_high  = SWAP32(d.float32_high); 
+
+   printf("Saving struct_big.dat\n");
+   f = fopen("struct_big.dat", "w");
+   fwrite(&d, sizeof(Data), 1, f);
+   fclose(f);
+ 
 }
