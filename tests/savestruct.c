@@ -9,9 +9,6 @@
 #define TRUE 1
 #define FALSE 0
 
-#define SWAP16(x) (x << 8 & 0xFF00) | (x >> 8 & 0x00FF)
-#define SWAP32(x) (x << 24 & 0xFF000000) | (x << 8 & 0x00FF0000) | (x >> 8 & 0x0000FF00) | (x >> 16 & 0x000000FF)
-
 typedef signed char   INT8;
 typedef unsigned char UINT8;
 typedef unsigned char BOOL8;
@@ -31,6 +28,18 @@ typedef unsigned long long UINT64;
 typedef unsigned long long BOOL64;
 typedef double             FLOAT64;
 
+void SwapBytes(void *pv, size_t n)
+{
+    char *p = pv;
+    size_t lo, hi;
+    for(lo=0, hi=n-1; hi>lo; lo++, hi--)
+    {
+        char tmp=p[lo];
+        p[lo] = p[hi];
+        p[hi] = tmp;
+    }
+}
+#define SWAP(x) SwapBytes(&x, sizeof(x));
 
 typedef struct {
    // 1 byte members
@@ -131,21 +140,33 @@ void main() {
 
    // Create a big endian version
 
-   d.int16_low     = SWAP16(d.int16_low);
-   d.int16_high    = SWAP16(d.int16_high);
-   d.uint16_low    = SWAP16(d.uint16_low);
-   d.uint16_high   = SWAP16(d.uint16_high);
-   d.bool16_false  = SWAP16(d.bool16_false);
-   d.bool16_true   = SWAP16(d.bool16_true);  
+   SWAP(d.int16_low);
+   SWAP(d.int16_high);
+   SWAP(d.uint16_low);
+   SWAP(d.uint16_high);
+   SWAP(d.bool16_false);
+   SWAP(d.bool16_true);
 
-   d.int32_low     = SWAP32(d.int32_low);
-   d.int32_high    = SWAP32(d.int32_high);
-   d.uint32_low    = SWAP32(d.uint32_low);
-   d.uint32_high   = SWAP32(d.uint32_high);
-   d.bool32_false  = SWAP32(d.bool32_false);
-   d.bool32_true   = SWAP32(d.bool32_true); 
-   d.float32_low   = SWAP32(d.float32_low);
-   d.float32_high  = SWAP32(d.float32_high); 
+   SWAP(d.int32_low);
+   SWAP(d.int32_high);
+   SWAP(d.uint32_low);
+   SWAP(d.uint32_high);
+   SWAP(d.bool32_false);
+   SWAP(d.bool32_true);  
+   SWAP(d.float32_low);
+   SWAP(d.float32_high);
+
+   SWAP(d.int64_low);
+   SWAP(d.int64_high);
+   SWAP(d.uint64_low);
+   SWAP(d.uint64_high);
+   SWAP(d.bool64_false);
+   SWAP(d.bool64_true);  
+   SWAP(d.float64_low);
+   SWAP(d.float64_high);
+
+   for (int i=0 ; i < 5; i++)
+      SWAP(d.int32_array[i]);
 
    printf("Saving struct_big.dat\n");
    f = fopen("struct_big.dat", "w");

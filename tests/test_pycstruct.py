@@ -1,5 +1,9 @@
-import unittest
-import sys
+import unittest, os, sys
+
+test_dir = os.path.dirname(os.path.realpath(__file__))
+proj_dir = os.path.dirname(test_dir)
+
+sys.path.append(proj_dir)
 from pycstruct import pycstruct
 
 class TestPyCStruct(unittest.TestCase):
@@ -59,7 +63,7 @@ class TestPyCStruct(unittest.TestCase):
     #############################################
     # Load pre-stored binary data and deserialize
 
-    f = open("tests/struct_{0}.dat".format(byteorder),"rb")
+    f = open(os.path.join(test_dir, "struct_{0}.dat".format(byteorder)),"rb")
     inbytes = f.read()
     result = m.deserialize(inbytes)
     f.close()
@@ -123,4 +127,4 @@ class TestPyCStruct(unittest.TestCase):
       self.assertEqual(int(inbytes[i]), int(outbytes[i]), msg='Index {0}'.format(i))
 
 if __name__ == '__main__':
-    unittest.main()
+  unittest.main()
