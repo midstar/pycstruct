@@ -35,6 +35,8 @@ class StructDef:
   def add(self, type, name, length = 1, byteorder = ''):
     if length < 1:
       raise Exception('Invalid length: {0}.'.format(length))
+    elif type not in _TYPE:
+      raise Exception('Invalid type: {0}.'.format(type))
     if byteorder == "":
       byteorder = self.__default_byteorder
     elif byteorder not in _BYTEORDER:

@@ -8,17 +8,68 @@ from pycstruct import pycstruct
 
 class TestPyCStruct(unittest.TestCase):
 
+  def test_invalid_creation(self):
+    # Invalid byteorder on creation
+    self.assertRaises(Exception, pycstruct.StructDef, "invalid")
+
+  def test_invalid_add(self):
+
+    m = pycstruct.StructDef()
+
+    # Invalid type
+    self.assertRaises(Exception, m.add, "invalid", "aname")
+
+    # Invalid length
+    self.assertRaises(Exception, m.add, "int8", "aname", 0)
+
+    # Invalid byteorder in member
+    self.assertRaises(Exception, m.add, "int8", "aname", 1, "invalid")
+
+    # Duplicaded member
+    m.add("int8", "name1")
+    self.assertRaises(Exception, m.add, "uint8", "name1")
+
+
+  def test_invalid_deserialize(self):
+
+    m = pycstruct.StructDef()
+    m.add("int8", "name1")
+
+    buffer = bytearray(m.size() + 1)
+    self.assertRaises(Exception, m.deserialize, buffer)
+
+  def test_invalid_serialize(self):
+
+    m = pycstruct.StructDef()
+    m.add("utf-8", "astring", length=5)
+
+    data = {}
+    data["astring"] = 5 # no valid string
+    self.assertRaises(Exception, m.serialize, data)
+
+    data["astring"] = "too long string"
+    self.assertRaises(Exception, m.serialize, data)
+
+    m.add("int32", "alist", length=5)
+    data["astring"] = "valid"
+    data["alist"] = 3 # no valid list
+    self.assertRaises(Exception, m.serialize, data)
+
+    data["alist"] = [1,2,3,4,5,6,7] # to long
+    self.assertRaises(Exception, m.serialize, data)
+
+  def test_empty_data(self):
+    m = self.create_struct("native")
+    data = m.create_empty_data()
+    
+
   def test_deserialize_serialize_little(self):
     self.deserialize_serialize('little')
 
   def test_deserialize_serialize_big(self):
     self.deserialize_serialize('big')
 
-  def deserialize_serialize(self, byteorder):
-
-    #############################################
-    # Define PyCStruct
-
+  def create_struct(self, byteorder):
     m = pycstruct.StructDef(byteorder)
 
     m.add('int8', 'int8_low')
@@ -59,6 +110,13 @@ class TestPyCStruct(unittest.TestCase):
     m.add('utf-8', 'utf8_nonascii', 80)
     m.add('utf-8', 'utf8_no_term', 4)
 
+    return m
+
+  def deserialize_serialize(self, byteorder):
+
+    #############################################
+    # Define PyCStruct
+    m = self.create_struct(byteorder)
 
     #############################################
     # Load pre-stored binary data and deserialize
