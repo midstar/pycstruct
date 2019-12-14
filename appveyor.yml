@@ -12,6 +12,7 @@ skip_tags: true
 version: 0.1.0.{build}
 
 install:
+  - sh: python3 -m pip install coverage
 
 build_script:
   - sh: sh run_tests.sh
