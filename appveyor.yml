@@ -14,6 +14,8 @@ version: 0.1.0.{build}
 install:
 
 build_script:
+  - sh: pwd
+  - sh: ls
   - sh: run_tests.sh
 
 
