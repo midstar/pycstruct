@@ -1,10 +1,10 @@
 # pycstruct appveyor configuration for Linux x64
 
 # Common configuration
-#image: 
-#- Ubuntu
+image: 
+- Ubuntu
 
-#platform: x64
+platform: x64
 
 # Do not build on tags (GitHub and BitBucket)
 skip_tags: true
@@ -20,10 +20,10 @@ environment:
 build: off
 
 install:
-- pip3 install tox
+- sh: pip3 install tox
 
 test_script:
-- tox
+- sh: tox
 
 
 
