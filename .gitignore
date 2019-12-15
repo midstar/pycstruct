@@ -2,3 +2,6 @@
 __pycache__
 *.out
 .vscode
+*.pyc
+.tox
+pycstruct.egg-info
