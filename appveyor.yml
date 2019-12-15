@@ -20,7 +20,7 @@ environment:
 build: off
 
 install:
-- pip install tox
+- pip3 install tox
 
 test_script:
 - tox
