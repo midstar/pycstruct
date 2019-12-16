@@ -1,26 +1,31 @@
 # pycstruct appveyor configuration for Linux x64
 
 # Common configuration
-image: 
-- Ubuntu
+#image: 
+#- Ubuntu
 
-platform: x64
+#platform: x64
 
 # Do not build on tags (GitHub and BitBucket)
-skip_tags: true
+#skip_tags: true
 
-version: 0.1.0.{build}
+#version: 0.1.0.{build}
 
 #stack: python 3.5
 
-matrix:
-  include:
-    - python: 3.5
-      env: TOXENV=py35
-    - python: 3.6
-      env: TOXENV=py36
-    - python: 3.7
-      env: TOXENV=py37
+environment:
+  PYTHONUNBUFFERED: 1
+  matrix:
+    include:
+      - PYTHON: "C:\\Python35"
+        TOX_ENV: "py35"
+      - PYTHON: "C:\\Python36"
+        TOX_ENV: "py36"
+      - PYTHON: "C:\\Python37"
+        TOX_ENV: "py37"
+
+init:
+- "%PYTHON%/python -V"
 
 #environment:
 #  matrix:
@@ -31,10 +36,11 @@ matrix:
 #build: off
 
 install:
-- pip install tox
+- "%PYTHON%/Scripts/pip install -U --user pip"
+- "%PYTHON%/Scripts/pip install -U --user tox"
 
 test_script:
-- tox
+- "%PYTHON%/python -m tox -e %TOX_ENV%"
 
 
 
