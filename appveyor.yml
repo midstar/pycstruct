@@ -13,6 +13,7 @@
 
 #stack: python 3.5
 
+
 environment:
   PYTHONUNBUFFERED: 1
   matrix:
@@ -26,6 +27,7 @@ environment:
 
 init:
 - "%PYTHON%/python -V"
+
 
 #environment:
 #  matrix:
