@@ -34,7 +34,7 @@ init:
 #  - TOXENV: py36
 #  - TOXENV: py37
 
-#build: off
+build: off
 
 install:
 - "%PYTHON%/Scripts/pip install -U --user pip"
