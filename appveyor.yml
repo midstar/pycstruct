@@ -3,14 +3,12 @@ version: 0.1.0.{build}
 environment:
   PYTHONUNBUFFERED: 1
   matrix:
-    - PYTHON: "Python35"
-      TOX_ENV: "py35"
-    - PYTHON: "Python36"
-      TOX_ENV: "py36"
-    - PYTHON: "Python37"
-      TOX_ENV: "py37"
+    - PYTHON_VERSION: "35"
+    - PYTHON_VERSION: "36"
+    - PYTHON_VERSION: "37"
 
 init:
+- "SET PYTHON=Python%PYTHON_VERSION%"
 - "SET PATH=C:\\%PYTHON%;C:\\Users\\appveyor\\AppData\\Roaming\\Python\\%PYTHON%\\Scripts;%PATH%"
 - "echo %PYTHON%"
 - "python -V"
@@ -24,7 +22,7 @@ install:
 - "dir C:\\Users\\appveyor\\AppData\\Roaming\\Python\\%PYTHON%\\Scripts"
 
 test_script:
-- "tox -e %TOX_ENV%"
+- "tox -e "py%PYTHON_VERSION%"
 - "coverage run --source=./pycstruct -m unittest discover -s tests/"
 - "coverage report"
 
