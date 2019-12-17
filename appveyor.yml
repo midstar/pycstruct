@@ -19,7 +19,7 @@ init:
 build: off
 
 install:
-- "pip install -U --user pip"
+- "python -m pip install -U --user pip"
 - "pip install -U --user tox"
 - "pip install -U --user coverage"
 
