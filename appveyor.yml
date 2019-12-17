@@ -3,18 +3,17 @@ version: 0.1.0.{build}
 environment:
   PYTHONUNBUFFERED: 1
   matrix:
-    - PYTHON: "C:\\Python35"
+    - PYTHON: "Python35"
       TOX_ENV: "py35"
-    - PYTHON: "C:\\Python36"
+    - PYTHON: "Python36"
       TOX_ENV: "py36"
-    - PYTHON: "C:\\Python37"
+    - PYTHON: "Python37"
       TOX_ENV: "py37"
 
 init:
-- "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+- "SET PATH=C:\\%PYTHON%;C:\\Users\\appveyor\\AppData\\Roaming\\Python\\%PYTHON%\\Scripts;%PATH%"
 - "python -V"
-- "dir %PYTHON%\\Scripts"
-- "dir C:\Users\appveyor\AppData\Roaming\Python\Python35\Scripts"
+- "dir C:\\Users\\appveyor\\AppData\\Roaming\\Python\\%PYTHON%\\Scripts"
 
 build: off
 
