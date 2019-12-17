@@ -1,3 +1,5 @@
+version: 0.1.0.{build}
+
 environment:
   PYTHONUNBUFFERED: 1
   matrix:
@@ -11,6 +13,8 @@ environment:
 init:
 - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
 - "python -V"
+- "dir %PYTHON%\\Scripts"
+- "dir C:\Users\appveyor\AppData\Roaming\Python\Python35\Scripts"
 
 build: off
 
@@ -20,8 +24,8 @@ install:
 - "pip install -U --user coverage"
 
 test_script:
-- "python -m tox -e %TOX_ENV%"
-- "python -m coverage report"
+- "tox -e %TOX_ENV%"
+- "coverage report"
 
 
 
