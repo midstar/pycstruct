@@ -20,7 +20,7 @@ install:
 
 test_script:
 - "%PYTHON%/python -m tox -e %TOX_ENV%"
-- "%PYTHON%/python -m coverage report
+- "%PYTHON%/python -m coverage report"
 
 
 
