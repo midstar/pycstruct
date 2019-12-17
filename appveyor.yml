@@ -25,7 +25,7 @@ install:
 test_script:
 - "tox -e py%PYTHON_VERSION%"
 
-coverage:
+after_test:
 - on:
     RUN_COVERAGE: True
 - "coverage run --source=./pycstruct -m unittest discover -s tests/"
