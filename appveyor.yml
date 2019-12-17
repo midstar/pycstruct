@@ -6,6 +6,7 @@ environment:
     - PYTHON_VERSION: "35"
     - PYTHON_VERSION: "36"
     - PYTHON_VERSION: "37"
+      RUN_COVERAGE: "True" # Only run coverage in this version
 
 init:
 - "SET PYTHON=Python%PYTHON_VERSION%"
@@ -23,6 +24,10 @@ install:
 
 test_script:
 - "tox -e py%PYTHON_VERSION%"
+
+coverage:
+- on:
+    RUN_COVERAGE: True
 - "coverage run --source=./pycstruct -m unittest discover -s tests/"
 - "coverage report"
 
