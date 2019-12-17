@@ -12,6 +12,7 @@ environment:
 
 init:
 - "SET PATH=C:\\%PYTHON%;C:\\Users\\appveyor\\AppData\\Roaming\\Python\\%PYTHON%\\Scripts;%PATH%"
+- "echo %PYTHON%"
 - "python -V"
 - "dir C:\\Users\\appveyor\\AppData\\Roaming\\Python\\%PYTHON%\\Scripts"
 
