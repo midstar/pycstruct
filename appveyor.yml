@@ -9,18 +9,19 @@ environment:
       TOX_ENV: "py37"
 
 init:
-- "%PYTHON%/python -V"
+- "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+- "python -V"
 
 build: off
 
 install:
-- "%PYTHON%/Scripts/pip install -U --user pip"
-- "%PYTHON%/Scripts/pip install -U --user tox"
-- "%PYTHON%/Scripts/pip install -U --user coverage"
+- "pip install -U --user pip"
+- "pip install -U --user tox"
+- "pip install -U --user coverage"
 
 test_script:
-- "%PYTHON%/python -m tox -e %TOX_ENV%"
-- "%PYTHON%/python -m coverage report"
+- "python -m tox -e %TOX_ENV%"
+- "python -m coverage report"
 
 
 
