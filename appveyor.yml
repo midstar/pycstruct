@@ -14,7 +14,6 @@ init:
 - "SET PATH=C:\\%PYTHON%;C:\\Users\\appveyor\\AppData\\Roaming\\Python\\%PYTHON%\\Scripts;%PATH%"
 - "echo %PYTHON%"
 - "python -V"
-#- "dir C:\\Users\\appveyor\\AppData\\Roaming\\Python\\%PYTHON%\\Scripts"
 
 build: off
 
@@ -22,6 +21,7 @@ install:
 - "python -m pip install -U --user pip"
 - "python -m pip install -U --user tox"
 - "python -m pip install -U --user coverage"
+- "dir C:\\Users\\appveyor\\AppData\\Roaming\\Python\\%PYTHON%\\Scripts"
 
 test_script:
 - "tox -e %TOX_ENV%"
