@@ -22,9 +22,8 @@ install:
 - "dir C:\\Users\\appveyor\\AppData\\Roaming\\Python\\%PYTHON%\\Scripts"
 
 test_script:
-- "tox -e "py%PYTHON_VERSION%"
+- "tox -e py%PYTHON_VERSION%"
 - "coverage run --source=./pycstruct -m unittest discover -s tests/"
 - "coverage report"
-
 
 
