@@ -23,16 +23,13 @@ install:
 test_script:
 - tox -e py%PYTHON_VERSION%
 
-#after_test:
-#- if %RUN_COVERAGE% == "True" (
-#   coverage run --source=./pycstruct -m unittest discover -s tests/
-#   coverage report
-#  )
 after_test:
 - ps: >-
     if($env:RUN_COVERAGE -Match "True"){
+      python -m pip install -U --user python-coveralls
       coverage run --source=./pycstruct -m unittest discover -s tests/
       coverage report
+      coveralls
     }
 
 
