@@ -24,6 +24,7 @@ test_script:
 - tox -e py%PYTHON_VERSION%
 
 after_test:
+- echo $PATH
 - ps: >-
     if($env:RUN_COVERAGE -Match "True"){
       python -m pip install -U --user python-coveralls
