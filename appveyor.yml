@@ -18,7 +18,7 @@ build: off
 install:
 - python -m pip install -U --user pip
 - python -m pip install -U --user tox
-- python -m pip install -U --user coverage
+- python -m pip install -U --user coverage==4.5.4
 
 test_script:
 - tox -e py%PYTHON_VERSION%
