@@ -3,10 +3,10 @@ version: 0.1.0.{build}
 environment:
   PYTHONUNBUFFERED: 1
   matrix:
-    #- PYTHON_VERSION: "35"
-    #- PYTHON_VERSION: "36"
-    - PYTHON_VERSION: "37"
+    - PYTHON_VERSION: "35"
       RUN_COVERAGE: "True" # Only run coverage in this version
+    - PYTHON_VERSION: "36"
+    - PYTHON_VERSION: "37"
 
 init:
 - SET PYTHON=Python%PYTHON_VERSION%
@@ -18,23 +18,18 @@ build: off
 install:
 - python -m pip install -U --user pip
 - python -m pip install -U --user tox
-- python -m pip install -U --user coverage==4.5.4
 
 test_script:
 - tox -e py%PYTHON_VERSION%
 
 after_test:
-- echo %PATH%
-- python -m pip install -U --user python-coveralls
-- coverage run --source=./pycstruct -m unittest discover -s tests/
-- coverage report
-- coveralls
-#- ps: >-
-#    if($env:RUN_COVERAGE -Match "True"){
-#      python -m pip install -U --user python-coveralls
-#      coverage run --source=./pycstruct -m unittest discover -s tests/
-#      coverage report
-#      coveralls
-#    }
+- ps: >-
+    if($env:RUN_COVERAGE -Match "True"){
+      python -m pip install -U --user coverage==4.5.4
+      python -m pip install -U --user python-coveralls
+      coverage run --source=./pycstruct -m unittest discover -s tests/
+      coverage report
+      coveralls
+    }
 
 
