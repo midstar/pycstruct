@@ -10,7 +10,7 @@ environment:
 
 init:
 - SET PYTHON=Python%PYTHON_VERSION%
-- SET PATH=C:\\%PYTHON%;C:\\Users\\appveyor\\AppData\\Roaming\\Python\\%PYTHON%\\Scripts;%PATH%
+- SET PATH=C:\%PYTHON%;C:\Users\appveyor\AppData\Roaming\Python\%PYTHON%\Scripts;%PATH%
 - python -V
 
 build: off
