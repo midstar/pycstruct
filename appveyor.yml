@@ -3,10 +3,10 @@ version: 0.1.0.{build}
 environment:
   PYTHONUNBUFFERED: 1
   matrix:
-    - PYTHON_VERSION: "35"
-      EXPORT_COVERAGE: "True" # Only export coverage in this version
+    #- PYTHON_VERSION: "35"
     #- PYTHON_VERSION: "36"
-    #- PYTHON_VERSION: "37"
+    - PYTHON_VERSION: "37"
+      EXPORT_COVERAGE: "True" # Only export coverage in this version
 
 init:
 - SET PYTHON=Python%PYTHON_VERSION%
