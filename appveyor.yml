@@ -25,9 +25,10 @@ test_script:
 - tox -e py%PYTHON_VERSION%
 
 after_test:
-- ps: >-
-    if($env:EXPORT_COVERAGE -Match "True"){
-      coveralls
-    }
+- coveralls
+#- ps: >-
+#    if($env:EXPORT_COVERAGE -Match "True"){
+#      coveralls
+#    }
 
 
