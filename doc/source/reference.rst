@@ -1,7 +1,7 @@
 Reference
 =========
 
-pycstruct module
-----------------
-.. automodule:: pycstruct.pycstruct
+pycstruct classes
+-----------------
+.. autoclass:: pycstruct.StructDef
    :members:
