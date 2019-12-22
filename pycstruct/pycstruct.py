@@ -5,8 +5,8 @@ _TYPE = {
   'uint8'   : {'format' : 'B', 'bytes' : 1},
   'bool8'   : {'format' : 'B', 'bytes' : 1},
   'int16'   : {'format' : 'h', 'bytes' : 2},
-  'bool16'  : {'format' : 'H', 'bytes' : 2},
   'uint16'  : {'format' : 'H', 'bytes' : 2},
+  'bool16'  : {'format' : 'H', 'bytes' : 2},
   'float16' : {'format' : 'e', 'bytes' : 2},
   'int32'   : {'format' : 'i', 'bytes' : 4},
   'uint32'  : {'format' : 'I', 'bytes' : 4},
@@ -28,6 +28,8 @@ _BYTEORDER = {
 class StructDef:
   """This class represents a struct definition
 
+
+
   :param default_byteorder: Byte order of each element unless explicilty set 
                             for the element. Valid values are 'native', 
                             'little' and 'big'.
@@ -44,16 +46,55 @@ class StructDef:
   def add(self, type, name, length = 1, byteorder = ''):
     """Add a new element in the struct definition. The element will be added 
        directly after the previous element. Padding is never added.
+
+       - Supported data types:
+
+          +------------+---------------+--------------------------------------+
+          | Name       | Size in bytes | Comment                              |
+          +============+===============+======================================+
+          | int8       | 1             | Integer                              |
+          +------------+---------------+--------------------------------------+
+          | uint8      | 1             | Unsigned integer                     |
+          +------------+---------------+--------------------------------------+
+          | bool8      | 1             | True (<>0) or False (0)              |
+          +------------+---------------+--------------------------------------+
+          | int16      | 2             | Integer                              |
+          +------------+---------------+--------------------------------------+
+          | uint16     | 2             | Unsigned integer                     |
+          +------------+---------------+--------------------------------------+
+          | bool16     | 2             | True (<>0) or False (0)              |
+          +------------+---------------+--------------------------------------+
+          | float16    | 2             | Floating point number                |
+          +------------+---------------+--------------------------------------+
+          | int32      | 4             | Integer                              |
+          +------------+---------------+--------------------------------------+
+          | uint32     | 4             | Unsigned integer                     |
+          +------------+---------------+--------------------------------------+
+          | bool32     | 4             | True (<>0) or False (0)              |
+          +------------+---------------+--------------------------------------+
+          | float32    | 4             | Floating point number                |
+          +------------+---------------+--------------------------------------+
+          | int64      | 8             | Integer                              |
+          +------------+---------------+--------------------------------------+
+          | uint64     | 8             | Unsigned integer                     |
+          +------------+---------------+--------------------------------------+
+          | bool64     | 8             | True (<>0) or False (0)              |
+          +------------+---------------+--------------------------------------+
+          | float64    | 8             | Floating point number                |
+          +------------+---------------+--------------------------------------+
+          | utf-8      | 1             | UTF-8/ASCII string. Use length       |
+          |            |               | parameter to set the length of the   |
+          |            |               | string including null termination    |
+          +------------+---------------+--------------------------------------+
        
-       :param type: Type of element. 
+       :param type: Element data type. See above.
        :type type: str
        :param name: Name of element. Needs to be unique.
        :type name: str
        :param length: Number of elements. If > 1 this is an array/list of elements with equal size. Default is 1.
        :type length: int, optional
        :param byteorder: Byteorder of this element. If not specified the default byteorder is used.
-       :type byteorder: str, optional
-       """
+       :type byteorder: str, optional"""
     if length < 1:
       raise Exception('Invalid length: {0}.'.format(length))
     elif type not in _TYPE:
