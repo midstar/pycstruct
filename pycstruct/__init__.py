@@ -1,0 +1,1 @@
+from pycstruct.pycstruct import StructDef

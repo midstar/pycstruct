@@ -4,7 +4,7 @@ test_dir = os.path.dirname(os.path.realpath(__file__))
 proj_dir = os.path.dirname(test_dir)
 
 sys.path.append(proj_dir)
-from pycstruct import pycstruct
+import pycstruct
 
 class TestPyCStruct(unittest.TestCase):
 

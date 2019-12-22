@@ -1,5 +1,5 @@
 /**
- * This code assumes using tcc on a windows platform (little endian native)
+ * This code assures no padding will be performed
  */
 #pragma pack(1)
 
