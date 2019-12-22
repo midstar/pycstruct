@@ -5,3 +5,4 @@ __pycache__
 *.pyc
 .tox
 pycstruct.egg-info
+doc/build
