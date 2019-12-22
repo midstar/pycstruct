@@ -26,13 +26,34 @@ _BYTEORDER = {
 }
 
 class StructDef:
+  """This class represents a struct definition
+
+  :param default_byteorder: Byte order of each element unless explicilty set 
+                            for the element. Valid values are 'native', 
+                            'little' and 'big'.
+  :type default_byteorder: str, optional
+  """
+
   def __init__(self, default_byteorder = 'native'):
+    """Constructor method"""
     self.__fields = collections.OrderedDict()
     if default_byteorder not in _BYTEORDER:
       raise Exception('Invalid byteorder: {0}.'.format(default_byteorder))
     self.__default_byteorder = default_byteorder
   
   def add(self, type, name, length = 1, byteorder = ''):
+    """Add a new element in the struct definition. The element will be added 
+       directly after the previous element. Padding is never added.
+       
+       :param type: Type of element. 
+       :type type: str
+       :param name: Name of element. Needs to be unique.
+       :type name: str
+       :param length: Number of elements. If > 1 this is an array/list of elements with equal size. Default is 1.
+       :type length: int, optional
+       :param byteorder: Byteorder of this element. If not specified the default byteorder is used.
+       :type byteorder: str, optional
+       """
     if length < 1:
       raise Exception('Invalid length: {0}.'.format(length))
     elif type not in _TYPE:
@@ -47,13 +68,24 @@ class StructDef:
     self.__fields[name] = {'type' : type, 'length' : length, 'byteorder' : byteorder}
 
   def size(self):
-    ''' Returns size of structure in bytes '''
+    """ Get size of structure
+
+    :return: Number of bytes this structure represents
+    :rtype: int
+    """
     size = 0
     for field in self.__fields.values():
       size += field['length'] * _TYPE[field['type']]['bytes']
     return size
 
   def deserialize(self, buffer):
+    """ Deserialize buffer into dictionary
+
+    :param buffer: Buffer that contains the data to deserialize
+    :type buffer: bytearray
+    :return: A dictionary keyed with the element names
+    :rtype: dict
+    """
     result = {}
     if len(buffer) != self.size():
       raise Exception("Invalid buffer size: {0}. Expected: {1}".format(len(buffer),self.size()))
@@ -81,6 +113,13 @@ class StructDef:
     return result
 
   def serialize(self, data):
+    """ Serialize dictionary into buffer
+
+    :param data: A dictionary keyed with element names. Elements can be omitted from the dictionary (defaults to value 0).
+    :type data: dict
+    :return: A buffer that contains data
+    :rtype: bytearray
+    """
     buffer = bytearray(self.size())
     offset = 0
     for name, field in self.__fields.items():
@@ -111,6 +150,11 @@ class StructDef:
     return buffer
 
   def create_empty_data(self):
+    """ Create an empty dictionary with all keys
+
+    :return: A dictionary keyed with the element names. Values are "empty" or 0.
+    :rtype: dict
+    """
     buffer = bytearray(self.size())
     return self.deserialize(buffer)
 
