@@ -146,7 +146,13 @@ class StructDef:
         values = []
         format = _BYTEORDER[field['byteorder']]['format'] + typeinfo['format']
         for i in range(0, length):
-          values.append(struct.unpack_from(format, buffer, offset + i*typeinfo['bytes'] )[0])
+          value = struct.unpack_from(format, buffer, offset + i*typeinfo['bytes'] )[0]
+          if field['type'].startswith("bool"):
+            if value == 0:
+              value = False
+            else:
+              value = True
+          values.append(value)
         if length == 1:
           result[name] = values[0]
         else:

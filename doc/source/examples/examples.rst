@@ -18,6 +18,12 @@ required.
 
 The produced output will be::
 
-    {'name': 'Foo Bar', 'is_male': 1, 'nbr_of_children': 2, 
+    {'name': 'Foo Bar', 'is_male': True, 'nbr_of_children': 2, 
      'age': 42, 'child_ages': [7, 9, 0, 0, 0, 0, 0, 0, 0, 0], 
      'height': 1.75}
+
+To write a binary file from python using the same structure
+using pycstruct following code is required.
+
+.. literalinclude:: simple_example_write.py
+   :language: python
