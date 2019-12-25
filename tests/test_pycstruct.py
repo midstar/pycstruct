@@ -61,6 +61,9 @@ class TestPyCStruct(unittest.TestCase):
   def test_empty_data(self):
     m = self.create_struct("native")
     data = m.create_empty_data()
+    # Check a few of the fields
+    self.assertTrue("int8_low" in data)
+    self.assertTrue("utf8_nonascii" in data)
     
 
   def test_deserialize_serialize_little(self):

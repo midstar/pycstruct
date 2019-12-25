@@ -16,7 +16,7 @@ _TYPE = {
   'uint64'  : {'format' : 'Q', 'bytes' : 8},
   'bool64'  : {'format' : 'Q', 'bytes' : 8},
   'float64' : {'format' : 'd', 'bytes' : 8},
-  'utf-8'   : {'format' : 'B', 'bytes' : 1},
+  'utf-8'   : {'format' : 'B', 'bytes' : 1}
 }
 
 _BYTEORDER = {
@@ -86,6 +86,10 @@ class StructDef:
           |            |               | parameter to set the length of the   |
           |            |               | string including null termination    |
           +------------+---------------+--------------------------------------+
+          | struct     | struct size   | Embedded struct. The actual struct   |
+          |            |               | definition shall be set as type and  |
+          |            |               | not 'struct' string.                 |
+          +------------+---------------+--------------------------------------+
        
        :param type: Element data type. See above.
        :type type: str
@@ -98,14 +102,14 @@ class StructDef:
        :type byteorder: str, optional"""
     if length < 1:
       raise Exception('Invalid length: {0}.'.format(length))
-    elif type not in _TYPE:
-      raise Exception('Invalid type: {0}.'.format(type))
+    if name in self.__fields:
+      raise Exception('Field name already exist: {0}.'.format(name))
     if byteorder == "":
       byteorder = self.__default_byteorder
     elif byteorder not in _BYTEORDER:
       raise Exception('Invalid byteorder: {0}.'.format(byteorder))
-    if name in self.__fields:
-      raise Exception('Field name already exist: {0}.'.format(name))
+    if type not in _TYPE and not isinstance(type, StructDef):
+      raise Exception('Invalid type: {0}.'.format(type))
 
     self.__fields[name] = {'type' : type, 'length' : length, 'byteorder' : byteorder}
 
@@ -117,7 +121,12 @@ class StructDef:
     """
     size = 0
     for field in self.__fields.values():
-      size += field['length'] * _TYPE[field['type']]['bytes']
+      nbr_bytes = 0
+      if isinstance(field['type'], StructDef):
+        nbr_bytes = field['type'].size()
+      else:
+        nbr_bytes =  _TYPE[field['type']]['bytes']
+      size += field['length'] * nbr_bytes
     return size
 
   def deserialize(self, buffer):
@@ -133,9 +142,17 @@ class StructDef:
       raise Exception("Invalid buffer size: {0}. Expected: {1}".format(len(buffer),self.size()))
     offset = 0
     for name, field in self.__fields.items():
-      typeinfo = _TYPE[field['type']]
+      datatype = field['type']
       length = field['length']
-      if field['type'] == 'utf-8':
+      datatype_size = 0
+      typeinfo = 0
+      if isinstance(datatype, StructDef):
+        datatype_size = datatype.size()
+      else:
+        typeinfo = _TYPE[datatype]
+        datatype_size = typeinfo['bytes']
+
+      if datatype == 'utf-8':
         utf8_bytes = buffer[offset:offset + length]
         # Find null termination
         index = utf8_bytes.find(0)
@@ -144,20 +161,28 @@ class StructDef:
         result[name] = utf8_bytes.decode('utf-8') 
       else: 
         values = []
-        format = _BYTEORDER[field['byteorder']]['format'] + typeinfo['format']
-        for i in range(0, length):
-          value = struct.unpack_from(format, buffer, offset + i*typeinfo['bytes'] )[0]
-          if field['type'].startswith("bool"):
-            if value == 0:
-              value = False
-            else:
-              value = True
-          values.append(value)
+        if isinstance(datatype, StructDef):
+          for i in range(0, length):
+            next_offset = offset + i*datatype_size
+            buffer_subset = buffer[next_offset:next_offset + datatype_size]
+            value = datatype.deserialize(buffer_subset)
+            values.append(value)
+        else:
+          format = _BYTEORDER[field['byteorder']]['format'] + typeinfo['format']
+          for i in range(0, length):
+            value = struct.unpack_from(format, buffer, offset + i*datatype_size)[0]
+            if field['type'].startswith("bool"):
+              if value == 0:
+                value = False
+              else:
+                value = True
+            values.append(value)
         if length == 1:
           result[name] = values[0]
         else:
           result[name] = values
-      offset += typeinfo['bytes'] * length
+
+      offset += datatype_size * length
     return result
 
   def serialize(self, data):
@@ -171,12 +196,19 @@ class StructDef:
     buffer = bytearray(self.size())
     offset = 0
     for name, field in self.__fields.items():
-      typeinfo = _TYPE[field['type']]
+      datatype = field['type']
       length = field['length']
-      format = _BYTEORDER[field['byteorder']]['format'] + typeinfo['format']
+      datatype_size = 0
+      typeinfo = 0
+      if isinstance(datatype, StructDef):
+        datatype_size = datatype.size()
+      else:
+        typeinfo = _TYPE[datatype]
+        datatype_size = typeinfo['bytes']
+
       if name in data:
         value = data[name]
-        if field['type'] == 'utf-8':
+        if datatype == 'utf-8':
           if not isinstance(value, str):
             raise Exception('Key: {0} shall be a string'.format(name))
           utf8_bytes = value.encode('utf-8')
@@ -184,17 +216,26 @@ class StructDef:
             raise Exception('String in key: {0} is larger than {1}'.format(name, length))
           for i in range(0, len(utf8_bytes)):
             buffer[i+offset] = utf8_bytes[i]
-        elif length > 1:
-          if not isinstance(value, collections.Iterable):
-            raise Exception('Key: {0} shall be a list'.format(name))
-          if len(value) > length:
-            raise Exception('List in key: {0} is larger than {1}'.format(name, length))
-          for i in range(0, len(value)):
-            struct.pack_into(format, buffer, offset + i*typeinfo['bytes'], value[i])
         else:
-          struct.pack_into(format, buffer, offset, value)
+          value_list = []
+          if length > 1:
+            if not isinstance(value, collections.Iterable):
+              raise Exception('Key: {0} shall be a list'.format(name))
+            if len(value) > length:
+              raise Exception('List in key: {0} is larger than {1}'.format(name, length))
+            value_list = value
+          else:
+            value_list.append(value) # Make list of single value
+          if isinstance(datatype, StructDef):
+            for i in range(0, len(value_list)):
+              next_offset = offset + i*datatype_size
+              buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value_list[i])
+          else:
+            format = _BYTEORDER[field['byteorder']]['format'] + typeinfo['format']
+            for i in range(0, len(value_list)):
+              struct.pack_into(format, buffer, offset + i * datatype_size, value_list[i])
 
-      offset += typeinfo['bytes'] * length
+      offset += datatype_size * length
     return buffer
 
   def create_empty_data(self):
