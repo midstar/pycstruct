@@ -236,5 +236,26 @@ class TestPyCStruct(unittest.TestCase):
     for i in range(0, len(inbytes)):
       self.assertEqual(int(inbytes[i]), int(outbytes[i]), msg='Index {0}'.format(i))
 
+  def test_bitfield_getsubvalue(self):
+    bitstruct = pycstruct.BitfieldDef()
+    value = int('0101110001010011', 2)
+
+    # Unsigned tests
+    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 1, start_bit = 0, signed = False), 1)
+    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 4, start_bit = 0, signed = False), 3)
+    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 16, start_bit = 0, signed = False), 23635)
+    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 15, start_bit = 0, signed = False), 23635)
+    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 14, start_bit = 2, signed = False), 5908)
+    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 3, start_bit = 4, signed = False), 5)
+
+    # Signed tests
+    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 1, start_bit = 0, signed = True), -1)
+    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 4, start_bit = 0, signed = True), 3)
+    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 16, start_bit = 0, signed = True), 23635)
+    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 15, start_bit = 0, signed = True), -9133)
+    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 14, start_bit = 2, signed = True), 5908)
+    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 3, start_bit = 4, signed = True), -3)
+
+
 if __name__ == '__main__':
   unittest.main()

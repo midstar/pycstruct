@@ -1,4 +1,4 @@
-import struct, collections
+import struct, collections, math
 
 _TYPE = {
   'int8'    : {'format' : 'b', 'bytes' : 1},
@@ -38,10 +38,10 @@ class StructDef:
 
   def __init__(self, default_byteorder = 'native'):
     """Constructor method"""
-    self.__fields = collections.OrderedDict()
     if default_byteorder not in _BYTEORDER:
       raise Exception('Invalid byteorder: {0}.'.format(default_byteorder))
     self.__default_byteorder = default_byteorder
+    self.__fields = collections.OrderedDict()
   
   def add(self, type, name, length = 1, byteorder = ''):
     """Add a new element in the struct definition. The element will be added 
@@ -247,3 +247,130 @@ class StructDef:
     buffer = bytearray(self.size())
     return self.deserialize(buffer)
 
+class BitfieldDef:
+  """This class represents a bit field definition
+
+  The size of the bit field is 1, 2, 4 or 8 bytes depending on the number of
+  elements added to the bit field. If a lager size is required than what
+  is required by the elements you have to add additional, "dummy", elements.
+
+  :param byteorder: Byte order of the bitfield. Valid values are 'native', 
+                    'little' and 'big'.
+  :type byteorder: str, optional
+  """
+
+  def __init__(self, byteorder = 'native'):
+    if byteorder not in _BYTEORDER:
+      raise Exception('Invalid byteorder: {0}.'.format(byteorder))
+    self._byteorder = byteorder
+    self._type = 'uint8' # Might be expanded when elements are added
+    self.__fields = collections.OrderedDict()
+
+  def add(self, name, nbr_of_bits = 1, signed = False):
+      """Add a new element in the bitfield definition. The element will be added 
+       directly after the previous element. 
+
+       The size of the bitfield will expand when required, but adding more than
+       in total 64 bits (8 bytes) will generate an exception.
+       
+       :param name: Name of element. Needs to be unique.
+       :type name: str
+       :param nbr_of_bits: Number of bits this element represents. Default is 1.
+       :type nbr_of_bits: int, optional
+       :param signed: Should the bit field be signed or not. Default is False.
+       :type signed: bool, optional"""
+      # Calculate number of bits
+      total_nbr_of_bits = nbr_of_bits
+      for name, field in self.__fields.items():
+        total_nbr_of_bits += field['nbr_of_bits']
+    
+      # Set the new type
+      if total_nbr_of_bits <= 8:
+        self._type = 'uint8'
+      elif total_nbr_of_bits <= 16:
+        self._type = 'uint16'
+      elif total_nbr_of_bits <= 32:
+        self._type = 'uint32'
+      elif total_nbr_of_bits <= 64:
+        self._type = 'uint64'
+      else:
+        raise Exception('Maximum number of bits (64) exceeded: {0}.'.format(total_nbr_of_bits))
+
+      self.__fields[name] = {'nbr_of_bits' : nbr_of_bits, 'signed' : signed}
+
+  def deserialize(self, buffer):
+    """ Deserialize buffer into dictionary
+
+    :param buffer: Buffer that contains the data to deserialize
+    :type buffer: bytearray
+    :return: A dictionary keyed with the element names
+    :rtype: dict
+    """
+    result = {}
+    if len(buffer) != self.size():
+      raise Exception("Invalid buffer size: {0}. Expected: {1}".format(len(buffer),self.size()))
+    typeinfo = _TYPE[self._type]
+    format = _BYTEORDER[self._byteorder]['format'] + typeinfo['format']
+    value = struct.unpack(format, buffer)
+
+    start_bit = 0
+    for name, field in self.__fields.items():
+      result[name] = self._get_subvalue(value, field['nbr_of_bits'], start_bit, field['signed'])
+      start_bit += field['nbr_of_bits']
+
+    return result
+
+  def size(self):
+    """ Get size of bitfield
+
+    :return: Number of bytes this bitfield represents
+    :rtype: int
+    """
+    return _TYPE[self._type]['bytes']
+  
+  def _get_subvalue(self, value, nbr_of_bits, start_bit, signed):
+    """ Get subvalue of value
+    :return: The subvalue
+    :rtype: int
+    """
+    shifted_value = value >> start_bit
+    mask = 0xFFFFFFFFFFFFFFFF >> (64 - nbr_of_bits)
+    non_signed_value = shifted_value & mask
+    if (signed == False):
+      return non_signed_value
+    sign_bit = 0x1 << (nbr_of_bits - 1)
+    if non_signed_value & sign_bit == 0:
+      # Value is positive
+      return non_signed_value
+    # Convert to negative value using Two's complement
+    signed_value = -1 * ((~non_signed_value & mask) + 1) 
+    return signed_value
+  
+  def _set_subvalue(self, value, subvalue, nbr_of_bits, start_bit, signed):
+    """ Set subvalue of value
+    :return: New value where subvalue is included
+    :rtype: int
+    """
+
+    # Validate size according to nbr_of_bits
+    max = 2**nbr_of_bits - 1
+    min = 0
+    if signed:
+      max = 2**(nbr_of_bits-1) - 1
+      min = -1 * (2**(nbr_of_bits-1))
+    
+    signed_str = 'Unsigned'
+    if signed:
+      signed_str = 'Signed'
+
+    if subvalue > max:
+      raise Exception('{0} value {1} is too large to fit in {2} bits. Max value is {3}.'.format(signed_str, subvalue,nbr_of_bits, max))
+    if subvalue < min:
+      raise Exception('{0} value {1} is too small to fit in {2} bits. Min value is {3}.'.format(signed_str, subvalue,nbr_of_bits, max))
+
+    if signed:
+      # Convert from negative value using Two's complement
+      subvalue = -1 * subvalue - 1
+    shifted_subvalue = subvalue << nbr_of_bits
+
+    return value | shifted_subvalue
