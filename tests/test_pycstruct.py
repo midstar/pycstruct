@@ -257,5 +257,32 @@ class TestPyCStruct(unittest.TestCase):
     self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 3, start_bit = 4, signed = True), -3)
 
 
+  def test_bitfield_setsubvalue(self):
+    bitstruct = pycstruct.BitfieldDef()
+    
+
+    # Unsigned tests
+    self.assertEqual(bin(bitstruct._set_subvalue(0, 1, nbr_of_bits = 1, start_bit = 0, signed = False)), '0b1')
+    self.assertEqual(bin(bitstruct._set_subvalue(0, 1, nbr_of_bits = 1, start_bit = 2, signed = False)), '0b100')
+    self.assertEqual(bin(bitstruct._set_subvalue(0, 5, nbr_of_bits = 3, start_bit = 5, signed = False)), '0b10100000')
+
+    value = int('010100001111', 2)
+    self.assertEqual(bin(bitstruct._set_subvalue(value, 15, nbr_of_bits = 4, start_bit = 4, signed = False)), '0b10111111111')
+
+    # Signed tests
+    value = 0
+    self.assertEqual(bin(bitstruct._set_subvalue(0, -1, nbr_of_bits = 1, start_bit = 0, signed = True)), '0b1')
+    self.assertEqual(bin(bitstruct._set_subvalue(0, -1, nbr_of_bits = 1, start_bit = 2, signed = True)), '0b100')
+    self.assertEqual(bin(bitstruct._set_subvalue(0, -5, nbr_of_bits = 4, start_bit = 5, signed = True)), '0b101100000')
+    self.assertEqual(bin(bitstruct._set_subvalue(0,  5, nbr_of_bits = 4, start_bit = 5, signed = True)), '0b10100000')
+
+    # Invalid values
+    self.assertRaises(Exception, bitstruct._set_subvalue, 0, -1, 1, 0, False)
+    self.assertRaises(Exception, bitstruct._set_subvalue, 0, 2, 1, 0, False)
+    self.assertRaises(Exception, bitstruct._set_subvalue, 0, 8, 3, 0, False)
+    self.assertRaises(Exception, bitstruct._set_subvalue, 0, -2, 1, 0, True)
+    self.assertRaises(Exception, bitstruct._set_subvalue, 0, 2, 1, 0, True)
+    self.assertRaises(Exception, bitstruct._set_subvalue, 0, 7, 3, 0, True)
+
 if __name__ == '__main__':
   unittest.main()

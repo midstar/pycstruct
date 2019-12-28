@@ -368,9 +368,13 @@ class BitfieldDef:
     if subvalue < min:
       raise Exception('{0} value {1} is too small to fit in {2} bits. Min value is {3}.'.format(signed_str, subvalue,nbr_of_bits, max))
 
-    if signed:
+    if signed and subvalue < 0:
       # Convert from negative value using Two's complement
-      subvalue = -1 * subvalue - 1
-    shifted_subvalue = subvalue << nbr_of_bits
+      sign_bit = 0x1 << (nbr_of_bits - 1)
+      subvalue = sign_bit | ~(-1 * subvalue - 1)
+
+    mask = 0xFFFFFFFFFFFFFFFF >> (64 - nbr_of_bits)
+
+    shifted_subvalue = (subvalue & mask) << start_bit
 
     return value | shifted_subvalue
