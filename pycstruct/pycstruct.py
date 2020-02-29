@@ -279,9 +279,13 @@ class BitfieldDef:
        :type nbr_of_bits: int, optional
        :param signed: Should the bit field be signed or not. Default is False.
        :type signed: bool, optional"""
+      # Check for same bitfield name
+      if name in self.__fields:
+        raise Exception('Field with name {0} already exists.'.format(name))
+
       # Calculate number of bits
       total_nbr_of_bits = nbr_of_bits
-      for name, field in self.__fields.items():
+      for _, field in self.__fields.items():
         total_nbr_of_bits += field['nbr_of_bits']
     
       # Set the new type

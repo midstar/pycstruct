@@ -236,6 +236,43 @@ class TestPyCStruct(unittest.TestCase):
     for i in range(0, len(inbytes)):
       self.assertEqual(int(inbytes[i]), int(outbytes[i]), msg='Index {0}'.format(i))
 
+
+  def test_bitfield_invalid_creation(self):
+    # Invalid byteorder on creation
+    self.assertRaises(Exception, pycstruct.BitfieldDef, 'invalid')
+
+  def test_bitfield_add(self):
+    bitfield = pycstruct.BitfieldDef()
+
+    self.assertEqual(bitfield.size(), 1)
+
+    bitfield.add("one_bit")
+    bitfield.add("two_bits", 2)
+    bitfield.add("three_bits", 3)
+    bitfield.add("two_bits_signed", 2, signed=True)
+    self.assertEqual(bitfield.size(), 1)
+
+    bitfield.add("one_more_bit")
+    self.assertEqual(bitfield.size(), 2)
+    bitfield.add("seven_bits", 7)
+    self.assertEqual(bitfield.size(), 2)
+
+    bitfield.add("three_bits_signed", 3, signed=True)
+    self.assertEqual(bitfield.size(), 4)
+
+    bitfield.add("32_bits", 32)
+    self.assertEqual(bitfield.size(), 8)
+
+    bitfield.add("13_signed_bits", 13, signed=True)
+
+    # Should overflow
+    self.assertRaises(Exception, bitfield.add, 'this_wont_fit_in_64_bits')
+
+
+    # Same bit field name again - forbidden
+    self.assertRaises(Exception, bitfield.add, 'three_bits')
+
+
   def test_bitfield_getsubvalue(self):
     bitstruct = pycstruct.BitfieldDef()
     value = int('0101110001010011', 2)
