@@ -6,3 +6,4 @@ __pycache__
 .tox
 pycstruct.egg-info
 doc/build
+htmlcov

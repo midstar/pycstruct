@@ -244,26 +244,35 @@ class TestPyCStruct(unittest.TestCase):
   def test_bitfield_add(self):
     bitfield = pycstruct.BitfieldDef()
 
-    self.assertEqual(bitfield.size(), 1)
+    self.assertEqual(bitfield.assigned_bits(), 0)
+    self.assertEqual(bitfield.size(), 0)
 
     bitfield.add("one_bit")
+    self.assertEqual(bitfield.assigned_bits(), 1)
     bitfield.add("two_bits", 2)
     bitfield.add("three_bits", 3)
     bitfield.add("two_bits_signed", 2, signed=True)
+    self.assertEqual(bitfield.assigned_bits(), 8)
     self.assertEqual(bitfield.size(), 1)
 
     bitfield.add("one_more_bit")
+    self.assertEqual(bitfield.assigned_bits(), 9)
     self.assertEqual(bitfield.size(), 2)
     bitfield.add("seven_bits", 7)
+    self.assertEqual(bitfield.assigned_bits(), 16)
     self.assertEqual(bitfield.size(), 2)
 
     bitfield.add("three_bits_signed", 3, signed=True)
-    self.assertEqual(bitfield.size(), 4)
+    self.assertEqual(bitfield.assigned_bits(), 19)
+    self.assertEqual(bitfield.size(), 3)
 
     bitfield.add("32_bits", 32)
-    self.assertEqual(bitfield.size(), 8)
+    self.assertEqual(bitfield.assigned_bits(), 51)
+    self.assertEqual(bitfield.size(), 7)
 
     bitfield.add("13_signed_bits", 13, signed=True)
+    self.assertEqual(bitfield.assigned_bits(), 64)
+    self.assertEqual(bitfield.size(), 8)
 
     # Should overflow
     self.assertRaises(Exception, bitfield.add, 'this_wont_fit_in_64_bits')
@@ -272,6 +281,66 @@ class TestPyCStruct(unittest.TestCase):
     # Same bit field name again - forbidden
     self.assertRaises(Exception, bitfield.add, 'three_bits')
 
+  def create_bitfield(self, byteorder):
+    b = pycstruct.BitfieldDef(byteorder)
+
+    b.add("onebit",1 ,signed=False)
+    b.add("twobits",2 ,signed=False)
+    b.add("threebits",3 ,signed=False)
+    b.add("fourbits",4 ,signed=False)
+    b.add("fivesignedbits",5 ,signed=True)
+    b.add("eightbits",8 ,signed=False)
+    b.add("eightsignedbits",8 ,signed=True)
+    b.add("onesignedbit",1 ,signed=True)
+    b.add("foursignedbits",4 ,signed=True)
+    b.add("sixteensignedbits",16 ,signed=True)
+    b.add("fivebits",5 ,signed=False)
+
+    return b
+
+  def deserialize_serialize_bitfield(self, byteorder):
+
+    #############################################
+    # Define Bitfield
+    b = self.create_bitfield(byteorder)
+
+    #############################################
+    # Load pre-stored binary data and deserialize
+
+    f = open(os.path.join(test_dir, 'bitfield_{0}.dat'.format(byteorder)),'rb')
+    inbytes = f.read()
+    result = b.deserialize(inbytes)
+    f.close()
+
+    #############################################
+    # Check expected values
+    self.assertEqual(result['onebit'], 1)
+    self.assertEqual(result['twobits'], 3)
+    self.assertEqual(result['threebits'], 1)
+    self.assertEqual(result['fourbits'], 3)
+    self.assertEqual(result['fivesignedbits'], -2)
+    self.assertEqual(result['eightbits'], 255)
+    self.assertEqual(result['eightsignedbits'], -128)
+    self.assertEqual(result['onesignedbit'], -1)
+    self.assertEqual(result['foursignedbits'], 5)
+    self.assertEqual(result['sixteensignedbits'], -12345)
+    self.assertEqual(result['fivebits'], 16)
+
+
+
+  def test_bitfield_deserialize_serialize_little(self):
+    self.deserialize_serialize_bitfield('little')
+
+  def test_bitfield_deserialize_serialize_big(self):
+    self.deserialize_serialize_bitfield('big')
+
+  def test_invalid_deserialize(self):
+
+    b = pycstruct.BitfieldDef()
+    b.add('afield')
+
+    buffer = bytearray(b.size() + 1)
+    self.assertRaises(Exception, b.deserialize, buffer)
 
   def test_bitfield_getsubvalue(self):
     bitstruct = pycstruct.BitfieldDef()

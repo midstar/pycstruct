@@ -1,4 +1,4 @@
-import struct, collections, math
+import struct, collections, math, sys
 
 _TYPE = {
   'int8'    : {'format' : 'b', 'bytes' : 1},
@@ -250,7 +250,7 @@ class StructDef:
 class BitfieldDef:
   """This class represents a bit field definition
 
-  The size of the bit field is 1, 2, 4 or 8 bytes depending on the number of
+  The size of the bit field is 1, 2, 3, .., 8 bytes depending on the number of
   elements added to the bit field. If a lager size is required than what
   is required by the elements you have to add additional, "dummy", elements.
 
@@ -262,8 +262,9 @@ class BitfieldDef:
   def __init__(self, byteorder = 'native'):
     if byteorder not in _BYTEORDER:
       raise Exception('Invalid byteorder: {0}.'.format(byteorder))
-    self._byteorder = byteorder
-    self._type = 'uint8' # Might be expanded when elements are added
+    if byteorder == 'native':
+      byteorder = sys.byteorder
+    self.__byteorder = byteorder
     self.__fields = collections.OrderedDict()
 
   def add(self, name, nbr_of_bits = 1, signed = False):
@@ -282,22 +283,10 @@ class BitfieldDef:
       # Check for same bitfield name
       if name in self.__fields:
         raise Exception('Field with name {0} already exists.'.format(name))
-
-      # Calculate number of bits
-      total_nbr_of_bits = nbr_of_bits
-      for _, field in self.__fields.items():
-        total_nbr_of_bits += field['nbr_of_bits']
     
-      # Set the new type
-      if total_nbr_of_bits <= 8:
-        self._type = 'uint8'
-      elif total_nbr_of_bits <= 16:
-        self._type = 'uint16'
-      elif total_nbr_of_bits <= 32:
-        self._type = 'uint32'
-      elif total_nbr_of_bits <= 64:
-        self._type = 'uint64'
-      else:
+      # Check that new size is not too large
+      total_nbr_of_bits = self.assigned_bits() + nbr_of_bits
+      if total_nbr_of_bits > 64:
         raise Exception('Maximum number of bits (64) exceeded: {0}.'.format(total_nbr_of_bits))
 
       self.__fields[name] = {'nbr_of_bits' : nbr_of_bits, 'signed' : signed}
@@ -305,7 +294,7 @@ class BitfieldDef:
   def deserialize(self, buffer):
     """ Deserialize buffer into dictionary
 
-    :param buffer: Buffer that contains the data to deserialize
+    :param buffer: Buffer that contains the data to deserialize (1 - 8 bytes)
     :type buffer: bytearray
     :return: A dictionary keyed with the element names
     :rtype: dict
@@ -313,9 +302,8 @@ class BitfieldDef:
     result = {}
     if len(buffer) != self.size():
       raise Exception("Invalid buffer size: {0}. Expected: {1}".format(len(buffer),self.size()))
-    typeinfo = _TYPE[self._type]
-    format = _BYTEORDER[self._byteorder]['format'] + typeinfo['format']
-    value = struct.unpack(format, buffer)
+
+    value = int.from_bytes(buffer, self.__byteorder, signed=False)
 
     start_bit = 0
     for name, field in self.__fields.items():
@@ -324,13 +312,25 @@ class BitfieldDef:
 
     return result
 
+  def assigned_bits(self):
+    """ Get size of bitfield in bits excluding padding bits
+
+    :return: Number of bits this bitfield represents excluding padding bits
+    :rtype: int
+    """
+    total_nbr_of_bits = 0
+    for _, field in self.__fields.items():
+      total_nbr_of_bits += field['nbr_of_bits']
+
+    return total_nbr_of_bits
+
   def size(self):
-    """ Get size of bitfield
+    """ Get size of bitfield in bytes
 
     :return: Number of bytes this bitfield represents
     :rtype: int
     """
-    return _TYPE[self._type]['bytes']
+    return int(math.ceil(self.assigned_bits()/8.0))
   
   def _get_subvalue(self, value, nbr_of_bits, start_bit, signed):
     """ Get subvalue of value
