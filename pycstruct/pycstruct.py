@@ -25,7 +25,27 @@ _BYTEORDER = {
   'big'    : {'format' : '>'}
 }
 
-class StructDef:
+class BaseDef:
+  """This is an abstract base class for definitions"""
+  def size(self):
+    raise NotImplementedError
+
+  def serialize(self, data):
+    raise NotImplementedError
+
+  def deserialize(self, buffer):
+    raise NotImplementedError
+  
+  def create_empty_data(self):
+    """ Create an empty dictionary with all keys
+
+    :return: A dictionary keyed with the element names. Values are "empty" or 0.
+    :rtype: dict
+    """
+    buffer = bytearray(self.size())
+    return self.deserialize(buffer)
+
+class StructDef(BaseDef):
   """This class represents a struct definition
 
 
@@ -86,9 +106,13 @@ class StructDef:
           |            |               | parameter to set the length of the   |
           |            |               | string including null termination    |
           +------------+---------------+--------------------------------------+
-          | struct     | struct size   | Embedded struct. The actual struct   |
-          |            |               | definition shall be set as type and  |
-          |            |               | not 'struct' string.                 |
+          | struct     | struct size   | Embedded struct. The actual          |
+          |            |               | StructDef object shall be set as     |
+          |            |               | type and not 'struct' string.        |
+          +------------+---------------+--------------------------------------+
+          | bitfield   | bitfield size | Bitfield. The actual BitfieldDef     |
+          |            |               | object shall be set as type and      |
+          |            |               | not 'bitfield' string.               |
           +------------+---------------+--------------------------------------+
        
        :param type: Element data type. See above.
@@ -108,7 +132,7 @@ class StructDef:
       byteorder = self.__default_byteorder
     elif byteorder not in _BYTEORDER:
       raise Exception('Invalid byteorder: {0}.'.format(byteorder))
-    if type not in _TYPE and not isinstance(type, StructDef):
+    if type not in _TYPE and not isinstance(type, BaseDef):
       raise Exception('Invalid type: {0}.'.format(type))
 
     self.__fields[name] = {'type' : type, 'length' : length, 'byteorder' : byteorder}
@@ -122,7 +146,7 @@ class StructDef:
     size = 0
     for field in self.__fields.values():
       nbr_bytes = 0
-      if isinstance(field['type'], StructDef):
+      if isinstance(field['type'], BaseDef):
         nbr_bytes = field['type'].size()
       else:
         nbr_bytes =  _TYPE[field['type']]['bytes']
@@ -146,7 +170,7 @@ class StructDef:
       length = field['length']
       datatype_size = 0
       typeinfo = 0
-      if isinstance(datatype, StructDef):
+      if isinstance(datatype, BaseDef):
         datatype_size = datatype.size()
       else:
         typeinfo = _TYPE[datatype]
@@ -161,7 +185,7 @@ class StructDef:
         result[name] = utf8_bytes.decode('utf-8') 
       else: 
         values = []
-        if isinstance(datatype, StructDef):
+        if isinstance(datatype, BaseDef):
           for i in range(0, length):
             next_offset = offset + i*datatype_size
             buffer_subset = buffer[next_offset:next_offset + datatype_size]
@@ -200,7 +224,7 @@ class StructDef:
       length = field['length']
       datatype_size = 0
       typeinfo = 0
-      if isinstance(datatype, StructDef):
+      if isinstance(datatype, BaseDef):
         datatype_size = datatype.size()
       else:
         typeinfo = _TYPE[datatype]
@@ -226,7 +250,7 @@ class StructDef:
             value_list = value
           else:
             value_list.append(value) # Make list of single value
-          if isinstance(datatype, StructDef):
+          if isinstance(datatype, BaseDef):
             for i in range(0, len(value_list)):
               next_offset = offset + i*datatype_size
               buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value_list[i])
@@ -238,16 +262,7 @@ class StructDef:
       offset += datatype_size * length
     return buffer
 
-  def create_empty_data(self):
-    """ Create an empty dictionary with all keys
-
-    :return: A dictionary keyed with the element names. Values are "empty" or 0.
-    :rtype: dict
-    """
-    buffer = bytearray(self.size())
-    return self.deserialize(buffer)
-
-class BitfieldDef:
+class BitfieldDef(BaseDef):
   """This class represents a bit field definition
 
   The size of the bit field is 1, 2, 3, .., 8 bytes depending on the number of

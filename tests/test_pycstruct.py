@@ -8,6 +8,14 @@ import pycstruct
 
 class TestPyCStruct(unittest.TestCase):
 
+  def test_invalid_baseclass(self):
+
+    b = pycstruct.BaseDef()
+
+    self.assertRaises(NotImplementedError, b.size)
+    self.assertRaises(NotImplementedError, b.serialize, 0)
+    self.assertRaises(NotImplementedError, b.deserialize, 0)
+
   def test_invalid_creation(self):
     # Invalid byteorder on creation
     self.assertRaises(Exception, pycstruct.StructDef, 'invalid')
