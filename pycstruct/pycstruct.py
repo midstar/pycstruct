@@ -110,11 +110,11 @@ class StructDef(BaseDef):
           |            |               | StructDef object shall be set as     |
           |            |               | type and not 'struct' string.        |
           +------------+---------------+--------------------------------------+
-          | bitfield   | bitfield size | Bitfield. The actual BitfieldDef     |
+          | bitfield   | bitfield size | Bitfield. The actual ~BitfieldDef    |
           |            |               | object shall be set as type and      |
           |            |               | not 'bitfield' string.               |
           +------------+---------------+--------------------------------------+
-          | enum       | enum size     | Enum. The actual EnumDef object      |
+          | enum       | enum size     | Enum. The actual ~EnumDef object     |
           |            |               | shall be set as type and not 'enum'  |
           |            |               | string.                              |
           +------------+---------------+--------------------------------------+
