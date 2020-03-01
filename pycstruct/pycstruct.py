@@ -110,13 +110,14 @@ class StructDef(BaseDef):
           |            |               | StructDef object shall be set as     |
           |            |               | type and not 'struct' string.        |
           +------------+---------------+--------------------------------------+
-          | bitfield   | bitfield size | Bitfield. The actual ~BitfieldDef    |
-          |            |               | object shall be set as type and      |
-          |            |               | not 'bitfield' string.               |
-          +------------+---------------+--------------------------------------+
-          | enum       | enum size     | Enum. The actual ~EnumDef object     |
-          |            |               | shall be set as type and not 'enum'  |
+          | bitfield   | bitfield size | Bitfield. The actual                 |
+          |            |               |  :meth:`BitfieldDef` object shall be |
+          |            |               | set as type and not 'bitfield'       |
           |            |               | string.                              |
+          +------------+---------------+--------------------------------------+
+          | enum       | enum size     | Enum. The actual :meth:`EnumDef`     |
+          |            |               | object shall be set as type and not  |
+          |            |               | 'enum' string.                       |
           +------------+---------------+--------------------------------------+
        
        :param type: Element data type. See above.
@@ -270,7 +271,7 @@ class BitfieldDef(BaseDef):
   """This class represents a bit field definition
 
   The size of the bit field is 1, 2, 3, .., 8 bytes depending on the number of
-  elements added to the bit field. If a lager size is required than what
+  elements added to the bit field. If a larger size is required than what
   is required by the elements you have to add additional, "dummy", elements.
 
   :param byteorder: Byte order of the bitfield. Valid values are 'native', 
@@ -427,7 +428,7 @@ class EnumDef(BaseDef):
   """This class represents an enum definition
 
   The size of the enum is 1, 2, 3, .., 8 bytes depending on the value of the
-  largest enum constant. If a lager size is required than what is required
+  largest enum constant. If a larger size is required than what is required
   by the constants you have to add a dummy constant with a value which will 
   force a the enum to have a particular size.
 
