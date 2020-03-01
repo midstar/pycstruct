@@ -18,6 +18,6 @@ mrGreen['child_ages'] = [13,24,12]
 
 buffer = person.serialize(mrGreen)
 
-f = open("simple_example_mr_green.dat","wb")
+f = open('simple_example_mr_green.dat','wb')
 f.write(buffer)
 f.close()

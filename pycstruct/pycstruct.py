@@ -35,7 +35,7 @@ class BaseDef:
 
   def deserialize(self, buffer):
     raise NotImplementedError
-  
+
   def create_empty_data(self):
     """ Create an empty dictionary with all keys
 
@@ -113,6 +113,10 @@ class StructDef(BaseDef):
           | bitfield   | bitfield size | Bitfield. The actual BitfieldDef     |
           |            |               | object shall be set as type and      |
           |            |               | not 'bitfield' string.               |
+          +------------+---------------+--------------------------------------+
+          | enum       | enum size     | Enum. The actual EnumDef object      |
+          |            |               | shall be set as type and not 'enum'  |
+          |            |               | string.                              |
           +------------+---------------+--------------------------------------+
        
        :param type: Element data type. See above.
@@ -417,3 +421,119 @@ class BitfieldDef(BaseDef):
     shifted_subvalue = (subvalue & mask) << start_bit
 
     return value | shifted_subvalue
+
+
+class EnumDef(BaseDef):
+  """This class represents an enum definition
+
+  The size of the enum is 1, 2, 3, .., 8 bytes depending on the value of the
+  largest enum constant. If a lager size is required than what is required
+  by the constants you have to add a dummy constant with a value which will 
+  force a the enum to have a particular size.
+
+  This implementation assumes that an enum is always signed.
+
+  :param byteorder: Byte order of the enum. Valid values are 'native', 
+                    'little' and 'big'.
+  :type byteorder: str, optional
+  """
+
+  def __init__(self, byteorder = 'native'):
+    if byteorder not in _BYTEORDER:
+      raise Exception('Invalid byteorder: {0}.'.format(byteorder))
+    if byteorder == 'native':
+      byteorder = sys.byteorder
+    self.__byteorder = byteorder
+    self.__constants = collections.OrderedDict()
+
+  def add(self, name, value=None):
+      """Add a new constant in the enum definition. Multiple constant might
+       be assigned to the same value.
+
+       The size of the enum will expand when required, but adding a value
+       requiering a size larger than 64 bits will generate an exception.
+       
+       :param name: Name of constant. Needs to be unique.
+       :type name: str
+       :param value: Value of the constant. Automatically assigned to next
+                     available value (0, 1, 2, ...) if not provided.
+       :type value: int, optional"""
+      # Check for same bitfield name
+      if name in self.__constants:
+        raise Exception('Constant with name {0} already exists.'.format(name))
+
+      # Automatically assigned to next available value
+      index = 0
+      while value == None:
+        try: 
+          self.get_name(index)
+          index += 1
+        except:
+          value = index  
+    
+      # Check that new size is not too large
+      bit_length = value.bit_length() + 1 # Including sign bit
+      if bit_length > 64:
+        raise Exception('Maximum number of bits (64) exceeded: {0}.'.format(bit_length))
+
+      self.__constants[name] = value
+
+  def deserialize(self, buffer):
+    """ Deserialize buffer into a string (constant name)
+
+    :param buffer: Buffer that contains the data to deserialize (1 - 8 bytes)
+    :type buffer: bytearray
+    :return: The constant name (string) 
+    :rtype: str
+    """
+    if len(buffer) != self.size():
+      raise Exception("Invalid buffer size: {0}. Expected: {1}".format(len(buffer),self.size()))
+
+    value = int.from_bytes(buffer, self.__byteorder, signed=True)
+
+    return self.get_name(value)
+
+  def serialize(self, data):
+    """ Serialize string (constant name) into buffer
+
+    :param data: A string representing the constant name.
+    :type data: str
+    :return: A buffer that contains data
+    :rtype: bytearray
+    """
+    value = self.get_value(data)
+
+    return value.to_bytes(self.size(), self.__byteorder, signed=True)
+
+  def size(self):
+    """ Get size of enum in bytes
+
+    :return: Number of bytes this enum represents
+    :rtype: int
+    """
+    max_value = 0
+    for _, value in self.__constants.items():
+      if value > max_value:
+        max_value = value
+    return int(math.ceil( (max_value.bit_length()+1) /8.0 ))
+
+  def get_name(self, value):
+    """ Get the name representation of the value
+
+    :return: The constant name
+    :rtype: str
+    """
+    for constant, v in self.__constants.items():
+      if value == v:
+        return constant
+    raise Exception("Value {0} is not a valid value for this enum.".format(value))
+
+  def get_value(self, name):
+    """ Get the value representation of the name
+
+    :return: The value
+    :rtype: int
+    """
+    if name not in self.__constants:
+      raise Exception("{0} is not a valid name in this enum".format(name))
+    return self.__constants[name]

@@ -408,5 +408,91 @@ class TestPyCStruct(unittest.TestCase):
     self.assertRaises(Exception, bitstruct._set_subvalue, 0, 2, 1, 0, True)
     self.assertRaises(Exception, bitstruct._set_subvalue, 0, 7, 3, 0, True)
 
+
+  def test_enum_invalid_creation(self):
+    # Invalid byteorder on creation
+    self.assertRaises(Exception, pycstruct.EnumDef, 'invalid')
+
+
+  def test_enum_add(self):
+    e = pycstruct.EnumDef()
+
+    self.assertEqual(e.size(), 1)
+
+    e.add("first")
+    self.assertEqual(e.get_value("first"), 0)
+    self.assertEqual(e.get_name(0), "first")
+    self.assertEqual(e.size(), 1)
+
+    e.add("second", 1)
+    self.assertEqual(e.get_value("second"), 1)
+    self.assertEqual(e.get_name(1), "second")
+    self.assertEqual(e.size(), 1)
+
+    e.add("fitbyte", 127)
+    self.assertEqual(e.get_value("fitbyte"), 127)
+    self.assertEqual(e.get_name(127), "fitbyte")
+    self.assertEqual(e.size(), 1)
+
+    e.add("third")
+    self.assertEqual(e.get_value("third"), 2)
+    self.assertEqual(e.get_name(2), "third")
+    self.assertEqual(e.size(), 1)
+
+    e.add("dont_fit_byte", 128)
+    self.assertEqual(e.size(), 2)
+
+    # Duplicate
+    self.assertRaises(Exception, e.add, "second")
+
+    # > 64 bits
+    self.assertRaises(Exception, e.add, "too_big", 12345678901234561234567)
+
+    # Get invalid value
+    self.assertRaises(Exception, e.get_value, 33)
+
+    # Get invalid name
+    self.assertRaises(Exception, e.get_name, "invalid")
+
+  def test_enum_serialize_deserialize(self):
+    e = pycstruct.EnumDef()
+    e.add("zero", 0)
+    e.add("one", 1)
+    e.add("two", 2)
+    e.add("three", 2)
+
+    value = "two"
+    buf = e.serialize(value)
+    self.assertEqual(len(buf), 1)
+    self.assertEqual(buf[0], 2)
+
+    big = pycstruct.EnumDef('big')
+    big.add("twofiftysix", 256)
+    value = "twofiftysix"
+    buf = big.serialize(value)
+    self.assertEqual(len(buf), 2)
+    self.assertEqual(buf[0], 1)
+    self.assertEqual(buf[1], 0)
+    outval = big.deserialize(buf)
+    self.assertEqual(outval, "twofiftysix")
+
+    little = pycstruct.EnumDef('little')
+    little.add("twofiftysix", 256)
+    value = "twofiftysix"
+    buf = little.serialize(value)
+    self.assertEqual(len(buf), 2)
+    self.assertEqual(buf[0], 0)
+    self.assertEqual(buf[1], 1)
+    outval = little.deserialize(buf)
+    self.assertEqual(outval, "twofiftysix")
+
+  def test_enum_invalid_deserialize(self):
+
+    e = pycstruct.EnumDef()
+    e.add('zero')
+
+    buffer = bytearray(e.size() + 1)
+    self.assertRaises(Exception, e.deserialize, buffer)
+    
 if __name__ == '__main__':
   unittest.main()

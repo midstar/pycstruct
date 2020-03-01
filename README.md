@@ -4,7 +4,21 @@
 [![Coverage Status](https://coveralls.io/repos/github/midstar/pycstruct/badge.svg?branch=HEAD)](https://coveralls.io/github/midstar/pycstruct?branch=HEAD)
 [![Documentation](https://readthedocs.org/projects/pycstruct/badge/?version=latest)](https://pycstruct.readthedocs.io/en/latest/?badge=latest)
 
-A python library for reading and writing binary data similar to what is done in C language structs.
+pycstruct is a python library for converting binary data to and from ordinary
+python dictionaries.
+
+Data is defined similar to what is done in C language structs.
+
+Typical usage of this library is read/write binary files or binary data
+transmitted over a network.
+
+It supports all traditional data types (integer, unsigned integer, boolean and
+float) between 1 to 8 bytes large, arrays (lists), strings (UTF-8), bitfields
+and enums.
+
+Structs can be embedded inside other structs.
+
+Individual elements can be stored / read in any byte order.
 
 Checkout the full documentation [here](https://pycstruct.readthedocs.io/en/latest/).
 
@@ -63,7 +77,7 @@ person.add('bool8', 'is_male')
 person.add('uint32', 'nbr_of_children')
 person.add('uint32', 'child_ages', length=10)
 
-f = open("simple_example.dat","rb")
+f = open('simple_example.dat','rb')
 inbytes = f.read()
 result = person.deserialize(inbytes)
 f.close()
@@ -101,7 +115,7 @@ mrGreen['child_ages'] = [13,24,12]
 
 buffer = person.serialize(mrGreen)
 
-f = open("simple_example_mr_green.dat","wb")
+f = open('simple_example_mr_green.dat','wb')
 f.write(buffer)
 f.close()
 ```
