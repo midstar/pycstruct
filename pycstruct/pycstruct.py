@@ -312,6 +312,26 @@ class BitfieldDef:
 
     return result
 
+
+  def serialize(self, data):
+    """ Serialize dictionary into buffer
+
+    :param data: A dictionary keyed with element names. Elements can be omitted from the dictionary (defaults to value 0).
+    :type data: dict
+    :return: A buffer that contains data
+    :rtype: bytearray
+    """
+    value = 0
+    start_bit = 0
+    for name, field in self.__fields.items():
+      subvalue = 0
+      if name in data:
+        subvalue = data[name]
+      value = self._set_subvalue(value, subvalue, field['nbr_of_bits'], start_bit, field['signed'])
+      start_bit += field['nbr_of_bits']
+
+    return value.to_bytes(self.size(), self.__byteorder, signed=False)
+
   def assigned_bits(self):
     """ Get size of bitfield in bits excluding padding bits
 
