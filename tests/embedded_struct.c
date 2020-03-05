@@ -6,11 +6,18 @@
 #include <stdio.h>
 #include <string.h>
 
+struct car_properties_s {
+  unsigned int env_class : 3;
+  unsigned int registered : 1;
+  unsigned int over_3500_kg : 1;
+};
+
 struct car_s 
 {
     unsigned short year;
     char model[50];
     char registration_number[10];
+    struct car_properties_s properties;
 };
 
 struct garage_s 
@@ -32,14 +39,23 @@ void main() {
     house.garage.nbr_registered_parkings = 3;
 
     house.garage.cars[0].year = 2011;
+    house.garage.cars[0].properties.env_class = 0;
+    house.garage.cars[0].properties.registered = 1;
+    house.garage.cars[0].properties.over_3500_kg = 0;
     strcpy(house.garage.cars[0].registration_number, "AHF432");
     strcpy(house.garage.cars[0].model, "Nissan Micra");
 
     house.garage.cars[1].year = 2005;
+    house.garage.cars[1].properties.env_class = 1;
+    house.garage.cars[1].properties.registered = 1;
+    house.garage.cars[1].properties.over_3500_kg = 1;
     strcpy(house.garage.cars[1].registration_number, "CCO544");
     strcpy(house.garage.cars[1].model, "Ford Focus");
 
     house.garage.cars[2].year = 1998;
+    house.garage.cars[2].properties.env_class = 3;
+    house.garage.cars[2].properties.registered = 0;
+    house.garage.cars[2].properties.over_3500_kg = 0;
     strcpy(house.garage.cars[2].registration_number, "HHT434");
     strcpy(house.garage.cars[2].model, "Volkswagen Golf");
 
