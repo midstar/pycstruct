@@ -196,6 +196,13 @@ class TestPyCStruct(unittest.TestCase):
       self.assertEqual(int(inbytes[i]), int(outbytes[i]), msg='Index {0}'.format(i))
 
   def test_embedded_struct(self):
+    car_type = pycstruct.EnumDef()
+    car_type.add('Sedan', 0)
+    car_type.add('Station_Wagon', 5)
+    car_type.add('Bus', 7)
+    car_type.add('Pickup', 12)
+    car_type.add('_padding_', 0xFFFFFFF) # To ensure 4 bytes
+
     car_properties = pycstruct.BitfieldDef()
     car_properties.add('class', 3)
     car_properties.add('registered', 1)
@@ -207,6 +214,7 @@ class TestPyCStruct(unittest.TestCase):
     car.add('utf-8', 'model', length=50)
     car.add('utf-8', 'registration_number', length=10)
     car.add(car_properties, 'properties')
+    car.add(car_type, 'type')
 
     garage = pycstruct.StructDef()
     garage.add(car, 'cars', length=20)
@@ -235,18 +243,21 @@ class TestPyCStruct(unittest.TestCase):
     self.assertEqual(result['garage']['cars'][0]['properties']['class'], 0)
     self.assertEqual(result['garage']['cars'][0]['properties']['registered'], 1)
     self.assertEqual(result['garage']['cars'][0]['properties']['over_3500_kg'], 0)
+    self.assertEqual(result['garage']['cars'][0]['type'], 'Sedan')
     self.assertEqual(result['garage']['cars'][0]['registration_number'], 'AHF432')
     self.assertEqual(result['garage']['cars'][0]['model'], 'Nissan Micra')
     self.assertEqual(result['garage']['cars'][1]['year'], 2005)
     self.assertEqual(result['garage']['cars'][1]['properties']['class'], 1)
     self.assertEqual(result['garage']['cars'][1]['properties']['registered'], 1)
     self.assertEqual(result['garage']['cars'][1]['properties']['over_3500_kg'], 1)
+    self.assertEqual(result['garage']['cars'][1]['type'], 'Bus')
     self.assertEqual(result['garage']['cars'][1]['registration_number'], 'CCO544')
     self.assertEqual(result['garage']['cars'][1]['model'], 'Ford Focus')
     self.assertEqual(result['garage']['cars'][2]['year'], 1998)
     self.assertEqual(result['garage']['cars'][2]['properties']['class'], 3)
     self.assertEqual(result['garage']['cars'][2]['properties']['registered'], 0)
     self.assertEqual(result['garage']['cars'][2]['properties']['over_3500_kg'], 0)
+    self.assertEqual(result['garage']['cars'][2]['type'], 'Pickup')
     self.assertEqual(result['garage']['cars'][2]['registration_number'], 'HHT434')
     self.assertEqual(result['garage']['cars'][2]['model'], 'Volkswagen Golf')
 

@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 
+enum car_type { Sedan=0, Station_Wagon=5, Bus=7, Pickup=12};
+
 struct car_properties_s {
   unsigned int env_class : 3;
   unsigned int registered : 1;
@@ -18,6 +20,7 @@ struct car_s
     char model[50];
     char registration_number[10];
     struct car_properties_s properties;
+    enum car_type type;
 };
 
 struct garage_s 
@@ -42,6 +45,8 @@ void main() {
     house.garage.cars[0].properties.env_class = 0;
     house.garage.cars[0].properties.registered = 1;
     house.garage.cars[0].properties.over_3500_kg = 0;
+    house.garage.cars[0].type = Sedan;
+
     strcpy(house.garage.cars[0].registration_number, "AHF432");
     strcpy(house.garage.cars[0].model, "Nissan Micra");
 
@@ -49,6 +54,7 @@ void main() {
     house.garage.cars[1].properties.env_class = 1;
     house.garage.cars[1].properties.registered = 1;
     house.garage.cars[1].properties.over_3500_kg = 1;
+    house.garage.cars[1].type = Bus;
     strcpy(house.garage.cars[1].registration_number, "CCO544");
     strcpy(house.garage.cars[1].model, "Ford Focus");
 
@@ -56,8 +62,10 @@ void main() {
     house.garage.cars[2].properties.env_class = 3;
     house.garage.cars[2].properties.registered = 0;
     house.garage.cars[2].properties.over_3500_kg = 0;
+    house.garage.cars[2].type = Pickup;
     strcpy(house.garage.cars[2].registration_number, "HHT434");
     strcpy(house.garage.cars[2].model, "Volkswagen Golf");
+
 
     printf("Saving embedded_stuct.dat\n");
     FILE *f = fopen("embedded_struct.dat", "w");
