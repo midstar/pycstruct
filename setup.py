@@ -1,7 +1,10 @@
 from setuptools import setup
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+try:
+    with open("README.md", "r") as fh:
+        long_description = fh.read()
+except:
+      long_description = ""
 
 setup(name='pycstruct',
       version='0.1.0',
