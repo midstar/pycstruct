@@ -24,7 +24,9 @@ Checkout the full documentation [here](https://pycstruct.readthedocs.io/en/lates
 
 ## Installation
 
-python3 -m pip install pycstruct
+Simply install the package using pip:
+
+    python3 -m pip install pycstruct
 
 ## Example
 
@@ -123,6 +125,10 @@ f = open('simple_example_mr_green.dat','wb')
 f.write(buffer)
 f.close()
 ```
+
+## Full documentation
+
+Checkout the full documentation [here](https://pycstruct.readthedocs.io/en/latest/).
 
 ## Author and license
 
