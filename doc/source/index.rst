@@ -21,6 +21,7 @@ Individual elements can be stored / read in any byte order.
    :maxdepth: 2
 
    installation.rst
+   overview.rst
    examples/examples.rst
    reference.rst
 

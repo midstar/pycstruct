@@ -8,9 +8,9 @@ person.add('bool8', 'is_male')
 person.add('uint32', 'nbr_of_children')
 person.add('uint32', 'child_ages', length=10)
 
-f = open('simple_example.dat','rb')
-inbytes = f.read()
+with open('simple_example.dat', 'rb') as f:
+    inbytes = f.read()
+
 result = person.deserialize(inbytes)
-f.close()
 
 print(str(result))
