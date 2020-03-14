@@ -22,6 +22,10 @@ Individual elements can be stored / read in any byte order.
 
 Checkout the full documentation [here](https://pycstruct.readthedocs.io/en/latest/).
 
+## Installation
+
+python3 -m pip install pycstruct
+
 ## Example
 
 Following C has a structure (person) with a set of elements
