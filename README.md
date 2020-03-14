@@ -22,7 +22,7 @@ Individual elements can be stored / read in any byte order.
 
 Checkout the full documentation [here](https://pycstruct.readthedocs.io/en/latest/).
 
-# Example
+## Example
 
 Following C has a structure (person) with a set of elements
 that are written to a binary file.
@@ -119,3 +119,7 @@ f = open('simple_example_mr_green.dat','wb')
 f.write(buffer)
 f.close()
 ```
+
+## Author and license
+
+This application is written by Joel Midstjärna and is licensed under the MIT License.
