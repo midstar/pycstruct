@@ -7,3 +7,5 @@ __pycache__
 pycstruct.egg-info
 doc/build
 htmlcov
+build
+dist

@@ -1,12 +1,17 @@
 from setuptools import setup
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 setup(name='pycstruct',
       version='0.1.0',
-      description='Binary data handling in python',
+      description='Binary data handling in Python using dictionaries',
+      long_description=long_description,
+       long_description_content_type="text/markdown",
       url='http://github.com/midstar/pycstruct',
       author='Joel Midstjärna',
       author_email='joel.midstjarna@gmail.com',
-      keywords = ['struct', 'enum', 'bitfield', 'binary', 'protocol'], 
+      keywords = ['struct', 'enum', 'bitfield', 'binary', 'protocol', 'dict', 'dictionary'], 
       license='MIT',
       packages=['pycstruct'],
       zip_safe=False,
@@ -20,4 +25,4 @@ setup(name='pycstruct',
       'Programming Language :: Python :: 3.5',
       'Programming Language :: Python :: 3.6',
       'Programming Language :: Python :: 3.7'
-      ],)
+      ])
