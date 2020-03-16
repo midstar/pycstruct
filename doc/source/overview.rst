@@ -69,9 +69,9 @@ file myDataFile.dat):
     with open('myDataFile.dat', 'rb') as f:
         inbytes = f.read()
 
-    myByteArray2 = myStruct.deserialize(inbytes)
+    myDict2 = myStruct.deserialize(inbytes)
 
-myByteArray2 will now be a dictionary with the fields mySmallInteger, 
+myDict2 will now be a dictionary with the fields mySmallInteger, 
 myUnsignedInteger and myFloatingPointNumber.
 
 Arrays
@@ -89,9 +89,7 @@ Now myArray will be an array with 100 elements.
 .. code-block:: python
 
     myDict = {}
-    myDict['myArray'] = []
-    myDict['myArray'].append(32)
-    myDict['myArray'].append(12)
+    myDict['myArray'] = [32, 11]
 
     myByteArray = myStruct.serialize(myDict)
 

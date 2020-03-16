@@ -128,7 +128,9 @@ class StructDef(BaseDef):
        :type length: int, optional
        :param byteorder: Byteorder of this element. Valid values are 'native', 
                          'little' and 'big'. If not specified the default byteorder is used.
-       :type byteorder: str, optional"""
+       :type byteorder: str, optional
+       
+       """
     if length < 1:
       raise Exception('Invalid length: {0}.'.format(length))
     if name in self.__fields:
