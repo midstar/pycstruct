@@ -1,13 +1,18 @@
 import xml.etree.ElementTree as ET
-import os, logging
+import os, logging, json
 
 class CParser():
-    def __init__(self, c_filename, xml_filename):
+    def __init__(self, c_filename):
+        self.c_filename = c_filename
+
+        #TBD
+
+    def _parse_xml(self, xml_filename):
 
         self.root = ET.parse(xml_filename).getroot()
 
         # Figure out the identity of the file we try to parse
-        c_filename = os.path.basename(c_filename)
+        c_filename = os.path.basename(self.c_filename)
         file_id = ''
         for child in self.root.findall("File"):
             name = os.path.basename(child.attrib['name'])
@@ -34,6 +39,7 @@ class CParser():
             struct['size'] = int(self._get_attrib(xml_struct, 'size', '0'))
             struct['align'] = int(self._get_attrib(xml_struct, 'align', '0'))
             struct['members_ids'] = self._get_attrib(xml_struct, 'members', '').split()
+            struct['members'] = []
             struct['supported'] = True
             structs[id] = struct
 
@@ -43,21 +49,26 @@ class CParser():
             for member_id in struct['members_ids']:
                 xml_member = self._get_elem_with_id(member_id)
                 if xml_member.tag != 'Field':
-                    logging.warning('Struct {0} has a member of type {1} which is not supported. Struct will be ignored.'.format(
+                    logging.warning('Struct {0} has a member of type {1} which is not supported.\n  - Struct will be ignored.'.format(
                         struct['name'], xml_member.tag))
                     struct['supported'] = False
                     break
                 member = {}
                 member['name'] = xml_member.attrib['name']
-                member_type = self._get_type(xml_member.attrib['type'])
-                if member_type == None:
-                    logging.warning('Struct {0} has a member {1} has a type which is not supported. Struct will be ignored.'.format(
-                        struct['name'], member['name']))
+                try:
+                    member_type = self._get_type(xml_member.attrib['type'], structs)
+                    member['type'] = member_type['type_name']
+                    member['length'] = member_type['length']
+                except Exception as e:
+                    logging.warning('Struct {0} has a member {1} could not be handled:\n  - {2}\n  - Struct will be ignored.'.format(
+                        struct['name'], member['name'], e.args[0]))
                     struct['supported'] = False
-                    break
-                member['type'] = member_type['type_name']
-                member['length'] = member_type['length']          
-                #print(str(member))
+                    break        
+                struct['members'].append(member)
+
+        
+
+        #print(json.dumps(structs, indent=2))
 
     def _get_attrib(self, elem, attrib, default):
         if attrib in elem.attrib:
@@ -109,7 +120,7 @@ class CParser():
             elem = self._get_elem_with_id(elem.attrib['type'])
         return elem
 
-    def _get_type(self, type_id):
+    def _get_type(self, type_id, structs):
         elem = self._get_basic_type_element(type_id)
     
         member_type = {}
@@ -118,16 +129,20 @@ class CParser():
             member_type['length'] = int(elem.attrib['max']) - int(elem.attrib['min']) + 1
             elem = self._get_basic_type_element(elem.attrib['type'])
             if elem.tag == 'ArrayType':
-                logging.warning('Nested arrays (matrixes) are not supported.')
-                return None
+                raise Exception('Nested arrays (matrixes) are not supported.')
         
         if elem.tag == 'FundamentalType':
             member_type['type_name'] = self._fundamental_type_to_pcstruct_type(elem, member_type['length'])
         elif elem.tag == 'PointerType':
             member_type['type_name'] = 'uint{0}'.format(elem.attrib['size'])
+        elif elem.tag == 'Struct':
+            struct_id = elem.attrib['id']
+            if struct_id in structs:
+                member_type['type_name'] = structs[struct_id]['name']
+            else:
+                raise Exception('Referred struct with ID {0} not found'.format(struct_id))
         else:
-            logging.warning('Member type {0} is not supported.'.format(elem.tag))
-            return None
+            raise Exception('Member type {0} is not supported.'.format(elem.tag))
 
         return member_type
 

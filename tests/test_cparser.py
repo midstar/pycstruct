@@ -9,7 +9,8 @@ import pycstruct
 class TestCParser(unittest.TestCase):
 
     def test_parse(self):
-        test = pycstruct.CParser(os.path.join(test_dir, 'savestruct.c'), os.path.join(test_dir, 'savestruct.xml'))
+        parser = pycstruct.CParser(os.path.join(test_dir, 'savestruct.c'))
+        parser._parse_xml(os.path.join(test_dir, 'savestruct.xml'))
 
 if __name__ == '__main__':
   unittest.main()
