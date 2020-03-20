@@ -1,8 +1,8 @@
 import xml.etree.ElementTree as ET
-import os, logging, json
+import os, logging, json, pycstruct
 
 class CParser():
-    def __init__(self, c_filename):
+    def __init__(self, c_filename, byteorder = 'native'):
         self.c_filename = c_filename
 
         #TBD
@@ -36,16 +36,16 @@ class CParser():
                 name = self._get_typedef_name(id)
             struct = {}
             struct['name'] = name
-            struct['size'] = int(self._get_attrib(xml_struct, 'size', '0'))
+            struct['size'] = int(int(self._get_attrib(xml_struct, 'size', '0'))/8)
             struct['align'] = int(self._get_attrib(xml_struct, 'align', '0'))
             struct['members_ids'] = self._get_attrib(xml_struct, 'members', '').split()
             struct['members'] = []
             struct['supported'] = True
+            struct['structdef'] = None
             structs[id] = struct
 
         # Figure out the member names and types of each struct
         for id, struct in structs.items():
-            print('Parsing: ' + struct['name'])
             for member_id in struct['members_ids']:
                 xml_member = self._get_elem_with_id(member_id)
                 if xml_member.tag != 'Field':
@@ -59,6 +59,7 @@ class CParser():
                     member_type = self._get_type(xml_member.attrib['type'], structs)
                     member['type'] = member_type['type_name']
                     member['length'] = member_type['length']
+                    member['reference'] = member_type['reference']
                 except Exception as e:
                     logging.warning('Struct {0} has a member {1} could not be handled:\n  - {2}\n  - Struct will be ignored.'.format(
                         struct['name'], member['name'], e.args[0]))
@@ -66,9 +67,43 @@ class CParser():
                     break        
                 struct['members'].append(member)
 
-        
+        return structs
 
-        #print(json.dumps(structs, indent=2))
+    def _to_structdefs(self, structs, byteorder):
+        result = {}
+        for id, struct in structs.items():
+            if struct['supported']:
+                try:
+                    result[struct['name']] = self._to_structdef(struct, structs, byteorder)
+                except Exception as e:
+                    logging.warning('Unable to convert struct {0} to pycstruct defintion:\n  - {1}\n  - Struct will be ignored.'.format(
+                        struct['name'], e.args[0]))
+                    struct['supported'] = False                   
+        return result
+
+    def _to_structdef(self, struct, structs, byteorder):
+        if struct['structdef'] != None:
+            return struct['structdef'] # Parsed before
+
+        structdef = pycstruct.StructDef(byteorder)
+        for member in struct['members']:
+            if member['type'] == 'struct':
+                other_struct = structs[member['reference']]
+                if other_struct['supported'] == False:
+                    raise Exception('Member {0} is of type struct {1} that is not supported'.format(
+                        member['name'], other_struct['name']))
+                other_structdef = self._to_structdef(other_struct, structs, byteorder)
+                structdef.add(other_structdef,member['name'], member['length'])
+            else: 
+                structdef.add(member['type'],member['name'], member['length'])
+
+        # Sanity check size:
+        if struct['size'] != structdef.size():
+            logging.warning('{0} StructDef size, {1}, does match indicated size {2}'.format(
+                struct['name'], structdef.size(), struct['size']))
+
+        struct['structdef'] = structdef
+        return structdef       
 
     def _get_attrib(self, elem, attrib, default):
         if attrib in elem.attrib:
@@ -125,6 +160,7 @@ class CParser():
     
         member_type = {}
         member_type['length'] = 1
+        member_type['reference'] = ''
         if elem.tag == 'ArrayType':
             member_type['length'] = int(elem.attrib['max']) - int(elem.attrib['min']) + 1
             elem = self._get_basic_type_element(elem.attrib['type'])
@@ -136,11 +172,8 @@ class CParser():
         elif elem.tag == 'PointerType':
             member_type['type_name'] = 'uint{0}'.format(elem.attrib['size'])
         elif elem.tag == 'Struct':
-            struct_id = elem.attrib['id']
-            if struct_id in structs:
-                member_type['type_name'] = structs[struct_id]['name']
-            else:
-                raise Exception('Referred struct with ID {0} not found'.format(struct_id))
+            member_type['type_name'] = 'struct'
+            member_type['reference'] = elem.attrib['id']
         else:
             raise Exception('Member type {0} is not supported.'.format(elem.tag))
 

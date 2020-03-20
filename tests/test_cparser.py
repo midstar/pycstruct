@@ -10,7 +10,8 @@ class TestCParser(unittest.TestCase):
 
     def test_parse(self):
         parser = pycstruct.CParser(os.path.join(test_dir, 'savestruct.c'))
-        parser._parse_xml(os.path.join(test_dir, 'savestruct.xml'))
+        structs = parser._parse_xml(os.path.join(test_dir, 'savestruct.xml'))
+        structdefs = parser._to_structdefs(structs, 'native')
 
 if __name__ == '__main__':
   unittest.main()
