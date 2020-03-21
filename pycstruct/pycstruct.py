@@ -240,12 +240,7 @@ class StructDef(BaseDef):
     """
     size = 0
     for field in self.__fields.values():
-      nbr_bytes = 0
-      if isinstance(field['type'], BaseDef):
-        nbr_bytes = field['type'].size()
-      else:
-        nbr_bytes =  _TYPE[field['type']]['bytes']
-      size += field['length'] * nbr_bytes
+      size += field['length'] * field['type'].size()
     return size
 
   def deserialize(self, buffer):
@@ -263,43 +258,20 @@ class StructDef(BaseDef):
     for name, field in self.__fields.items():
       datatype = field['type']
       length = field['length']
-      datatype_size = 0
-      typeinfo = 0
-      if isinstance(datatype, BaseDef):
-        datatype_size = datatype.size()
-      else:
-        typeinfo = _TYPE[datatype]
-        datatype_size = typeinfo['bytes']
+      datatype_size = datatype.size()
 
-      if datatype == 'utf-8':
-        utf8_bytes = buffer[offset:offset + length]
-        # Find null termination
-        index = utf8_bytes.find(0)
-        if index >= 0:
-          utf8_bytes = utf8_bytes[:index]
-        result[name] = utf8_bytes.decode('utf-8') 
-      else: 
-        values = []
-        if isinstance(datatype, BaseDef):
-          for i in range(0, length):
-            next_offset = offset + i*datatype_size
-            buffer_subset = buffer[next_offset:next_offset + datatype_size]
-            value = datatype.deserialize(buffer_subset)
-            values.append(value)
-        else:
-          format = _BYTEORDER[field['byteorder']]['format'] + typeinfo['format']
-          for i in range(0, length):
-            value = struct.unpack_from(format, buffer, offset + i*datatype_size)[0]
-            if field['type'].startswith("bool"):
-              if value == 0:
-                value = False
-              else:
-                value = True
-            values.append(value)
-        if length == 1:
-          result[name] = values[0]
-        else:
-          result[name] = values
+      values = []
+
+      for i in range(0, length):
+        next_offset = offset + i*datatype_size
+        buffer_subset = buffer[next_offset:next_offset + datatype_size]
+        value = datatype.deserialize(buffer_subset)
+        values.append(value)
+
+      if length == 1:
+        result[name] = values[0]
+      else:
+        result[name] = values
 
       offset += datatype_size * length
     return result
