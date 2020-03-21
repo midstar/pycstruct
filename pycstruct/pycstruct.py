@@ -1,5 +1,9 @@
 import struct, collections, math, sys
 
+###############################################################################
+# Global variables
+
+# Basic Types
 _TYPE = {
   'int8'    : {'format' : 'b', 'bytes' : 1},
   'uint8'   : {'format' : 'B', 'bytes' : 1},
@@ -16,7 +20,6 @@ _TYPE = {
   'uint64'  : {'format' : 'Q', 'bytes' : 8},
   'bool64'  : {'format' : 'Q', 'bytes' : 8},
   'float64' : {'format' : 'd', 'bytes' : 8}
-  #'utf-8'   : {'format' : 'B', 'bytes' : 1}
 }
 
 _BYTEORDER = {
@@ -25,9 +28,32 @@ _BYTEORDER = {
   'big'    : {'format' : '>'}
 }
 
+
+###############################################################################
+# Internal functions
+
+def _get_padding(alignment, current_size, next_element_size):
+  """Calculate number of padding bytes required to get next element in 
+     the correct alignment
+  """
+  if alignment == 1:
+    return 0 # Always aligned
+
+  elem_size = min(alignment, next_element_size)
+  remainder = current_size % elem_size
+  if remainder == 0:
+    return 0
+  return elem_size - remainder
+
+###############################################################################
+# Classes
+
 class BaseDef:
   """This is an abstract base class for definitions"""
   def size(self):
+    raise NotImplementedError
+
+  def _largest_member(self, data):
     raise NotImplementedError
 
   def serialize(self, data):
@@ -44,6 +70,7 @@ class BaseDef:
     """
     buffer = bytearray(self.size())
     return self.deserialize(buffer)
+
 
 class BasicTypeDef(BaseDef):
   """This class represents the basic types (int, float and bool)
@@ -78,6 +105,9 @@ class BasicTypeDef(BaseDef):
 
   def size(self):
     return self.size_bytes
+
+  def _largest_member(self):
+    return self.length # Same as length
   
 class StringDef(BaseDef):
   """This class represents UTF-8 strings
@@ -113,6 +143,9 @@ class StringDef(BaseDef):
   def size(self):
     return self.length # Each element 1 byte
 
+  def _largest_member(self):
+    return 1 # 1 byte
+
 class StructDef(BaseDef):
   """This class represents a struct definition
 
@@ -122,6 +155,8 @@ class StructDef(BaseDef):
   :type default_byteorder: str, optional
   :param alignment: Alignment of elements in bytes. If set to a value > 1
                     padding will be added between elements when necessary.
+                    Use 4 for 32 bit architectures, 8 for 64 bit 
+                    architectures unless packing is performed.
   :type default_byteorder: str, optional
   """
 
@@ -242,6 +277,20 @@ class StructDef(BaseDef):
     for field in self.__fields.values():
       size += field['length'] * field['type'].size()
     return size
+
+  def _largest_member(self):
+    """ Used for struct padding
+
+    :return: Largest member
+    :rtype: int
+    """
+    largest = 0
+    for field in self.__fields.values():
+      l = field['type']._largest_member()
+      if l > largest:
+        largest = l
+    
+    return largest
 
   def deserialize(self, buffer):
     """ Deserialize buffer into dictionary
@@ -415,6 +464,21 @@ class BitfieldDef(BaseDef):
     :rtype: int
     """
     return int(math.ceil(self.assigned_bits()/8.0))
+
+  def _largest_member(self):
+    """ Used for struct padding
+
+    :return: Closest power of 2 value of size
+    :rtype: int
+    """
+    s = self.size()
+
+    if s == 3:
+      return 4
+    elif s > 4:
+      return 8
+    
+    return s
   
   def _get_subvalue(self, value, nbr_of_bits, start_bit, signed):
     """ Get subvalue of value
@@ -561,6 +625,21 @@ class EnumDef(BaseDef):
       if value > max_value:
         max_value = value
     return int(math.ceil( (max_value.bit_length()+1) /8.0 ))
+
+  def _largest_member(self):
+    """ Used for struct padding
+
+    :return: Closest power of 2 value of size
+    :rtype: int
+    """
+    s = self.size()
+
+    if s == 3:
+      return 4
+    elif s > 4:
+      return 8
+    
+    return s
 
   def get_name(self, value):
     """ Get the name representation of the value
