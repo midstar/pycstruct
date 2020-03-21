@@ -46,7 +46,7 @@ class BaseDef:
     return self.deserialize(buffer)
 
 class BasicTypeDef(BaseDef):
-  """This class represents the basic types
+  """This class represents the basic types (int, float and bool)
   """
   def __init__(self, type, byteorder):
     self.type = type
@@ -55,7 +55,7 @@ class BasicTypeDef(BaseDef):
     self.format = _TYPE[type]['format']
 
   def serialize(self, data):
-    ''' Data is an integer, floating point or boolean value '''
+    ''' Data needs to be an integer, floating point or boolean value '''
     buffer = bytearray(self.size())
 
     format = _BYTEORDER[self.byteorder]['format'] + self.format
@@ -75,9 +75,43 @@ class BasicTypeDef(BaseDef):
         value = True
 
     return value
-    
+
   def size():
     return self.size
+  
+class StringDef(BaseDef):
+  """This class represents UTF-8 strings
+  """
+  def __init__(self, length):
+    self.length = length
+
+  def serialize(self, data):
+    ''' Data needs to be a string '''
+    buffer = bytearray(self.size())
+
+    if not isinstance(data, str):
+      raise Exception('Not a valid string: {0}'.format(data))
+
+    utf8_bytes = data.encode('utf-8')
+    if len(utf8_bytes) > self.length:
+      raise Exception('String overflow. Produced size {0} but max is {1}'.format(
+        len(utf8_bytes), self.length))
+
+    for i in range(0, len(utf8_bytes)):
+      buffer[i] = utf8_bytes[i]
+    return buffer
+
+  def deserialize(self, buffer):
+    ''' Result is a string '''
+    # Find null termination
+    index = buffer.find(0)
+    if index >= 0:
+      buffer = buffer[:index]
+
+    return buffer.decode('utf-8') 
+
+  def size():
+    return self.length # Each element 1 byte
 
 class StructDef(BaseDef):
   """This class represents a struct definition
