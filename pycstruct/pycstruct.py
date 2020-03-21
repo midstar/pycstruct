@@ -51,7 +51,7 @@ class BasicTypeDef(BaseDef):
   def __init__(self, type, byteorder):
     self.type = type
     self.byteorder = byteorder
-    self.size = _TYPE[type]['bytes']
+    self.size_bytes = _TYPE[type]['bytes']
     self.format = _TYPE[type]['format']
 
   def serialize(self, data):
@@ -76,8 +76,8 @@ class BasicTypeDef(BaseDef):
 
     return value
 
-  def size():
-    return self.size
+  def size(self):
+    return self.size_bytes
   
 class StringDef(BaseDef):
   """This class represents UTF-8 strings
@@ -110,7 +110,7 @@ class StringDef(BaseDef):
 
     return buffer.decode('utf-8') 
 
-  def size():
+  def size(self):
     return self.length # Each element 1 byte
 
 class StructDef(BaseDef):
@@ -203,6 +203,8 @@ class StructDef(BaseDef):
        :type byteorder: str, optional
        
        """
+
+    # Sanity checks
     if length < 1:
       raise Exception('Invalid length: {0}.'.format(length))
     if name in self.__fields:
@@ -213,8 +215,17 @@ class StructDef(BaseDef):
       raise Exception('Invalid byteorder: {0}.'.format(byteorder))
     if type not in _TYPE and not isinstance(type, BaseDef):
       raise Exception('Invalid type: {0}.'.format(type))
+
+    # Create objects when necessary
+    if type == "utf-8":
+      type = StringDef(length)
+      # String length is handled inside the definition
+      length = 1
+    elif type in _TYPE:
+      type = BasicTypeDef(type, byteorder)
+
+    # Check if padding is required
     if self.__alignment > 1:
-      # Check if padding is required
       remainder = self.size() % self.__alignment
       # TODO - not done
 
