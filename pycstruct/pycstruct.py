@@ -45,27 +45,65 @@ class BaseDef:
     buffer = bytearray(self.size())
     return self.deserialize(buffer)
 
+class BasicTypeDef(BaseDef):
+  """This class represents the basic types
+  """
+  def __init__(self, type, byteorder):
+    self.type = type
+    self.byteorder = byteorder
+    self.size = _TYPE[type]['bytes']
+    self.format = _TYPE[type]['format']
+
+  def serialize(self, data):
+    ''' Data is an integer, floating point or boolean value '''
+    buffer = bytearray(self.size())
+
+    format = _BYTEORDER[self.byteorder]['format'] + self.format
+    struct.pack_into(format, buffer, 0, data)
+
+    return buffer
+
+  def deserialize(self, buffer):
+    ''' Result is an integer, floating point or boolean value '''
+    format = _BYTEORDER[self.byteorder]['format'] + self.format
+    value = struct.unpack_from(format, buffer, 0)[0]
+
+    if self.type.startswith("bool"):
+      if value == 0:
+        value = False
+      else:
+        value = True
+
+    return value
+    
+  def size():
+    return self.size
+
 class StructDef(BaseDef):
   """This class represents a struct definition
-
-
 
   :param default_byteorder: Byte order of each element unless explicilty set 
                             for the element. Valid values are 'native', 
                             'little' and 'big'.
   :type default_byteorder: str, optional
+  :param alignment: Alignment of elements in bytes. If set to a value > 1
+                    padding will be added between elements when necessary.
+  :type default_byteorder: str, optional
   """
 
-  def __init__(self, default_byteorder = 'native'):
+  def __init__(self, default_byteorder = 'native', alignment = 1):
     """Constructor method"""
     if default_byteorder not in _BYTEORDER:
       raise Exception('Invalid byteorder: {0}.'.format(default_byteorder))
     self.__default_byteorder = default_byteorder
+    self.__alignment = alignment
+    self.__alignment_count = 0
     self.__fields = collections.OrderedDict()
   
   def add(self, type, name, length = 1, byteorder = ''):
     """Add a new element in the struct definition. The element will be added 
-       directly after the previous element. Padding is never added.
+       directly after the previous element. Padding might be added depending
+       on the alignment setting.
 
        - Supported data types:
 
@@ -141,6 +179,11 @@ class StructDef(BaseDef):
       raise Exception('Invalid byteorder: {0}.'.format(byteorder))
     if type not in _TYPE and not isinstance(type, BaseDef):
       raise Exception('Invalid type: {0}.'.format(type))
+    if self.__alignment > 1:
+      # Check if padding is required
+      remainder = self.size() % self.__alignment
+      # TODO - not done
+
 
     self.__fields[name] = {'type' : type, 'length' : length, 'byteorder' : byteorder}
 
