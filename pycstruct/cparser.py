@@ -1,6 +1,8 @@
 import xml.etree.ElementTree as ET
 import os, logging, json, pycstruct
 
+logger = logging.getLogger('pycstruct')
+
 class CParser():
     def __init__(self, c_filename, byteorder = 'native'):
         self.c_filename = c_filename
@@ -49,7 +51,7 @@ class CParser():
             for member_id in struct['members_ids']:
                 xml_member = self._get_elem_with_id(member_id)
                 if xml_member.tag != 'Field':
-                    logging.warning('Struct {0} has a member of type {1} which is not supported.\n  - Struct will be ignored.'.format(
+                    logger.warning('Struct {0} has a member of type {1} which is not supported.\n  - Struct will be ignored.'.format(
                         struct['name'], xml_member.tag))
                     struct['supported'] = False
                     break
@@ -61,7 +63,7 @@ class CParser():
                     member['length'] = member_type['length']
                     member['reference'] = member_type['reference']
                 except Exception as e:
-                    logging.warning('Struct {0} has a member {1} could not be handled:\n  - {2}\n  - Struct will be ignored.'.format(
+                    logger.warning('Struct {0} has a member {1} could not be handled:\n  - {2}\n  - Struct will be ignored.'.format(
                         struct['name'], member['name'], e.args[0]))
                     struct['supported'] = False
                     break        
@@ -76,7 +78,7 @@ class CParser():
                 try:
                     result[struct['name']] = self._to_structdef(struct, structs, byteorder)
                 except Exception as e:
-                    logging.warning('Unable to convert struct {0} to pycstruct defintion:\n  - {1}\n  - Struct will be ignored.'.format(
+                    logger.warning('Unable to convert struct {0} to pycstruct defintion:\n  - {1}\n  - Struct will be ignored.'.format(
                         struct['name'], e.args[0]))
                     struct['supported'] = False                   
         return result
@@ -99,7 +101,7 @@ class CParser():
 
         # Sanity check size:
         if struct['size'] != structdef.size():
-            logging.warning('{0} StructDef size, {1}, does match indicated size {2}'.format(
+            logger.warning('{0} StructDef size, {1}, does match indicated size {2}'.format(
                 struct['name'], structdef.size(), struct['size']))
 
         struct['structdef'] = structdef
@@ -145,6 +147,11 @@ class CParser():
         elif length > 1 and 'char' in typename:
             # char of length > 1 are considered UTF-8 data
             pycstruct_type_name = 'utf-'
+        elif 'unsigned' in typename:
+            pycstruct_type_name = 'uint'
+        else:
+            pycstruct_type_name = 'int'
+
 
         return '{0}{1}'.format(pycstruct_type_name, typesize)
 

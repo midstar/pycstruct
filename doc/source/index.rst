@@ -23,6 +23,7 @@ Individual elements can be stored / read in any byte order.
    installation.rst
    overview.rst
    examples/examples.rst
+   faq.rst
    reference.rst
 
 
