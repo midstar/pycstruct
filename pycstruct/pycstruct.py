@@ -287,6 +287,9 @@ class StructDef(BaseDef):
     elif not isinstance(type, BaseDef):
       raise Exception('Invalid type: {0}.'.format(type))
 
+    # Reset end padding
+    self.__pad_end.set_length(0)
+
     # Check if padding between elements is required
     padding = _get_padding(self.__alignment, self.size(), type._largest_member())
     if padding > 0:
@@ -298,7 +301,8 @@ class StructDef(BaseDef):
     self.__fields[name] = {'type' : type, 'length' : length}
 
     # Check if end padding is required
-    padding = _get_padding(self.__alignment, self.size(), type._largest_member())
+    self.__fields.move_to_end('__pad_end')
+    padding = _get_padding(self.__alignment, self.size(), self._largest_member())
     self.__pad_end.set_length(padding)
 
   def size(self):
@@ -403,6 +407,21 @@ class StructDef(BaseDef):
     """
     buffer = bytearray(self.size())
     return self.deserialize(buffer)
+
+  def __str__(self):
+    """ Create string representation
+
+    :return: A string illustrating all members
+    :rtype: string
+    """
+    result = []
+    result.append('{:<30}{:<10}{:<10}{:<10}'.format(
+      'Name','Size','Length','Largest type'))
+    for name, field in self.__fields.items():
+      type = field['type']
+      result.append('{:<30}{:<10}{:<10}{:<10}'.format(
+        name,type.size(),field['length'], type._largest_member()))
+    return '\n'.join(result)
 
 
 ###############################################################################

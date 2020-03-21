@@ -72,6 +72,13 @@ class TestPyCStruct(unittest.TestCase):
     # Check a few of the fields
     self.assertTrue('int8_low' in data)
     self.assertTrue('utf8_nonascii' in data)
+
+  def test_str(self):
+    m = self.create_struct('native', 1)
+    a_string = str(m)
+    # Check a few of the fields that they are listed in the result string
+    self.assertTrue('int8_low' in a_string)
+    self.assertTrue('utf8_nonascii' in a_string)
     
 
   def test_deserialize_serialize_little(self):
