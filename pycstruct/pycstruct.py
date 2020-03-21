@@ -63,15 +63,6 @@ class BaseDef:
   def deserialize(self, buffer):
     raise NotImplementedError
 
-  def create_empty_data(self):
-    """ Create an empty dictionary with all keys
-
-    :return: A dictionary keyed with the element names. Values are "empty" or 0.
-    :rtype: dict
-    """
-    buffer = bytearray(self.size())
-    return self.deserialize(buffer)
-
 
 ###############################################################################
 # BasicTypeDef Class
@@ -404,6 +395,15 @@ class StructDef(BaseDef):
       offset += datatype_size * length
     return buffer
 
+  def create_empty_data(self):
+    """ Create an empty dictionary with all keys
+
+    :return: A dictionary keyed with the element names. Values are "empty" or 0.
+    :rtype: dict
+    """
+    buffer = bytearray(self.size())
+    return self.deserialize(buffer)
+
 
 ###############################################################################
 # BitfieldDef Class
@@ -578,6 +578,15 @@ class BitfieldDef(BaseDef):
     shifted_subvalue = (subvalue & mask) << start_bit
 
     return value | shifted_subvalue
+
+  def create_empty_data(self):
+    """ Create an empty dictionary with all keys
+
+    :return: A dictionary keyed with the element names. Values are "empty" or 0.
+    :rtype: dict
+    """
+    buffer = bytearray(self.size())
+    return self.deserialize(buffer)
 
 
 ###############################################################################
