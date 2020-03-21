@@ -15,8 +15,8 @@ _TYPE = {
   'int64'   : {'format' : 'q', 'bytes' : 8},
   'uint64'  : {'format' : 'Q', 'bytes' : 8},
   'bool64'  : {'format' : 'Q', 'bytes' : 8},
-  'float64' : {'format' : 'd', 'bytes' : 8},
-  'utf-8'   : {'format' : 'B', 'bytes' : 1}
+  'float64' : {'format' : 'd', 'bytes' : 8}
+  #'utf-8'   : {'format' : 'B', 'bytes' : 1}
 }
 
 _BYTEORDER = {
@@ -213,8 +213,6 @@ class StructDef(BaseDef):
       byteorder = self.__default_byteorder
     elif byteorder not in _BYTEORDER:
       raise Exception('Invalid byteorder: {0}.'.format(byteorder))
-    if type not in _TYPE and not isinstance(type, BaseDef):
-      raise Exception('Invalid type: {0}.'.format(type))
 
     # Create objects when necessary
     if type == "utf-8":
@@ -223,6 +221,8 @@ class StructDef(BaseDef):
       length = 1
     elif type in _TYPE:
       type = BasicTypeDef(type, byteorder)
+    elif not isinstance(type, BaseDef):
+      raise Exception('Invalid type: {0}.'.format(type))
 
     # Check if padding is required
     if self.__alignment > 1:
@@ -230,7 +230,7 @@ class StructDef(BaseDef):
       # TODO - not done
 
 
-    self.__fields[name] = {'type' : type, 'length' : length, 'byteorder' : byteorder}
+    self.__fields[name] = {'type' : type, 'length' : length}
 
   def size(self):
     """ Get size of structure
@@ -289,42 +289,24 @@ class StructDef(BaseDef):
     for name, field in self.__fields.items():
       datatype = field['type']
       length = field['length']
-      datatype_size = 0
-      typeinfo = 0
-      if isinstance(datatype, BaseDef):
-        datatype_size = datatype.size()
-      else:
-        typeinfo = _TYPE[datatype]
-        datatype_size = typeinfo['bytes']
+      datatype_size = datatype.size()
 
       if name in data:
         value = data[name]
-        if datatype == 'utf-8':
-          if not isinstance(value, str):
-            raise Exception('Key: {0} shall be a string'.format(name))
-          utf8_bytes = value.encode('utf-8')
-          if len(utf8_bytes) > length:
-            raise Exception('String in key: {0} is larger than {1}'.format(name, length))
-          for i in range(0, len(utf8_bytes)):
-            buffer[i+offset] = utf8_bytes[i]
+
+        value_list = []
+        if length > 1:
+          if not isinstance(value, collections.Iterable):
+            raise Exception('Key: {0} shall be a list'.format(name))
+          if len(value) > length:
+            raise Exception('List in key: {0} is larger than {1}'.format(name, length))
+          value_list = value
         else:
-          value_list = []
-          if length > 1:
-            if not isinstance(value, collections.Iterable):
-              raise Exception('Key: {0} shall be a list'.format(name))
-            if len(value) > length:
-              raise Exception('List in key: {0} is larger than {1}'.format(name, length))
-            value_list = value
-          else:
-            value_list.append(value) # Make list of single value
-          if isinstance(datatype, BaseDef):
-            for i in range(0, len(value_list)):
-              next_offset = offset + i*datatype_size
-              buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value_list[i])
-          else:
-            format = _BYTEORDER[field['byteorder']]['format'] + typeinfo['format']
-            for i in range(0, len(value_list)):
-              struct.pack_into(format, buffer, offset + i * datatype_size, value_list[i])
+          value_list.append(value) # Make list of single value
+
+        for i in range(0, len(value_list)):
+          next_offset = offset + i*datatype_size
+          buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value_list[i])
 
       offset += datatype_size * length
     return buffer
