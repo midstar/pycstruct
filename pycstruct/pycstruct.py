@@ -45,8 +45,9 @@ def _get_padding(alignment, current_size, next_element_size):
     return 0
   return elem_size - remainder
 
+
 ###############################################################################
-# Classes
+# BaseDef Class
 
 class BaseDef:
   """This is an abstract base class for definitions"""
@@ -71,6 +72,9 @@ class BaseDef:
     buffer = bytearray(self.size())
     return self.deserialize(buffer)
 
+
+###############################################################################
+# BasicTypeDef Class
 
 class BasicTypeDef(BaseDef):
   """This class represents the basic types (int, float and bool)
@@ -107,7 +111,11 @@ class BasicTypeDef(BaseDef):
     return self.size_bytes
 
   def _largest_member(self):
-    return self.length # Same as length
+    return self.size_bytes
+
+
+###############################################################################
+# StringDef Class
   
 class StringDef(BaseDef):
   """This class represents UTF-8 strings
@@ -146,6 +154,31 @@ class StringDef(BaseDef):
   def _largest_member(self):
     return 1 # 1 byte
 
+
+###############################################################################
+# PaddingDef Class
+
+class PaddingDef(BaseDef):
+  """This class represents a padding of arbitary size
+  """
+  def __init__(self, length):
+    self.length = length
+
+  def set_length(self, length):
+    self.length = length
+
+  def size(self):
+    return self.length # Each element 1 byte
+
+  def _largest_member(self):
+    if self.length == 0:
+      return 0 # Empty padding
+    return 1 # 1 byte
+
+
+###############################################################################
+# StructDef Class
+
 class StructDef(BaseDef):
   """This class represents a struct definition
 
@@ -166,8 +199,12 @@ class StructDef(BaseDef):
       raise Exception('Invalid byteorder: {0}.'.format(default_byteorder))
     self.__default_byteorder = default_byteorder
     self.__alignment = alignment
-    self.__alignment_count = 0
+    self.__pad_count = 0
     self.__fields = collections.OrderedDict()
+
+    # Add end padding of 0 size
+    self.__pad_end = PaddingDef(0)
+    self.__fields['__pad_end'] = {'type' : self.__pad_end, 'length' : 1}
   
   def add(self, type, name, length = 1, byteorder = ''):
     """Add a new element in the struct definition. The element will be added 
@@ -259,13 +296,19 @@ class StructDef(BaseDef):
     elif not isinstance(type, BaseDef):
       raise Exception('Invalid type: {0}.'.format(type))
 
-    # Check if padding is required
-    if self.__alignment > 1:
-      remainder = self.size() % self.__alignment
-      # TODO - not done
+    # Check if padding between elements is required
+    padding = _get_padding(self.__alignment, self.size(), type._largest_member())
+    if padding > 0:
+      pad = PaddingDef(padding)
+      self.__fields['__pad{0}'.format(self.__pad_count)] = {'type' : pad, 'length' : 1}
+      self.__pad_count += 1
 
-
+    # Add the element
     self.__fields[name] = {'type' : type, 'length' : length}
+
+    # Check if end padding is required
+    padding = _get_padding(self.__alignment, self.size(), type._largest_member())
+    self.__pad_end.set_length(padding)
 
   def size(self):
     """ Get size of structure
@@ -309,18 +352,19 @@ class StructDef(BaseDef):
       length = field['length']
       datatype_size = datatype.size()
 
-      values = []
+      if not name.startswith('__pad'):
+        values = []
 
-      for i in range(0, length):
-        next_offset = offset + i*datatype_size
-        buffer_subset = buffer[next_offset:next_offset + datatype_size]
-        value = datatype.deserialize(buffer_subset)
-        values.append(value)
+        for i in range(0, length):
+          next_offset = offset + i*datatype_size
+          buffer_subset = buffer[next_offset:next_offset + datatype_size]
+          value = datatype.deserialize(buffer_subset)
+          values.append(value)
 
-      if length == 1:
-        result[name] = values[0]
-      else:
-        result[name] = values
+        if length == 1:
+          result[name] = values[0]
+        else:
+          result[name] = values
 
       offset += datatype_size * length
     return result
@@ -340,7 +384,7 @@ class StructDef(BaseDef):
       length = field['length']
       datatype_size = datatype.size()
 
-      if name in data:
+      if name in data and not name.startswith('__pad'):
         value = data[name]
 
         value_list = []
@@ -359,6 +403,10 @@ class StructDef(BaseDef):
 
       offset += datatype_size * length
     return buffer
+
+
+###############################################################################
+# BitfieldDef Class
 
 class BitfieldDef(BaseDef):
   """This class represents a bit field definition
@@ -530,6 +578,10 @@ class BitfieldDef(BaseDef):
     shifted_subvalue = (subvalue & mask) << start_bit
 
     return value | shifted_subvalue
+
+
+###############################################################################
+# EnumDef Class
 
 
 class EnumDef(BaseDef):
