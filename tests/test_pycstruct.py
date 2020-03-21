@@ -67,7 +67,7 @@ class TestPyCStruct(unittest.TestCase):
     self.assertRaises(Exception, m.serialize, data)
 
   def test_empty_data(self):
-    m = self.create_struct('native')
+    m = self.create_struct('native', 1)
     data = m.create_empty_data()
     # Check a few of the fields
     self.assertTrue('int8_low' in data)
@@ -75,13 +75,19 @@ class TestPyCStruct(unittest.TestCase):
     
 
   def test_deserialize_serialize_little(self):
-    self.deserialize_serialize('little')
+    self.deserialize_serialize('little', 1, 'struct_little.dat')
+
+  def test_deserialize_serialize_little_nopack(self):
+    self.deserialize_serialize('little', 8, 'struct_little_nopack.dat')
 
   def test_deserialize_serialize_big(self):
-    self.deserialize_serialize('big')
+    self.deserialize_serialize('big', 1, 'struct_big.dat')
 
-  def create_struct(self, byteorder):
-    m = pycstruct.StructDef(byteorder)
+  def test_deserialize_serialize_big_nopack(self):
+    self.deserialize_serialize('big', 8, 'struct_big_nopack.dat')
+
+  def create_struct(self, byteorder, alignment):
+    m = pycstruct.StructDef(byteorder, alignment)
 
     m.add('int8', 'int8_low')
     m.add('int8', 'int8_high')
@@ -123,16 +129,16 @@ class TestPyCStruct(unittest.TestCase):
 
     return m
 
-  def deserialize_serialize(self, byteorder):
+  def deserialize_serialize(self, byteorder, alignment, filename):
 
     #############################################
     # Define PyCStruct
-    m = self.create_struct(byteorder)
+    m = self.create_struct(byteorder, alignment)
 
     #############################################
     # Load pre-stored binary data and deserialize
 
-    f = open(os.path.join(test_dir, 'struct_{0}.dat'.format(byteorder)),'rb')
+    f = open(os.path.join(test_dir, filename),'rb')
     inbytes = f.read()
     result = m.deserialize(inbytes)
     f.close()
