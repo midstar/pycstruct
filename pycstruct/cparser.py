@@ -39,7 +39,7 @@ class CParser():
             struct = {}
             struct['name'] = name
             struct['size'] = int(int(self._get_attrib(xml_struct, 'size', '0'))/8)
-            struct['align'] = int(self._get_attrib(xml_struct, 'align', '0'))
+            struct['align'] = int(int(self._get_attrib(xml_struct, 'align', '8'))/8)
             struct['members_ids'] = self._get_attrib(xml_struct, 'members', '').split()
             struct['members'] = []
             struct['supported'] = True
@@ -87,7 +87,7 @@ class CParser():
         if struct['structdef'] != None:
             return struct['structdef'] # Parsed before
 
-        structdef = pycstruct.StructDef(byteorder)
+        structdef = pycstruct.StructDef(byteorder, struct['align'])
         for member in struct['members']:
             if member['type'] == 'struct':
                 other_struct = structs[member['reference']]
