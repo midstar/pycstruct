@@ -15,6 +15,8 @@ class TestPyCStruct(unittest.TestCase):
     self.assertRaises(NotImplementedError, b.size)
     self.assertRaises(NotImplementedError, b.serialize, 0)
     self.assertRaises(NotImplementedError, b.deserialize, 0)
+    self.assertRaises(NotImplementedError, b._largest_member, 0)
+    self.assertRaises(NotImplementedError, b._type_name)
 
   def test_invalid_creation(self):
     # Invalid byteorder on creation
@@ -66,7 +68,7 @@ class TestPyCStruct(unittest.TestCase):
     data['alist'] = [1,2,3,4,5,6,7] # to long
     self.assertRaises(Exception, m.serialize, data)
 
-  def test_empty_data(self):
+  def test_struct_empty_data(self):
     m = self.create_struct('native', 1)
     data = m.create_empty_data()
     # Check a few of the fields
@@ -133,10 +135,6 @@ class TestPyCStruct(unittest.TestCase):
     m.add('utf-8', 'utf8_ascii', 100)
     m.add('utf-8', 'utf8_nonascii', 80)
     m.add('utf-8', 'utf8_no_term', 4)
-
-    print("---------------------------------------")
-    print("Align: " + str(alignment))
-    print(m)
 
     return m
 
@@ -242,6 +240,15 @@ class TestPyCStruct(unittest.TestCase):
     house.add(garage, 'garage')
 
     #############################################
+    # Test to string method
+    stringrep = str(car)
+    self.assertTrue('model' in stringrep)
+    stringrep = str(garage)
+    self.assertTrue('nbr_registered_parkings' in stringrep)
+    stringrep = str(house)
+    self.assertTrue('nbr_of_levels' in stringrep)
+
+    #############################################
     # Load pre-stored binary data and deserialize
 
     f = open(os.path.join(test_dir, 'embedded_struct.dat'),'rb')
@@ -334,6 +341,13 @@ class TestPyCStruct(unittest.TestCase):
 
     # Same bit field name again - forbidden
     self.assertRaises(Exception, bitfield.add, 'three_bits')
+
+  def test_bitfield_empty_data(self):
+    b = self.create_bitfield('native')
+    data = b.create_empty_data()
+    # Check a few of the fields
+    self.assertTrue('threebits' in data)
+    self.assertTrue('onesignedbit' in data)
 
   def create_bitfield(self, byteorder):
     b = pycstruct.BitfieldDef(byteorder)
@@ -618,6 +632,19 @@ class TestPyCStruct(unittest.TestCase):
     self.assertEqual(padding(8, 7, 8), 1)
     self.assertEqual(padding(8, 8, 8), 0)
     self.assertEqual(padding(8, 9, 8), 7)
+
+  def test_round_pow_2(self):
+    round_2 = pycstruct.pycstruct._round_pow_2
+
+    self.assertEqual(round_2(0), 0)
+    self.assertEqual(round_2(1), 1)
+    self.assertEqual(round_2(2), 2)
+    self.assertEqual(round_2(3), 4)
+    self.assertEqual(round_2(4), 4)
+    self.assertEqual(round_2(5), 8)
+    self.assertEqual(round_2(8), 8)
+    self.assertEqual(round_2(9), 16)
+
     
 if __name__ == '__main__':
   unittest.main()

@@ -45,6 +45,16 @@ def _get_padding(alignment, current_size, next_element_size):
     return 0
   return elem_size - remainder
 
+def _round_pow_2(value):
+  """Round value to next power of 2 value - max 16"""
+  if value > 8:
+    return 16
+  elif value > 4:
+    return 8
+  elif value > 2:
+    return 4
+  
+  return value
 
 ###############################################################################
 # BaseDef Class
@@ -54,16 +64,16 @@ class BaseDef:
   def size(self):
     raise NotImplementedError
 
-  def _largest_member(self, data):
-    raise NotImplementedError
-
-  def _type_name(self):
-    raise NotImplementedError
-
   def serialize(self, data):
     raise NotImplementedError
 
   def deserialize(self, buffer):
+    raise NotImplementedError
+
+  def _largest_member(self, data):
+    raise NotImplementedError
+
+  def _type_name(self):
     raise NotImplementedError
 
 
@@ -531,14 +541,7 @@ class BitfieldDef(BaseDef):
     :return: Closest power of 2 value of size
     :rtype: int
     """
-    s = self.size()
-
-    if s == 3:
-      return 4
-    elif s > 4:
-      return 8
-    
-    return s
+    return _round_pow_2(self.size())
   
   def _get_subvalue(self, value, nbr_of_bits, start_bit, signed):
     """ Get subvalue of value
@@ -708,14 +711,7 @@ class EnumDef(BaseDef):
     :return: Closest power of 2 value of size
     :rtype: int
     """
-    s = self.size()
-
-    if s == 3:
-      return 4
-    elif s > 4:
-      return 8
-    
-    return s
+    return _round_pow_2(self.size())
 
   def get_name(self, value):
     """ Get the name representation of the value
