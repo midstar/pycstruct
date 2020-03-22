@@ -211,12 +211,17 @@ class TestPyCStruct(unittest.TestCase):
       self.assertEqual(int(inbytes[i]), int(outbytes[i]), msg='Index {0}'.format(i))
 
   def test_embedded_struct(self):
-    car_type = pycstruct.EnumDef()
+    self.embedded_struct('embedded_struct.dat', alignment = 1)
+
+  def test_embedded_struct_nopack(self):
+    self.embedded_struct('embedded_struct_nopack.dat', alignment = 8)
+
+  def embedded_struct(self, filename, alignment = 1):
+    car_type = pycstruct.EnumDef(size = 4)
     car_type.add('Sedan', 0)
     car_type.add('Station_Wagon', 5)
     car_type.add('Bus', 7)
     car_type.add('Pickup', 12)
-    car_type.add('_padding_', 0xFFFFFFF) # To ensure 4 bytes
 
     car_properties = pycstruct.BitfieldDef()
     car_properties.add('class', 3)
@@ -224,18 +229,18 @@ class TestPyCStruct(unittest.TestCase):
     car_properties.add('over_3500_kg', 1)
 
 
-    car = pycstruct.StructDef()
+    car = pycstruct.StructDef(alignment = alignment)
     car.add('uint16', 'year')
     car.add('utf-8', 'model', length=50)
     car.add('utf-8', 'registration_number', length=10)
     car.add(car_properties, 'properties')
     car.add(car_type, 'type')
 
-    garage = pycstruct.StructDef()
+    garage = pycstruct.StructDef(alignment = alignment)
     garage.add(car, 'cars', length=20)
     garage.add('uint8', 'nbr_registered_parkings')
 
-    house = pycstruct.StructDef()
+    house = pycstruct.StructDef(alignment = alignment)
     house.add('uint8', 'nbr_of_levels')
     house.add(garage, 'garage')
 
@@ -248,10 +253,21 @@ class TestPyCStruct(unittest.TestCase):
     stringrep = str(house)
     self.assertTrue('nbr_of_levels' in stringrep)
 
+
+    print('----------- Car ----------------')
+    print('align: {} size: {}'.format(alignment, car.size()))
+    print(car)
+    print('----------- Garage ----------------')
+    print('align: {} size: {}'.format(alignment, garage.size()))
+    print(garage)
+    print('----------- House ----------------')
+    print('align: {} size: {}'.format(alignment, house.size()))
+    print(house)
+
     #############################################
     # Load pre-stored binary data and deserialize
 
-    f = open(os.path.join(test_dir, 'embedded_struct.dat'),'rb')
+    f = open(os.path.join(test_dir, filename),'rb')
     inbytes = f.read()
     result = house.deserialize(inbytes)
     f.close()
@@ -499,9 +515,6 @@ class TestPyCStruct(unittest.TestCase):
     self.assertEqual(e.get_name(2), "third")
     self.assertEqual(e.size(), 1)
 
-    e.add("dont_fit_byte", 128)
-    self.assertEqual(e.size(), 2)
-
     # Duplicate
     self.assertRaises(Exception, e.add, "second")
 
@@ -515,7 +528,7 @@ class TestPyCStruct(unittest.TestCase):
     self.assertRaises(Exception, e.get_name, "invalid")
 
   def test_enum_serialize_deserialize(self):
-    e = pycstruct.EnumDef()
+    e = pycstruct.EnumDef(size = 1)
     e.add("zero", 0)
     e.add("one", 1)
     e.add("two", 2)
@@ -526,7 +539,7 @@ class TestPyCStruct(unittest.TestCase):
     self.assertEqual(len(buf), 1)
     self.assertEqual(buf[0], 2)
 
-    big = pycstruct.EnumDef('big')
+    big = pycstruct.EnumDef('big', size = 2)
     big.add("twofiftysix", 256)
     value = "twofiftysix"
     buf = big.serialize(value)
@@ -536,7 +549,7 @@ class TestPyCStruct(unittest.TestCase):
     outval = big.deserialize(buf)
     self.assertEqual(outval, "twofiftysix")
 
-    little = pycstruct.EnumDef('little')
+    little = pycstruct.EnumDef('little', size = 2)
     little.add("twofiftysix", 256)
     value = "twofiftysix"
     buf = little.serialize(value)

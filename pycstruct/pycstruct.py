@@ -615,23 +615,26 @@ class EnumDef(BaseDef):
   """This class represents an enum definition
 
   The size of the enum is 1, 2, 3, .., 8 bytes depending on the value of the
-  largest enum constant. If a larger size is required than what is required
-  by the constants you have to add a dummy constant with a value which will 
-  force a the enum to have a particular size.
+  largest enum constant. You can also force the enum size by setting 
+  the size argument.
 
   This implementation assumes that an enum is always signed.
 
   :param byteorder: Byte order of the enum. Valid values are 'native', 
                     'little' and 'big'.
   :type byteorder: str, optional
+  :param size: Force enum to be a certain size. By default it will expand
+               when new elements are added.
+  :type size: int, optional
   """
 
-  def __init__(self, byteorder = 'native'):
+  def __init__(self, byteorder = 'native', size = -1):
     if byteorder not in _BYTEORDER:
       raise Exception('Invalid byteorder: {0}.'.format(byteorder))
     if byteorder == 'native':
       byteorder = sys.byteorder
     self.__byteorder = byteorder
+    self.__size = size
     self.__constants = collections.OrderedDict()
 
   def add(self, name, value=None):
@@ -661,8 +664,9 @@ class EnumDef(BaseDef):
     
       # Check that new size is not too large
       bit_length = value.bit_length() + 1 # Including sign bit
-      if bit_length > 64:
-        raise Exception('Maximum number of bits (64) exceeded: {0}.'.format(bit_length))
+      if bit_length > self.size() * 8:
+        raise Exception('Maximum number of bits ({}) exceeded: {}.'.format(
+          self.size() * 8, bit_length))
 
       self.__constants[name] = value
 
@@ -699,6 +703,9 @@ class EnumDef(BaseDef):
     :return: Number of bytes this enum represents
     :rtype: int
     """
+    if self.__size > 0:
+      return self.__size # Force size
+
     max_value = 0
     for _, value in self.__constants.items():
       if value > max_value:

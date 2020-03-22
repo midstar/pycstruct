@@ -1,7 +1,17 @@
+#ifndef NO_PACK
+
 /**
  * This code assures no padding will be performed
  */
 #pragma pack(1)
+
+const char *out_file = "embedded_struct.dat";
+
+#else
+
+const char *out_file = "embedded_struct_nopack.dat";
+
+#endif // NO_PACK
 
 #include <stdio.h>
 #include <string.h>
@@ -66,9 +76,14 @@ void main() {
     strcpy(house.garage.cars[2].registration_number, "HHT434");
     strcpy(house.garage.cars[2].model, "Volkswagen Golf");
 
+    printf("Size car_type: %d\n", sizeof(enum car_type));
+    printf("Size car_properties_s: %d\n", sizeof(struct car_properties_s));
+    printf("Size car_s: %d\n", sizeof(struct car_s));
+    printf("Size garage_s: %d\n", sizeof(struct garage_s));
+    printf("Size house_s: %d\n", sizeof(struct house_s));
 
-    printf("Saving embedded_stuct.dat\n");
-    FILE *f = fopen("embedded_struct.dat", "w");
+    printf("Saving %s\n", out_file);
+    FILE *f = fopen(out_file, "w");
     fwrite(&house, sizeof(struct house_s), 1, f);
     fclose(f);
  

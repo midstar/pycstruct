@@ -1,5 +1,5 @@
 import xml.etree.ElementTree as ET
-import os, logging, json, pycstruct
+import os, logging, pycstruct
 
 logger = logging.getLogger('pycstruct')
 
