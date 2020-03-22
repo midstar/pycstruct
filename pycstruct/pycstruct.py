@@ -434,20 +434,24 @@ class BitfieldDef(BaseDef):
   """This class represents a bit field definition
 
   The size of the bit field is 1, 2, 3, .., 8 bytes depending on the number of
-  elements added to the bit field. If a larger size is required than what
-  is required by the elements you have to add additional, "dummy", elements.
+  elements added to the bit field. You can also force the bitfield size by
+  setting the size argument.
 
   :param byteorder: Byte order of the bitfield. Valid values are 'native', 
                     'little' and 'big'.
   :type byteorder: str, optional
+  :param size: Force enum to be a certain size. By default it will expand
+               when new elements are added.
+  :type size: int, optional
   """
 
-  def __init__(self, byteorder = 'native'):
+  def __init__(self, byteorder = 'native', size = -1):
     if byteorder not in _BYTEORDER:
       raise Exception('Invalid byteorder: {0}.'.format(byteorder))
     if byteorder == 'native':
       byteorder = sys.byteorder
     self.__byteorder = byteorder
+    self.__size = size
     self.__fields = collections.OrderedDict()
 
   def add(self, name, nbr_of_bits = 1, signed = False):
@@ -469,8 +473,9 @@ class BitfieldDef(BaseDef):
     
       # Check that new size is not too large
       total_nbr_of_bits = self.assigned_bits() + nbr_of_bits
-      if total_nbr_of_bits > 64:
-        raise Exception('Maximum number of bits (64) exceeded: {0}.'.format(total_nbr_of_bits))
+      if total_nbr_of_bits > self._max_bits():
+        raise Exception('Maximum number of bits ({}) exceeded: {}.'.format(
+          self._max_bits(), total_nbr_of_bits))
 
       self.__fields[name] = {'nbr_of_bits' : nbr_of_bits, 'signed' : signed}
 
@@ -533,7 +538,15 @@ class BitfieldDef(BaseDef):
     :return: Number of bytes this bitfield represents
     :rtype: int
     """
+    if self.__size >= 0:
+      return self.__size # Force size
+
     return int(math.ceil(self.assigned_bits()/8.0))
+
+  def _max_bits(self):
+    if self.__size >= 0:
+      return self.__size * 8 # Force size
+    return 64    
 
   def _largest_member(self):
     """ Used for struct padding
@@ -664,9 +677,9 @@ class EnumDef(BaseDef):
     
       # Check that new size is not too large
       bit_length = value.bit_length() + 1 # Including sign bit
-      if bit_length > self.size() * 8:
+      if bit_length > self._max_bits():
         raise Exception('Maximum number of bits ({}) exceeded: {}.'.format(
-          self.size() * 8, bit_length))
+          self._max_bits(), bit_length))
 
       self.__constants[name] = value
 
@@ -703,7 +716,7 @@ class EnumDef(BaseDef):
     :return: Number of bytes this enum represents
     :rtype: int
     """
-    if self.__size > 0:
+    if self.__size >= 0:
       return self.__size # Force size
 
     max_value = 0
@@ -711,6 +724,11 @@ class EnumDef(BaseDef):
       if value > max_value:
         max_value = value
     return int(math.ceil( (max_value.bit_length()+1) /8.0 ))
+
+  def _max_bits(self):
+    if self.__size >= 0:
+      return self.__size * 8 # Force size
+    return 64    
 
   def _largest_member(self):
     """ Used for struct padding
