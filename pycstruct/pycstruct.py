@@ -57,6 +57,9 @@ class BaseDef:
   def _largest_member(self, data):
     raise NotImplementedError
 
+  def _type_name(self):
+    raise NotImplementedError
+
   def serialize(self, data):
     raise NotImplementedError
 
@@ -104,6 +107,9 @@ class BasicTypeDef(BaseDef):
   def _largest_member(self):
     return self.size_bytes
 
+  def _type_name(self):
+    return self.type
+
 
 ###############################################################################
 # StringDef Class
@@ -145,26 +151,8 @@ class StringDef(BaseDef):
   def _largest_member(self):
     return 1 # 1 byte
 
-
-###############################################################################
-# PaddingDef Class
-
-class PaddingDef(BaseDef):
-  """This class represents a padding of arbitary size
-  """
-  def __init__(self, length):
-    self.length = length
-
-  def set_length(self, length):
-    self.length = length
-
-  def size(self):
-    return self.length # Each element 1 byte
-
-  def _largest_member(self):
-    if self.length == 0:
-      return 0 # Empty padding
-    return 1 # 1 byte
+  def _type_name(self):
+    return 'utf-8'
 
 
 ###############################################################################
@@ -194,8 +182,8 @@ class StructDef(BaseDef):
     self.__fields = collections.OrderedDict()
 
     # Add end padding of 0 size
-    self.__pad_end = PaddingDef(0)
-    self.__fields['__pad_end'] = {'type' : self.__pad_end, 'length' : 1}
+    self.__pad_byte = BasicTypeDef('uint8', default_byteorder)
+    self.__pad_end = {'type' : self.__pad_byte, 'length' : 0}
   
   def add(self, type, name, length = 1, byteorder = ''):
     """Add a new element in the struct definition. The element will be added 
@@ -287,23 +275,25 @@ class StructDef(BaseDef):
     elif not isinstance(type, BaseDef):
       raise Exception('Invalid type: {0}.'.format(type))
 
-    # Reset end padding
-    self.__pad_end.set_length(0)
+    # Remove end padding if it exists
+    self.__fields.pop('__pad_end','')
 
     # Check if padding between elements is required
     padding = _get_padding(self.__alignment, self.size(), type._largest_member())
     if padding > 0:
-      pad = PaddingDef(padding)
-      self.__fields['__pad{0}'.format(self.__pad_count)] = {'type' : pad, 'length' : 1}
+      #pad = PaddingDef(padding)
+      self.__fields['__pad_{0}'.format(self.__pad_count)] = \
+        {'type' : self.__pad_byte, 'length' : padding}
       self.__pad_count += 1
 
     # Add the element
     self.__fields[name] = {'type' : type, 'length' : length}
 
     # Check if end padding is required
-    self.__fields.move_to_end('__pad_end')
     padding = _get_padding(self.__alignment, self.size(), self._largest_member())
-    self.__pad_end.set_length(padding)
+    if padding > 0:
+      self.__pad_end['length'] = padding
+      self.__fields['__pad_end'] = self.__pad_end
 
   def size(self):
     """ Get size of structure
@@ -415,13 +405,16 @@ class StructDef(BaseDef):
     :rtype: string
     """
     result = []
-    result.append('{:<30}{:<10}{:<10}{:<10}'.format(
-      'Name','Size','Length','Largest type'))
+    result.append('{:<30}{:<15}{:<10}{:<10}{:<10}'.format(
+      'Name','Type', 'Size','Length','Largest type'))
     for name, field in self.__fields.items():
       type = field['type']
-      result.append('{:<30}{:<10}{:<10}{:<10}'.format(
-        name,type.size(),field['length'], type._largest_member()))
+      result.append('{:<30}{:<15}{:<10}{:<10}{:<10}'.format(
+        name,type._type_name(), type.size(),field['length'], type._largest_member()))
     return '\n'.join(result)
+
+  def _type_name(self):
+    return 'struct'
 
 
 ###############################################################################
@@ -607,6 +600,9 @@ class BitfieldDef(BaseDef):
     buffer = bytearray(self.size())
     return self.deserialize(buffer)
 
+  def _type_name(self):
+    return 'bitfield'
+
 
 ###############################################################################
 # EnumDef Class
@@ -741,3 +737,6 @@ class EnumDef(BaseDef):
     if name not in self.__constants:
       raise Exception("{0} is not a valid name in this enum".format(name))
     return self.__constants[name]
+
+  def _type_name(self):
+    return 'enum'

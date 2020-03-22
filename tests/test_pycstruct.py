@@ -134,6 +134,10 @@ class TestPyCStruct(unittest.TestCase):
     m.add('utf-8', 'utf8_nonascii', 80)
     m.add('utf-8', 'utf8_no_term', 4)
 
+    print("---------------------------------------")
+    print("Align: " + str(alignment))
+    print(m)
+
     return m
 
   def deserialize_serialize(self, byteorder, alignment, filename):
