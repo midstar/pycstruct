@@ -223,7 +223,13 @@ class TestPyCStruct(unittest.TestCase):
     car_type.add('Bus', 7)
     car_type.add('Pickup', 12)
 
-    car_properties = pycstruct.BitfieldDef()
+    # gcc is setting the size of car_properties_s to
+    # 4 bytes when no packing is added of some strange
+    # reason.
+    size = 1
+    if alignment > 1:
+      size = 4
+    car_properties = pycstruct.BitfieldDef(size = size)
     car_properties.add('class', 3)
     car_properties.add('registered', 1)
     car_properties.add('over_3500_kg', 1)
@@ -252,17 +258,6 @@ class TestPyCStruct(unittest.TestCase):
     self.assertTrue('nbr_registered_parkings' in stringrep)
     stringrep = str(house)
     self.assertTrue('nbr_of_levels' in stringrep)
-
-
-    print('----------- Car ----------------')
-    print('align: {} size: {}'.format(alignment, car.size()))
-    print(car)
-    print('----------- Garage ----------------')
-    print('align: {} size: {}'.format(alignment, garage.size()))
-    print(garage)
-    print('----------- House ----------------')
-    print('align: {} size: {}'.format(alignment, house.size()))
-    print(house)
 
     #############################################
     # Load pre-stored binary data and deserialize
