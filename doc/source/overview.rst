@@ -252,5 +252,61 @@ byteorder by providing the byteorder argument.
 
     myEnum = pycstruct.EnumDef(byteorder = 'big')
 
+Alignment and padding
+---------------------
+
+Compilers usually add padding in-between elements in structs to secure
+individual elements are put on addresses that can be accessed 
+efficiently. Also, padding is added in the end of the structs when
+required so that an array of the struct can be made without "memory gaps".
+
+Padding dependes on the alignment of the CPU architecture (typically 32
+or 64 bits on modern architectures), the size of individual items in
+the struct and the position of the items in the struct.
+
+The padding behaviour can be removed by most compilers, usually adding
+a compiler flag or directive such as:
+
+.. code-block:: c
+
+    #pragma pack(1)
+
+pycstruct is by default not adding any padding, i.e. the structs are 
+packed. However by providing the alignment argument padding will be
+added automatically.
+
+.. code-block:: python
+
+    noPadding_Default          = pycstruct.StructDef(alignment = 1)
+    paddedFor16BitArchitecture = pycstruct.StructDef(alignment = 2)
+    paddedFor32BitArchitecture = pycstruct.StructDef(alignment = 4)
+    paddedFor63BitArchitecture = pycstruct.StructDef(alignment = 8)
+
+Lets add padding to the first example in this overview:
+
+.. code-block:: python
+
+    myStruct = pycstruct.StructDef(alignment = 8)
+    myStruct.add('int8', 'mySmallInteger')
+    myStruct.add('uint32', 'myUnsignedInteger')
+    myStruct.add('float32', 'myFloatingPointNumber')
+
+The above example will now have following layout:
+
++---------------+-----------------------+---------------------------+
+| Size in bytes | Type                  | Name                      |
++===============+=======================+===========================+
+| 1             | Signed integer        | mySmallInteger            |
++---------------+-----------------------+---------------------------+
+| 1             | Unsigned integer      | __pad_0[0]                |
++---------------+-----------------------+---------------------------+
+| 1             | Unsigned integer      | __pad_0[1]                |
++---------------+-----------------------+---------------------------+
+| 1             | Unsigned integer      | __pad_0[2]                |
++---------------+-----------------------+---------------------------+
+| 4             | Unsigned integer      | myUnsignedInteger         |
++---------------+-----------------------+---------------------------+
+| 4             | Floating point number | myFloatingPointNumber     |
++---------------+-----------------------+---------------------------+
 
 
