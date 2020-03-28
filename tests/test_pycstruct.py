@@ -557,11 +557,6 @@ class TestPyCStruct(unittest.TestCase):
   
   def test_union_no_pad(self):
 
-    #uint8 = pycstruct.pycstruct.BasicTypeDef('uint8', 'native')
-    #self.assertEqual(uint8.deserialize(bytearray.fromhex("00")), 0)
-    #self.assertEqual(uint8.deserialize(bytearray.fromhex("FF")), 255)
-    #self.assertEqual(uint8.deserialize(bytearray.fromhex("00")), 0)
-
     u = pycstruct.StructDef(union = True, default_byteorder = 'big')
     self.assertEqual(u._type_name(),'union')
     u.add('uint8', 'small')
@@ -594,11 +589,8 @@ class TestPyCStruct(unittest.TestCase):
 
     buf3 = u.serialize(output2)
     output3 = u.deserialize(buf3)
-    self.assertEqual(output3['largest'],0x1122)
-
-
-
-
+    self.assertEqual(output3['largest'],0x1122000000000000)
+    self.assertEqual(output3['larger'],0x11220000)
 
 
 
