@@ -7,7 +7,7 @@ except:
       long_description = ""
 
 setup(name='pycstruct',
-      version='0.1.0',
+      version='0.2.0',
       description='Binary data handling in Python using dictionaries',
       long_description=long_description,
        long_description_content_type="text/markdown",
