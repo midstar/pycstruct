@@ -92,16 +92,17 @@ class BasicTypeDef(BaseDef):
   def serialize(self, data):
     ''' Data needs to be an integer, floating point or boolean value '''
     buffer = bytearray(self.size())
-
     format = _BYTEORDER[self.byteorder]['format'] + self.format
     struct.pack_into(format, buffer, 0, data)
 
     return buffer
 
-  def deserialize(self, buffer):
+  def deserialize(self, buffer, debug = False):
     ''' Result is an integer, floating point or boolean value '''
     format = _BYTEORDER[self.byteorder]['format'] + self.format
     value = struct.unpack_from(format, buffer, 0)[0]
+    if debug:
+      print('{} buffer {} len {} value {}'.format(self._type_name(), buffer, len(buffer), value))
 
     if self.type.startswith("bool"):
       if value == 0:
@@ -352,6 +353,8 @@ class StructDef(BaseDef):
     :rtype: dict
     """
     result = {}
+    if self.__union:
+      print('IN Deserialize buffer {} result {}'.format(buffer,result))
     if len(buffer) != self.size():
       raise Exception("Invalid buffer size: {0}. Expected: {1}".format(len(buffer),self.size()))
     offset = 0
@@ -366,7 +369,11 @@ class StructDef(BaseDef):
         for i in range(0, length):
           next_offset = offset + i*datatype_size
           buffer_subset = buffer[next_offset:next_offset + datatype_size]
-          value = datatype.deserialize(buffer_subset)
+          if self.__union:
+            value = datatype.deserialize(buffer_subset, True)
+            print('  subset {} value {}'.format(buffer_subset, value))
+          else:
+            value = datatype.deserialize(buffer_subset)
           values.append(value)
 
         if length == 1:
@@ -376,6 +383,9 @@ class StructDef(BaseDef):
 
       if not self.__union:
         offset += datatype_size * length
+    
+    if self.__union:
+      print('OUT Deserialize buffer {} result {}'.format(buffer,result))
     return result
 
   def serialize(self, data):

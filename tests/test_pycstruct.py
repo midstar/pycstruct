@@ -554,6 +554,55 @@ class TestPyCStruct(unittest.TestCase):
     outval = little.deserialize(buf)
     self.assertEqual(outval, "twofiftysix")
 
+  
+  def test_union_no_pad(self):
+
+    #uint8 = pycstruct.pycstruct.BasicTypeDef('uint8', 'native')
+    #self.assertEqual(uint8.deserialize(bytearray.fromhex("00")), 0)
+    #self.assertEqual(uint8.deserialize(bytearray.fromhex("FF")), 255)
+    #self.assertEqual(uint8.deserialize(bytearray.fromhex("00")), 0)
+
+    u = pycstruct.StructDef(union = True, default_byteorder = 'big')
+    self.assertEqual(u._type_name(),'union')
+    u.add('uint8', 'small')
+    self.assertEqual(u.size(),1)
+    u.add('uint16', 'large')
+    self.assertEqual(u.size(),2)
+    u.add('uint32', 'larger')
+    self.assertEqual(u.size(),4)
+    u.add('uint64', 'largest')
+    self.assertEqual(u.size(),8)
+
+    input = {}
+    input['largest']=0x1122334455667788
+
+    buf = u.serialize(input)
+    self.assertEqual(len(buf),8)
+
+    output = u.deserialize(buf)
+    self.assertEqual(output['small'],0x11)
+    self.assertEqual(output['large'],0x1122)
+    self.assertEqual(output['larger'],0x11223344)
+    self.assertEqual(output['largest'],0x1122334455667788)
+
+    buf2 = u.serialize(output)
+    output2 = u.deserialize(buf2)
+    self.assertEqual(output2['largest'],0x1122334455667788)
+
+    del output2['largest']
+    del output2['larger']
+
+    buf3 = u.serialize(output2)
+    output3 = u.deserialize(buf3)
+    self.assertEqual(output3['largest'],0x1122)
+
+
+
+
+
+
+
+
   def test_enum_invalid_deserialize(self):
 
     e = pycstruct.EnumDef()
