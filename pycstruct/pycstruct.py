@@ -1,7 +1,7 @@
 import struct, collections, math, sys
 
 ###############################################################################
-# Global variables
+# Global constants
 
 # Basic Types
 _TYPE = {

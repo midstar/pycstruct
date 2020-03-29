@@ -1,19 +1,57 @@
 import xml.etree.ElementTree as ET
-import os, logging, pycstruct
+import os, logging, pycstruct, subprocess, shutil
+
+###############################################################################
+# Global constants
 
 logger = logging.getLogger('pycstruct')
 
-class CParser():
-    def __init__(self, c_filename, byteorder = 'native'):
-        self.c_filename = c_filename
+###############################################################################
+# Internal functions
 
-        #TBD
+def _run_castxml(input_files, xml_filename, castxml_cmd = 'castxml', 
+                 castxml_extra_args = []):
+    if shutil.which(castxml_cmd) == None:
+        raise Exception('Executable "{}" not found.\n'.format(castxml_cmd) +
+                        'External software castxml is not installed.\n' +
+                        'You need to install it and put it in your PATH.')
+    args = [castxml_cmd]
+    args += castxml_extra_args
+    args += input_files
+    args.append('--castxml-output=1')
+    args.append('-o')
+    args.append(xml_filename)
 
-    def _parse_xml(self, xml_filename):
+    try:
+        output = subprocess.check_output(args, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        raise Exception('Unable to run:\n' +
+                        '{}\n\n'.format(' '.join(args)) +
+                        'Output:\n' +
+                        e.output.decode('utf-8'))
 
-        self.root = ET.parse(xml_filename).getroot()
+    if not os.path.isfile(xml_filename):
+        raise Exception('castxml did not report any error but ' + 
+                        '{} was never produced.\n\n'.format(xml_filename) +
+                        'castxml output was:\n{}'.format(output.decode('utf-8')))
+
+###############################################################################
+# CastXMLParser class (internal)
+
+class _CastXmlParser():
+    ''' Parses XML:s produced by CastXML and creates a new dictionary format
+        that describes all the types supported by pycstruct
+    '''
+
+    def __init__(self, xml_filename):
+        self._xml_filename = xml_filename
+
+    def parse(self):
+
+        self.root = ET.parse(self._xml_filename).getroot()
 
         # Figure out the identity of the file we try to parse
+        ''' Remove this... not necessary
         c_filename = os.path.basename(self.c_filename)
         file_id = ''
         for child in self.root.findall("File"):
@@ -23,7 +61,7 @@ class CParser():
                 break
         if file_id == '':
             raise Exception('File XML element with name attribute {0} not identified in {1}'.format(c_filename, xml_filename))
-
+            '''
         # Find all structs defined in this file
         #xml_structs = self.root.findall("Struct[@file='{0}']".format(file_id))
         xml_structs = self.root.findall("Struct")
@@ -73,7 +111,7 @@ class CParser():
 
     def _to_structdefs(self, structs, byteorder):
         result = {}
-        for id, struct in structs.items():
+        for _, struct in structs.items():
             if struct['supported']:
                 try:
                     result[struct['name']] = self._to_structdef(struct, structs, byteorder)
@@ -185,6 +223,20 @@ class CParser():
             raise Exception('Member type {0} is not supported.'.format(elem.tag))
 
         return member_type
+
+
+###############################################################################
+# CParser class
+
+class CParser():
+
+    def __init__(self, input_files, byteorder = 'native',  
+                 castxml_cmd = 'castxml', castxml_extra_args = []):
+        pass
+        #TBD
+    
+
+
 
         
 
