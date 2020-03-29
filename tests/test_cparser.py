@@ -27,8 +27,34 @@ class TestCParser(unittest.TestCase):
     _run_castxml(input_files, 'joel.xml', castxml_cmd='/home/joelmidstjarna/tmp/castxml-linux.tar.gz/castxml/bin/castxml')
     #parser._
 
+  def test_get_hash(self):
+    _get_hash = pycstruct.cparser._get_hash
 
-  def test_parse(self):
+    hash = _get_hash(['one'])
+    self.assertEqual(len(hash), 10)
+
+    hash2 = _get_hash(['one', 'two'])
+    self.assertEqual(len(hash2), 10)
+
+    self.assertNotEqual(hash, hash2)
+
+    hash3 = _get_hash(['one', 'two'])
+    self.assertEqual(hash3, hash2)
+
+  def test_listify(self):
+    _listify = pycstruct.cparser._listify
+
+    alist = ['hello']
+    another_list = _listify(alist)
+    self.assertEqual(alist, another_list)
+
+    from_str_list = _listify('hello')
+    self.assertEqual(from_str_list, alist)
+
+    
+
+
+  def test_xml_parse(self):
     _CastXmlParser = pycstruct.cparser._CastXmlParser
     parser = _CastXmlParser(os.path.join(test_dir, 'savestruct.xml'))
     structs = parser.parse()

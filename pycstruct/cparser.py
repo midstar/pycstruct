@@ -1,5 +1,5 @@
 import xml.etree.ElementTree as ET
-import os, logging, pycstruct, subprocess, shutil
+import os, logging, pycstruct, subprocess, shutil, hashlib, tempfile
 
 ###############################################################################
 # Global constants
@@ -28,12 +28,26 @@ def _run_castxml(input_files, xml_filename, castxml_cmd = 'castxml',
         raise Exception('Unable to run:\n' +
                         '{}\n\n'.format(' '.join(args)) +
                         'Output:\n' +
-                        e.output.decode('utf-8'))
+                        e.output.decode())
 
     if not os.path.isfile(xml_filename):
         raise Exception('castxml did not report any error but ' + 
                         '{} was never produced.\n\n'.format(xml_filename) +
-                        'castxml output was:\n{}'.format(output.decode('utf-8')))
+                        'castxml output was:\n{}'.format(output.decode()))
+
+def _get_hash(list_of_strings):
+    ''' Get a reproducible short name of a list of strings '''
+    long_string = ''.join(list_of_strings)
+    sha256 = hashlib.sha256(long_string.encode())
+    hexdigest = sha256.hexdigest()
+    return hexdigest[:10]
+
+def _listify(list_or_str):
+    ''' If list_or_str is a string it will be put in a list '''
+    if isinstance(list_or_str, str):
+        list_or_str = [list_or_str]
+    return list_or_str
+
 
 ###############################################################################
 # CastXMLParser class (internal)
@@ -235,10 +249,31 @@ class CParser():
         pass
         #TBD
     
+###############################################################################
+# Public functions
 
+def parse_c(input_files, byteorder = 'native',  
+            castxml_cmd = 'castxml', castxml_extra_args = [],
+            cache_path = '', use_cashed = False):
+    input_files = _listify(input_files)
+    xml_filename = _get_hash(input_files) + '.xml'
 
+    if cache_path == '':
+        # Use temporary path to store xml
+        cache_path = tempfile.gettempdir()
+    
+    xml_path = os.path.join(cache_path, xml_filename)
 
-        
+    # Generate XML
+    if use_cashed == False or os.path.isfile(xml_path) == False:
+        _run_castxml(input_files, xml_path, castxml_cmd, castxml_extra_args)
+
+    # Parse XML
+    castxml_parser = _CastXmlParser(xml_path)
+    structs = castxml_parser.parse() 
+    structdefs = castxml_parser._to_structdefs(structs, byteorder)
+
+    return structdefs
 
 
 
