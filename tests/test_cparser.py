@@ -1,4 +1,4 @@
-import unittest, os, sys, shutil
+import unittest, os, sys, shutil, tempfile
 
 test_dir = os.path.dirname(os.path.realpath(__file__))
 proj_dir = os.path.dirname(test_dir)
@@ -83,11 +83,44 @@ class TestCParser(unittest.TestCase):
 
   @unittest.skipIf(shutil.which('castxml') == None, 'castxml is not installed')
   def test_run_parse_c_real(self):
-    input_files = [os.path.join(test_dir, 'savestruct.c')]
-    
+    input_file = os.path.join(test_dir, 'savestruct.c')
 
+    # Use default cache
+    result = pycstruct.parse_c(input_file)
+    self.assertTrue('Data' in result)
 
+    xml_filename = pycstruct.cparser._get_hash(
+        pycstruct.cparser._listify(input_file)) + '.xml'
+    xml_path = os.path.join(tempfile.gettempdir(), xml_filename)
+    self.assertTrue(os.path.isfile(xml_path))
+    os.remove(xml_path)
 
+    # Use custom cache path
+    result = pycstruct.parse_c(input_file, cache_path='.')
+    self.assertTrue('Data' in result)  
+    self.assertTrue(os.path.isfile(xml_filename))
+    first_timestamp = os.path.getmtime(xml_filename)
+
+    # Re-run using cache path
+    result = pycstruct.parse_c(input_file, cache_path='.', use_cached = True)
+    self.assertTrue('Data' in result)  
+    self.assertTrue(os.path.isfile(xml_filename))
+    second_timestamp = os.path.getmtime(xml_filename)
+
+    # Check that file was NOT updated
+    self.assertEqual(first_timestamp, second_timestamp)
+
+    # Re-run again not using cache path
+    result = pycstruct.parse_c(input_file, cache_path='.', use_cached = False)
+    self.assertTrue('Data' in result)  
+    self.assertTrue(os.path.isfile(xml_filename))
+    third_timestamp = os.path.getmtime(xml_filename)
+
+    # Check that file WAS updated
+    self.assertNotEqual(first_timestamp, third_timestamp)
+
+    os.remove(xml_filename)
+  
 
 if __name__ == '__main__':
   unittest.main()

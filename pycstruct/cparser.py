@@ -238,23 +238,13 @@ class _CastXmlParser():
 
         return member_type
 
-
-###############################################################################
-# CParser class
-
-class CParser():
-
-    def __init__(self, input_files, byteorder = 'native',  
-                 castxml_cmd = 'castxml', castxml_extra_args = []):
-        pass
-        #TBD
     
 ###############################################################################
 # Public functions
 
 def parse_c(input_files, byteorder = 'native',  
             castxml_cmd = 'castxml', castxml_extra_args = [],
-            cache_path = '', use_cashed = False):
+            cache_path = '', use_cached = False):
     input_files = _listify(input_files)
     xml_filename = _get_hash(input_files) + '.xml'
 
@@ -265,7 +255,7 @@ def parse_c(input_files, byteorder = 'native',
     xml_path = os.path.join(cache_path, xml_filename)
 
     # Generate XML
-    if use_cashed == False or os.path.isfile(xml_path) == False:
+    if use_cached == False or os.path.isfile(xml_path) == False:
         _run_castxml(input_files, xml_path, castxml_cmd, castxml_extra_args)
 
     # Parse XML
