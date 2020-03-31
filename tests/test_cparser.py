@@ -1,4 +1,4 @@
-import unittest, os, sys
+import unittest, os, sys, shutil
 
 test_dir = os.path.dirname(os.path.realpath(__file__))
 proj_dir = os.path.dirname(test_dir)
@@ -10,22 +10,24 @@ class TestCParser(unittest.TestCase):
 
   def test_run_castxml_invalid(self):
     _run_castxml = pycstruct.cparser._run_castxml
+    _get_hash = pycstruct.cparser._get_hash
 
-    input_files = [os.path.join(test_dir, 'savestruct.c')]
+    input_files = ['dont_exist.c']
 
     # Non existing command
-    self.assertRaises(Exception, _run_castxml, input_files, 'out.xml', catxml_cmd='dontexist')
+    self.assertRaises(Exception, _run_castxml, input_files, 'out.xml', castxml_cmd='dontexist')
 
-    # Existing but failing TBD - Update to mocke
-    self.assertRaises(Exception, _run_castxml, input_files, 'out.xml', catxml_cmd='ls')
+    # Existing but failing 
+    self.assertRaises(Exception, _run_castxml, input_files, 'out.xml', castxml_cmd='python3')
+
+    # Will not fail command execution but no XML produced
+    self.assertRaises(Exception, _run_castxml, input_files, 'out.xml', castxml_cmd='echo')
+
+    # This one will pass - fake output
+    xml_filename = _get_hash(input_files)
 
 
-  def test_run_castxml_real(self):
-    _run_castxml = pycstruct.cparser._run_castxml
-    input_files = [os.path.join(test_dir, 'savestruct.c')]
 
-    _run_castxml(input_files, 'joel.xml', castxml_cmd='/home/joelmidstjarna/tmp/castxml-linux.tar.gz/castxml/bin/castxml')
-    #parser._
 
   def test_get_hash(self):
     _get_hash = pycstruct.cparser._get_hash
@@ -59,6 +61,33 @@ class TestCParser(unittest.TestCase):
     parser = _CastXmlParser(os.path.join(test_dir, 'savestruct.xml'))
     structs = parser.parse()
     structdefs = parser._to_structdefs(structs, 'native')
+
+  @unittest.skipIf(shutil.which('castxml') == None, 'castxml is not installed')
+  def test_run_castxml_real(self):
+    _run_castxml = pycstruct.cparser._run_castxml
+    input_files = [os.path.join(test_dir, 'savestruct.c')]
+    output_file = 'test_output.xml'
+
+    # Generate standard
+    _run_castxml(input_files, output_file)
+    self.assertTrue(os.path.isfile(output_file))
+    os.remove(output_file)
+
+    # Valid extra arguments
+    _run_castxml(input_files, output_file, castxml_extra_args=['-dI'])
+    self.assertTrue(os.path.isfile(output_file))
+    os.remove(output_file)
+
+    # Invalid extra arguments
+    self.assertRaises(Exception, _run_castxml, input_files, output_file, castxml_extra_args=['--invalid'])
+
+  @unittest.skipIf(shutil.which('castxml') == None, 'castxml is not installed')
+  def test_run_parse_c_real(self):
+    input_files = [os.path.join(test_dir, 'savestruct.c')]
+    
+
+
+
 
 if __name__ == '__main__':
   unittest.main()

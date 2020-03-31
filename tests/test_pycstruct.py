@@ -10,7 +10,7 @@ class TestPyCStruct(unittest.TestCase):
 
   def test_invalid_baseclass(self):
 
-    b = pycstruct.BaseDef()
+    b = pycstruct.pycstruct.BaseDef()
 
     self.assertRaises(NotImplementedError, b.size)
     self.assertRaises(NotImplementedError, b.serialize, 0)
