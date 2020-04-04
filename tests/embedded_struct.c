@@ -71,7 +71,7 @@ struct house_s {
     struct garage_s garage;
 };
 
-void main() {
+int main() {
     struct house_s house;
 
     memset(&house, 0, sizeof(struct house_s));
@@ -108,16 +108,17 @@ void main() {
     strcpy(house.garage.cars[2].registration_number, "HHT434");
     strcpy(house.garage.cars[2].model, "Volkswagen Golf");
 
-    printf("Size car_type: %d\n", sizeof(enum car_type));
-    printf("Size type_specific_properties_u: %d\n", sizeof(union type_specific_properties_u));
-    printf("Size car_properties_s: %d\n", sizeof(struct car_properties_s));
-    printf("Size car_s: %d\n", sizeof(struct car_s));
-    printf("Size garage_s: %d\n", sizeof(struct garage_s));
-    printf("Size house_s: %d\n", sizeof(struct house_s));
+    printf("Size car_type: %lu\n", sizeof(enum car_type));
+    printf("Size type_specific_properties_u: %lu\n", sizeof(union type_specific_properties_u));
+    printf("Size car_properties_s: %lu\n", sizeof(struct car_properties_s));
+    printf("Size car_s: %lu\n", sizeof(struct car_s));
+    printf("Size garage_s: %lu\n", sizeof(struct garage_s));
+    printf("Size house_s: %lu\n", sizeof(struct house_s));
 
     printf("Saving %s\n", out_file);
     FILE *f = fopen(out_file, "w");
     fwrite(&house, sizeof(struct house_s), 1, f);
     fclose(f);
  
+    return 0;
 }
