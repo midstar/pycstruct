@@ -64,18 +64,6 @@ class _CastXmlParser():
 
         self.root = ET.parse(self._xml_filename).getroot()
 
-        # Figure out the identity of the file we try to parse
-        ''' Remove this... not necessary
-        c_filename = os.path.basename(self.c_filename)
-        file_id = ''
-        for child in self.root.findall("File"):
-            name = os.path.basename(child.attrib['name'])
-            if name == c_filename:
-                file_id = child.attrib['id']
-                break
-        if file_id == '':
-            raise Exception('File XML element with name attribute {0} not identified in {1}'.format(c_filename, xml_filename))
-            '''
         # Find all structs defined in this file
         #xml_structs = self.root.findall("Struct[@file='{0}']".format(file_id))
         xml_structs = self.root.findall("Struct")

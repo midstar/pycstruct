@@ -223,6 +223,26 @@ class TestPyCStruct(unittest.TestCase):
     car_type.add('Bus', 7)
     car_type.add('Pickup', 12)
 
+    sedan_properties = pycstruct.StructDef(alignment = alignment)
+    sedan_properties.add('uint16', 'sedan_code')
+
+    station_wagon_properties = pycstruct.StructDef(alignment = alignment)
+    station_wagon_properties.add('int32', 'trunk_volume')
+
+    bus_properties = pycstruct.StructDef(alignment = alignment)
+    bus_properties.add('int32', 'number_of_passangers')
+    bus_properties.add('uint16', 'number_of_entries')
+    bus_properties.add('bool8', 'is_accordion_bus')
+
+    pickup_properties = pycstruct.StructDef(alignment = alignment)
+    pickup_properties.add('int32', 'truck_bed_volume')
+
+    type_specific_properties = pycstruct.StructDef(alignment = alignment, union = True)
+    type_specific_properties.add(sedan_properties, 'sedan')
+    type_specific_properties.add(station_wagon_properties, 'station_wagon')
+    type_specific_properties.add(bus_properties, 'bus')
+    type_specific_properties.add(pickup_properties, 'pickup')
+
     # gcc is setting the size of car_properties_s to
     # 4 bytes when no packing is added of some strange
     # reason.
@@ -241,6 +261,7 @@ class TestPyCStruct(unittest.TestCase):
     car.add('utf-8', 'registration_number', length=10)
     car.add(car_properties, 'properties')
     car.add(car_type, 'type')
+    car.add(type_specific_properties, 'type_properties')
 
     garage = pycstruct.StructDef(alignment = alignment)
     garage.add(car, 'cars', length=20)
@@ -279,6 +300,7 @@ class TestPyCStruct(unittest.TestCase):
     self.assertEqual(result['garage']['cars'][0]['properties']['registered'], 1)
     self.assertEqual(result['garage']['cars'][0]['properties']['over_3500_kg'], 0)
     self.assertEqual(result['garage']['cars'][0]['type'], 'Sedan')
+    self.assertEqual(result['garage']['cars'][0]['type_properties']['sedan']['sedan_code'], 20)
     self.assertEqual(result['garage']['cars'][0]['registration_number'], 'AHF432')
     self.assertEqual(result['garage']['cars'][0]['model'], 'Nissan Micra')
     self.assertEqual(result['garage']['cars'][1]['year'], 2005)
@@ -286,6 +308,9 @@ class TestPyCStruct(unittest.TestCase):
     self.assertEqual(result['garage']['cars'][1]['properties']['registered'], 1)
     self.assertEqual(result['garage']['cars'][1]['properties']['over_3500_kg'], 1)
     self.assertEqual(result['garage']['cars'][1]['type'], 'Bus')
+    self.assertEqual(result['garage']['cars'][1]['type_properties']['bus']['number_of_passangers'], 44)
+    self.assertEqual(result['garage']['cars'][1]['type_properties']['bus']['number_of_entries'], 3)
+    self.assertEqual(result['garage']['cars'][1]['type_properties']['bus']['is_accordion_bus'], False)
     self.assertEqual(result['garage']['cars'][1]['registration_number'], 'CCO544')
     self.assertEqual(result['garage']['cars'][1]['model'], 'Ford Focus')
     self.assertEqual(result['garage']['cars'][2]['year'], 1998)
@@ -293,6 +318,7 @@ class TestPyCStruct(unittest.TestCase):
     self.assertEqual(result['garage']['cars'][2]['properties']['registered'], 0)
     self.assertEqual(result['garage']['cars'][2]['properties']['over_3500_kg'], 0)
     self.assertEqual(result['garage']['cars'][2]['type'], 'Pickup')
+    self.assertEqual(result['garage']['cars'][2]['type_properties']['pickup']['truck_bed_volume'], 155)
     self.assertEqual(result['garage']['cars'][2]['registration_number'], 'HHT434')
     self.assertEqual(result['garage']['cars'][2]['model'], 'Volkswagen Golf')
 
