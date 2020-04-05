@@ -65,7 +65,6 @@ class _CastXmlParser():
         self.root = ET.parse(self._xml_filename).getroot()
 
         # Find all structs defined in this file
-        #xml_structs = self.root.findall("Struct[@file='{0}']".format(file_id))
         xml_structs = self.root.findall("Struct")
 
         # Create a new dict with metadata about the struct
