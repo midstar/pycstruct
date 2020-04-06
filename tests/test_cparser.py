@@ -62,6 +62,14 @@ class TestCParser(unittest.TestCase):
     structs = parser.parse()
     structdefs = parser._to_structdefs(structs, 'native')
 
+
+  @unittest.skipIf(True, 'temporary skipped')
+  def test_xml_parse_embedded(self):
+    _CastXmlParser = pycstruct.cparser._CastXmlParser
+    parser = _CastXmlParser(os.path.join(test_dir, 'embedded_struct.xml'))
+    structs = parser.parse()
+    structdefs = parser._to_structdefs(structs, 'native')
+
   @unittest.skipIf(shutil.which('castxml') == None, 'castxml is not installed')
   def test_run_castxml_real(self):
     _run_castxml = pycstruct.cparser._run_castxml

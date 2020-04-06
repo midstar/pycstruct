@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as ET
 import os, logging, pycstruct, subprocess, shutil, hashlib, tempfile
+import json # TODO Remove this later
 
 ###############################################################################
 # Global constants
@@ -59,45 +60,48 @@ class _CastXmlParser():
 
     def __init__(self, xml_filename):
         self._xml_filename = xml_filename
+        self._anonymous_count = 0
 
     def parse(self):
 
         self.root = ET.parse(self._xml_filename).getroot()
 
-        # Find all structs defined in this file
-        xml_structs = self.root.findall("Struct")
+        # Create a new dict with metadata about struct, bitstructs and unions
+        composite_types = {} # Keyed on id
+        for xml_item in self.root:
+            if xml_item.tag == 'Union':
+                is_union = True
+            elif xml_item.tag == 'Struct':
+                is_union = False
+            else:
+                continue # No composite type
 
-        # Create a new dict with metadata about the struct
-        structs = {} # Keyed on id
-        for xml_struct in xml_structs:
-            id = xml_struct.attrib['id']
-            name = xml_struct.attrib['name']
+            id = xml_item.attrib['id']
+            name = xml_item.attrib['name']
             if name == '':
                 # Does not have a name - check for TypeDef
                 name = self._get_typedef_name(id)
-            struct = {}
-            struct['name'] = name
-            struct['size'] = int(int(self._get_attrib(xml_struct, 'size', '0'))/8)
-            struct['align'] = int(int(self._get_attrib(xml_struct, 'align', '8'))/8)
-            struct['members_ids'] = self._get_attrib(xml_struct, 'members', '').split()
-            struct['members'] = []
-            struct['supported'] = True
-            struct['structdef'] = None
-            structs[id] = struct
+            composite_type = {}
+            composite_type['is_union'] = is_union
+            composite_type['name'] = name
+            composite_type['size'] = int(int(self._get_attrib(xml_item, 'size', '0'))/8)
+            composite_type['align'] = int(int(self._get_attrib(xml_item, 'align', '8'))/8)
+            composite_type['members_ids'] = self._get_attrib(xml_item, 'members', '').split()
+            composite_type['members'] = []
+            composite_type['supported'] = True
+            composite_type['structdef'] = None
+            composite_types[id] = composite_type
 
         # Figure out the member names and types of each struct
-        for id, struct in structs.items():
+        for id, struct in composite_types.items():
             for member_id in struct['members_ids']:
                 xml_member = self._get_elem_with_id(member_id)
                 if xml_member.tag != 'Field':
-                    logger.warning('Struct {0} has a member of type {1} which is not supported.\n  - Struct will be ignored.'.format(
-                        struct['name'], xml_member.tag))
-                    struct['supported'] = False
-                    break
+                    continue # Probably just a struct/union definition
                 member = {}
                 member['name'] = xml_member.attrib['name']
                 try:
-                    member_type = self._get_type(xml_member.attrib['type'], structs)
+                    member_type = self._get_type(xml_member.attrib['type'], composite_types)
                     member['type'] = member_type['type_name']
                     member['length'] = member_type['length']
                     member['reference'] = member_type['reference']
@@ -108,7 +112,7 @@ class _CastXmlParser():
                     break        
                 struct['members'].append(member)
 
-        return structs
+        return composite_types
 
     def _to_structdefs(self, structs, byteorder):
         result = {}
@@ -126,13 +130,13 @@ class _CastXmlParser():
         if struct['structdef'] != None:
             return struct['structdef'] # Parsed before
 
-        structdef = pycstruct.StructDef(byteorder, struct['align'])
+        structdef = pycstruct.StructDef(byteorder, struct['align'], union = struct['is_union'])
         for member in struct['members']:
-            if member['type'] == 'struct':
+            if member['type'] == 'struct' or member['type'] == 'union':
                 other_struct = structs[member['reference']]
                 if other_struct['supported'] == False:
-                    raise Exception('Member {0} is of type struct {1} that is not supported'.format(
-                        member['name'], other_struct['name']))
+                    raise Exception('Member {0} is of type {1} {2} that is not supported'.format(
+                        member['name'], member['type'], other_struct['name']))
                 other_structdef = self._to_structdef(other_struct, structs, byteorder)
                 structdef.add(other_structdef,member['name'], member['length'])
             else: 
@@ -165,7 +169,7 @@ class _CastXmlParser():
         return elem
 
     def _get_typedef_name(self, type_id):
-        ''' Find ut the typedef name of a type which do not have a name '''
+        ''' Find out the typedef name of a type which do not have a name '''
 
         # First check if there is a connected ElaboratedType element
         try:
@@ -174,7 +178,14 @@ class _CastXmlParser():
             pass
 
         # Now find the TypeDef element connected to the type or ElaboratedType element
-        return self._get_elem_with_attrib('Typedef', 'type', type_id).attrib['name']
+        name = ''
+        try:
+            name = self._get_elem_with_attrib('Typedef', 'type', type_id).attrib['name']
+        except:
+            name = 'anonymous_{}'.format(self._anonymous_count)
+            self._anonymous_count
+        return name
+
 
     def _fundamental_type_to_pcstruct_type(self, elem, length):
         ''' Map the fundamental type to pycstruct type '''
@@ -219,6 +230,9 @@ class _CastXmlParser():
             member_type['type_name'] = 'uint{0}'.format(elem.attrib['size'])
         elif elem.tag == 'Struct':
             member_type['type_name'] = 'struct'
+            member_type['reference'] = elem.attrib['id']
+        elif elem.tag == 'Union':
+            member_type['type_name'] = 'union'
             member_type['reference'] = elem.attrib['id']
         else:
             raise Exception('Member type {0} is not supported.'.format(elem.tag))
