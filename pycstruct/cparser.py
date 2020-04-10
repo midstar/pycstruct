@@ -54,18 +54,23 @@ def _listify(list_or_str):
 # CastXMLParser class (internal)
 
 class _CastXmlParser():
-    ''' Parses XML:s produced by CastXML and creates a new dictionary format
-        that describes all the types supported by pycstruct
+    ''' Parses XML:s produced by CastXML and creates a new dictionary where
+        each key represent a type name of a supported pycstruct data type
+        and the value is the actual pycstruct instance.
     '''
 
     def __init__(self, xml_filename):
         self._xml_filename = xml_filename
         self._anonymous_count = 0
 
-    def parse(self):
+    def parse(self, byteorder = 'native'):
 
         self.root = ET.parse(self._xml_filename).getroot()
 
+        composite_types = self._parse_composite_types()
+        return self._to_structdefs(composite_types, byteorder)
+
+    def _parse_composite_types(self):
         # Create a new dict with metadata about struct, bitstructs and unions
         composite_types = {} # Keyed on id
         for xml_item in self.root:
@@ -92,9 +97,9 @@ class _CastXmlParser():
             composite_type['structdef'] = None
             composite_types[id] = composite_type
 
-        # Figure out the member names and types of each struct
-        for id, struct in composite_types.items():
-            for member_id in struct['members_ids']:
+        # Figure out the member names and types of each composite type
+        for id, composite_type in composite_types.items():
+            for member_id in composite_type['members_ids']:
                 xml_member = self._get_elem_with_id(member_id)
                 if xml_member.tag != 'Field':
                     continue # Probably just a struct/union definition
@@ -106,11 +111,11 @@ class _CastXmlParser():
                     member['length'] = member_type['length']
                     member['reference'] = member_type['reference']
                 except Exception as e:
-                    logger.warning('Struct {0} has a member {1} could not be handled:\n  - {2}\n  - Struct will be ignored.'.format(
-                        struct['name'], member['name'], e.args[0]))
-                    struct['supported'] = False
+                    logger.warning('{0} has a member {1} could not be handled:\n  - {2}\n  - Composite type will be ignored.'.format(
+                        composite_type['name'], member['name'], e.args[0]))
+                    composite_type['supported'] = False
                     break        
-                struct['members'].append(member)
+                composite_type['members'].append(member)
 
         return composite_types
 
@@ -261,10 +266,9 @@ def parse_c(input_files, byteorder = 'native',
 
     # Parse XML
     castxml_parser = _CastXmlParser(xml_path)
-    structs = castxml_parser.parse() 
-    structdefs = castxml_parser._to_structdefs(structs, byteorder)
+    defs = castxml_parser.parse() 
 
-    return structdefs
+    return defs
 
 
 
