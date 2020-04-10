@@ -59,7 +59,8 @@ class TestCParser(unittest.TestCase):
   def test_xml_parse(self):
     _CastXmlParser = pycstruct.cparser._CastXmlParser
     parser = _CastXmlParser(os.path.join(test_dir, 'savestruct.xml'))
-    structs = parser.parse('native')
+    defs = parser.parse('native')
+    self.assertTrue('Data' in defs)
 
 
   @unittest.skipIf(True, 'temporary skipped')

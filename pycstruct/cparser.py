@@ -68,7 +68,7 @@ class _CastXmlParser():
         self.root = ET.parse(self._xml_filename).getroot()
 
         composite_types = self._parse_composite_types()
-        return self._to_structdefs(composite_types, byteorder)
+        return self._to_defs(composite_types, byteorder)
 
     def _parse_composite_types(self):
         # Create a new dict with metadata about struct, bitstructs and unions
@@ -94,7 +94,7 @@ class _CastXmlParser():
             composite_type['members_ids'] = self._get_attrib(xml_item, 'members', '').split()
             composite_type['members'] = []
             composite_type['supported'] = True
-            composite_type['structdef'] = None
+            composite_type['def'] = None
             composite_types[id] = composite_type
 
         # Figure out the member names and types of each composite type
@@ -119,40 +119,40 @@ class _CastXmlParser():
 
         return composite_types
 
-    def _to_structdefs(self, structs, byteorder):
+    def _to_defs(self, composite_types, byteorder):
         result = {}
-        for _, struct in structs.items():
-            if struct['supported']:
+        for _, composite_type in composite_types.items():
+            if composite_type['supported']:
                 try:
-                    result[struct['name']] = self._to_structdef(struct, structs, byteorder)
+                    result[composite_type['name']] = self._to_def(composite_type, composite_types, byteorder)
                 except Exception as e:
-                    logger.warning('Unable to convert struct {0} to pycstruct defintion:\n  - {1}\n  - Struct will be ignored.'.format(
-                        struct['name'], e.args[0]))
-                    struct['supported'] = False                   
+                    logger.warning('Unable to convert {0} to pycstruct defintion:\n  - {1}\n  - Type will be ignored.'.format(
+                        composite_type['name'], e.args[0]))
+                    composite_type['supported'] = False                   
         return result
 
-    def _to_structdef(self, struct, structs, byteorder):
-        if struct['structdef'] != None:
-            return struct['structdef'] # Parsed before
+    def _to_def(self, composite_type, composite_types, byteorder):
+        if composite_type['def'] != None:
+            return composite_type['def'] # Parsed before
 
-        structdef = pycstruct.StructDef(byteorder, struct['align'], union = struct['is_union'])
-        for member in struct['members']:
+        structdef = pycstruct.StructDef(byteorder, composite_type['align'], union = composite_type['is_union'])
+        for member in composite_type['members']:
             if member['type'] == 'struct' or member['type'] == 'union':
-                other_struct = structs[member['reference']]
+                other_struct = composite_types[member['reference']]
                 if other_struct['supported'] == False:
                     raise Exception('Member {0} is of type {1} {2} that is not supported'.format(
                         member['name'], member['type'], other_struct['name']))
-                other_structdef = self._to_structdef(other_struct, structs, byteorder)
+                other_structdef = self._to_def(other_struct, composite_types, byteorder)
                 structdef.add(other_structdef,member['name'], member['length'])
             else: 
                 structdef.add(member['type'],member['name'], member['length'])
 
         # Sanity check size:
-        if struct['size'] != structdef.size():
+        if composite_type['size'] != structdef.size():
             logger.warning('{0} StructDef size, {1}, does match indicated size {2}'.format(
-                struct['name'], structdef.size(), struct['size']))
+                composite_type['name'], structdef.size(), composite_type['size']))
 
-        struct['structdef'] = structdef
+        composite_type['def'] = structdef
         return structdef       
 
     def _get_attrib(self, elem, attrib, default):
