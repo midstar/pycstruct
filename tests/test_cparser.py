@@ -63,7 +63,7 @@ class TestCParser(unittest.TestCase):
     self.assertTrue('Data' in defs)
 
 
-  @unittest.skipIf(True, 'temporary skipped')
+  #@unittest.skipIf(True, 'temporary skipped')
   def test_xml_parse_embedded(self):
     _CastXmlParser = pycstruct.cparser._CastXmlParser
     parser = _CastXmlParser(os.path.join(test_dir, 'embedded_struct.xml'))
