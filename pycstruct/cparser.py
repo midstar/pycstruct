@@ -92,7 +92,7 @@ class _CastXmlParser():
         for xml_struct_or_bitfield in xml_structs_and_bitfields:
             id = xml_union.attrib['id']
             if self._is_bitfield(xml_struct_or_bitfield):
-                print('bifield') # TBD
+                supported_types[id] = self._parse_bitfield(xml_struct_or_bitfield)
             else:
                 supported_types[id] = self._parse_struct(xml_struct_or_bitfield)
 
@@ -148,24 +148,25 @@ class _CastXmlParser():
         bitfield['type'] = 'bitfield'
         self._set_common_meta(xml_bitfield, bitfield)
         bitfield['members'] = []
-        '''
-        for member_id in self._get_attrib(xml_bitfield, 'members', '').split():
-            xml_member = self._get_elem_with_id(member_id)
-            if xml_member.tag != 'Field':
-                continue # Probably just a struct/union definition
+        bitfield['members'] = []
+        for field in self._get_fields(xml_bitfield):
             member = {}
-            member['name'] = xml_member.attrib['name']
-            try:
-                member_type = self._get_type(xml_member.attrib['type'])
-                member['type'] = member_type['type_name']
-                member['length'] = member_type['length']
-                member['reference'] = member_type['reference']
-            except Exception as e:
-                logger.warning('{0} has a member {1} could not be handled:\n  - {2}\n  - Composite type will be ignored.'.format(
-                    dict_output['name'], member['name'], e.args[0]))
-                dict_output['supported'] = False
-                break
-            dict_output['members'].append(member)   '''  
+            member['name'] = field.attrib['name']
+            member['bits'] = field.attrib['bits']
+            member['signed'] = True
+
+            # Figure out if it is signed
+            type_elem = self._get_basic_type_element(field.attrib['type'])
+            if type_elem.tag == 'FundamentalType':
+                # Figure out sign
+                if 'unsigned' in type_elem.attrib['name']:
+                    member['signed'] = False
+            else:
+                logger.warn('Unable to parse sign of bitfield {} member {}. Will be signed.'.format(
+                        bitfield['name'], member['name']))
+
+            bitfield['members'].append(member)  
+  
         return bitfield   
 
     def _set_common_meta(self, xml_input, dict_output):
