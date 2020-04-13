@@ -123,7 +123,6 @@ class _CastXmlParser():
                     id = member['reference']
                     name = supported_types[id]['name']
                     member['reference'] = name
-                    print('{}: Set id {} to {}'.format(member['name'], id, name))
 
         return type_meta
 
@@ -367,6 +366,10 @@ class _TypeMetaParser():
                     instance.add(other_instance, member['name'], member['length'])
                 else: 
                     instance.add(member['type'],member['name'], member['length'])
+        else:
+            # Not supported
+            meta['supported'] = False
+            return None
 
         # Sanity check size:
         if meta['size'] != instance.size():
@@ -403,6 +406,7 @@ def parse_c(input_files, byteorder = 'native',
     # Generate pycstruct instances
     type_meta_parser = _TypeMetaParser(type_meta, byteorder)
     pycstruct_instances = type_meta_parser.parse() 
+    _print(str(pycstruct_instances))
 
     return pycstruct_instances
 
