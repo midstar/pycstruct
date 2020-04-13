@@ -344,7 +344,7 @@ class _TypeMetaParser():
 
             Returns the instance.
         '''
-        if self._instances[name] != None:
+        if name in self._instances:
             return self._instances[name] # Parsed before
         
         meta = self._type_meta[name]
@@ -376,29 +376,6 @@ class _TypeMetaParser():
         self._instances[name] = instance
         return instance  
 
-    def _to_def(self, composite_type):
-        if composite_type['def'] != None:
-            return composite_type['def'] # Parsed before
-
-        structdef = pycstruct.StructDef(byteorder, composite_type['align'], union = composite_type['is_union'])
-        for member in composite_type['members']:
-            if member['type'] == 'struct' or member['type'] == 'union':
-                other_struct = composite_types[member['reference']]
-                if other_struct['supported'] == False:
-                    raise Exception('Member {0} is of type {1} {2} that is not supported'.format(
-                        member['name'], member['type'], other_struct['name']))
-                other_structdef = self._to_def(other_struct, composite_types, byteorder)
-                structdef.add(other_structdef,member['name'], member['length'])
-            else: 
-                structdef.add(member['type'],member['name'], member['length'])
-
-        # Sanity check size:
-        if composite_type['size'] != structdef.size():
-            logger.warning('{0} StructDef size, {1}, does match indicated size {2}'.format(
-                composite_type['name'], structdef.size(), composite_type['size']))
-
-        composite_type['def'] = structdef
-        return structdef    
   
 ###############################################################################
 # Public functions
