@@ -394,7 +394,7 @@ class _TypeMetaParser():
         # Sanity check size:
         if meta['size'] != instance.size():
             logger.warning('{0} size, {1}, does match indicated size {2}'.format(
-                meta['name'], instance.size(), instance['size']))
+                meta['name'], instance.size(), meta['size']))
 
         self._instances[name] = instance
         return instance  
