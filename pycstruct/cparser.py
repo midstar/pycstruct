@@ -75,7 +75,7 @@ class _CastXmlParser():
         self._xml_filename = xml_filename
         self._anonymous_count = 0
 
-    def parse(self, byteorder = 'native'):
+    def parse(self):
 
         self.root = ET.parse(self._xml_filename).getroot()
 
@@ -102,7 +102,6 @@ class _CastXmlParser():
             else:
                 supported_types[id] = self._parse_struct(xml_struct_or_bitfield)
 
-        _save(supported_types, 'supported_types.json')
         # Change mapping from id to name
         type_meta = {}
         for id, type in supported_types.items():
@@ -174,7 +173,6 @@ class _CastXmlParser():
         bitfield = {}
         bitfield['type'] = 'bitfield'
         self._set_common_meta(xml_bitfield, bitfield)
-        bitfield['members'] = []
         bitfield['members'] = []
         for field in self._get_fields(xml_bitfield):
             member = {}

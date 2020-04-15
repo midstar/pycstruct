@@ -59,15 +59,54 @@ class TestCParser(unittest.TestCase):
   def test_xml_parse(self):
     _CastXmlParser = pycstruct.cparser._CastXmlParser
     parser = _CastXmlParser(os.path.join(test_dir, 'savestruct.xml'))
-    defs = parser.parse('native')
-    self.assertTrue('Data' in defs)
+    meta = parser.parse()
+    self.assertTrue('Data' in meta)
+    self.assertTrue(meta['Data']['type'] == 'struct')
+
+    type_meta_parser = pycstruct.cparser._TypeMetaParser(meta, 'native')
+    instance = type_meta_parser.parse() 
+    self.assertTrue('Data' in instance)
+    self.assertTrue(isinstance(instance['Data'], pycstruct.StructDef))
 
 
   #@unittest.skipIf(True, 'temporary skipped')
   def test_xml_parse_embedded(self):
     _CastXmlParser = pycstruct.cparser._CastXmlParser
     parser = _CastXmlParser(os.path.join(test_dir, 'embedded_struct.xml'))
-    defs = parser.parse('native')
+    meta = parser.parse()
+    self.assertTrue('car_type' in meta)
+    self.assertTrue(meta['car_type']['type'] == 'enum')
+    self.assertTrue('sedan_properties_s' in meta)
+    self.assertTrue(meta['sedan_properties_s']['type'] == 'struct')
+    self.assertTrue('station_wagon_properties_s' in meta)
+    self.assertTrue(meta['station_wagon_properties_s']['type'] == 'struct')
+    self.assertTrue('bus_properties_s' in meta)
+    self.assertTrue(meta['bus_properties_s']['type'] == 'struct')
+    self.assertTrue('pickup_properties_s' in meta)
+    self.assertTrue(meta['pickup_properties_s']['type'] == 'struct')
+    self.assertTrue('type_specific_properties_u' in meta)
+    self.assertTrue(meta['type_specific_properties_u']['type'] == 'union')
+    self.assertTrue('car_properties_s' in meta)
+    self.assertTrue(meta['car_properties_s']['type'] == 'bitfield')
+    self.assertTrue('car_s' in meta)
+    self.assertTrue(meta['car_s']['type'] == 'struct')
+    self.assertTrue('garage_s' in meta)
+    self.assertTrue(meta['garage_s']['type'] == 'struct')
+    self.assertTrue('house_s' in meta)
+    self.assertTrue(meta['house_s']['type'] == 'struct')
+
+    type_meta_parser = pycstruct.cparser._TypeMetaParser(meta, 'native')
+    instance = type_meta_parser.parse() 
+    self.assertTrue('car_type' in instance)
+    self.assertTrue(isinstance(instance['car_type'], pycstruct.EnumDef))
+    self.assertTrue('type_specific_properties_u' in instance)
+    self.assertTrue(isinstance(instance['type_specific_properties_u'], pycstruct.StructDef))
+    self.assertEqual(instance['type_specific_properties_u']._type_name(), 'union')
+    self.assertTrue('car_properties_s' in instance)
+    self.assertTrue(isinstance(instance['car_properties_s'], pycstruct.BitfieldDef))
+    self.assertTrue('house_s' in instance)
+    self.assertTrue(isinstance(instance['house_s'], pycstruct.StructDef))
+    self.assertEqual(instance['house_s']._type_name(), 'struct')
 
   @unittest.skipIf(shutil.which('castxml') == None, 'castxml is not installed')
   def test_run_castxml_real(self):
