@@ -152,7 +152,7 @@ class _CastXmlParser():
         for xml_member in xml_enum.findall('EnumValue'):
             member = {}
             member['name'] = xml_member.attrib['name']
-            member['value'] = xml_member.attrib['init']
+            member['value'] = int(xml_member.attrib['init'])
             enum['members'].append(member)
         return enum    
 
@@ -179,7 +179,7 @@ class _CastXmlParser():
         for field in self._get_fields(xml_bitfield):
             member = {}
             member['name'] = field.attrib['name']
-            member['bits'] = field.attrib['bits']
+            member['bits'] = int(field.attrib['bits'])
             member['signed'] = True
 
             # Figure out if it is signed
@@ -310,6 +310,9 @@ class _CastXmlParser():
         elif elem.tag == 'Union':
             member_type['type_name'] = 'union'
             member_type['reference'] = elem.attrib['id']
+        elif elem.tag == 'Enumeration':
+            member_type['type_name'] = 'enum'
+            member_type['reference'] = elem.attrib['id']
         else:
             raise Exception('Member type {0} is not supported.'.format(elem.tag))
 
@@ -368,8 +371,23 @@ class _TypeMetaParser():
                     instance.add(other_instance, member['name'], member['length'])
                 else: 
                     instance.add(member['type'],member['name'], member['length'])
+        
+        # Enum
+        elif meta['type'] == 'enum':
+            instance = pycstruct.EnumDef(self._byteorder, meta['size'])
+            for member in meta['members']:
+                instance.add(member['name'], member['value'])
+        
+        # Bitfield
+        elif meta['type'] == 'bitfield':
+            instance = pycstruct.BitfieldDef(self._byteorder, meta['size'])
+            for member in meta['members']:
+                instance.add(member['name'], member['bits'], member['signed'])
+
+        # Not supported
         else:
-            # Not supported
+            logger.warning('Unable to create instance for {} (type {}). Not supported.'.format(
+                meta['name'], meta['type']))
             meta['supported'] = False
             return None
 
