@@ -102,6 +102,7 @@ class _CastXmlParser():
             else:
                 supported_types[id] = self._parse_struct(xml_struct_or_bitfield)
 
+        _save(supported_types, 'supported_types.json')
         # Change mapping from id to name
         type_meta = {}
         for id, type in supported_types.items():
@@ -197,6 +198,7 @@ class _CastXmlParser():
 
     def _set_common_meta(self, xml_input, dict_output):
         ''' Set common metadata available for all types '''
+        id = xml_input.attrib['id']
         name = xml_input.attrib['name']
         if name == '':
             # Does not have a name - check for TypeDef
@@ -406,7 +408,6 @@ def parse_c(input_files, byteorder = 'native',
     # Generate pycstruct instances
     type_meta_parser = _TypeMetaParser(type_meta, byteorder)
     pycstruct_instances = type_meta_parser.parse() 
-    _print(str(pycstruct_instances))
 
     return pycstruct_instances
 
