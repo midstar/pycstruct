@@ -380,7 +380,7 @@ class _TypeMetaParser():
         
         # Bitfield
         elif meta['type'] == 'bitfield':
-            instance = pycstruct.BitfieldDef(self._byteorder, meta['size'])
+            instance = pycstruct.BitfieldDef(self._byteorder, meta['size'] + 2)
             for member in meta['members']:
                 instance.add(member['name'], member['bits'], member['signed'])
 
