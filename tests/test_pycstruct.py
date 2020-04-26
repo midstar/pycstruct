@@ -89,7 +89,7 @@ def check_embedded_struct(t, structdef_instance, filename):
     t.assertEqual(result['nbr_of_levels'], 5)
     t.assertEqual(result['garage']['nbr_registered_parkings'], 3)
     t.assertEqual(result['garage']['cars'][0]['year'], 2011)
-    t.assertEqual(result['garage']['cars'][0]['properties']['class'], 0)
+    t.assertEqual(result['garage']['cars'][0]['properties']['env_class'], 0)
     t.assertEqual(result['garage']['cars'][0]['properties']['registered'], 1)
     t.assertEqual(result['garage']['cars'][0]['properties']['over_3500_kg'], 0)
     t.assertEqual(result['garage']['cars'][0]['type'], 'Sedan')
@@ -97,7 +97,7 @@ def check_embedded_struct(t, structdef_instance, filename):
     t.assertEqual(result['garage']['cars'][0]['registration_number'], 'AHF432')
     t.assertEqual(result['garage']['cars'][0]['model'], 'Nissan Micra')
     t.assertEqual(result['garage']['cars'][1]['year'], 2005)
-    t.assertEqual(result['garage']['cars'][1]['properties']['class'], 1)
+    t.assertEqual(result['garage']['cars'][1]['properties']['env_class'], 1)
     t.assertEqual(result['garage']['cars'][1]['properties']['registered'], 1)
     t.assertEqual(result['garage']['cars'][1]['properties']['over_3500_kg'], 1)
     t.assertEqual(result['garage']['cars'][1]['type'], 'Bus')
@@ -107,7 +107,7 @@ def check_embedded_struct(t, structdef_instance, filename):
     t.assertEqual(result['garage']['cars'][1]['registration_number'], 'CCO544')
     t.assertEqual(result['garage']['cars'][1]['model'], 'Ford Focus')
     t.assertEqual(result['garage']['cars'][2]['year'], 1998)
-    t.assertEqual(result['garage']['cars'][2]['properties']['class'], 3)
+    t.assertEqual(result['garage']['cars'][2]['properties']['env_class'], 3)
     t.assertEqual(result['garage']['cars'][2]['properties']['registered'], 0)
     t.assertEqual(result['garage']['cars'][2]['properties']['over_3500_kg'], 0)
     t.assertEqual(result['garage']['cars'][2]['type'], 'Pickup')
@@ -310,7 +310,7 @@ class TestPyCStruct(unittest.TestCase):
     if alignment > 1:
       size = 4
     car_properties = pycstruct.BitfieldDef(size = size)
-    car_properties.add('class', 3)
+    car_properties.add('env_class', 3)
     car_properties.add('registered', 1)
     car_properties.add('over_3500_kg', 1)
 

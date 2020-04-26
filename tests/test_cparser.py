@@ -110,7 +110,7 @@ class TestCParser(unittest.TestCase):
     self.assertTrue(isinstance(instance['house_s'], pycstruct.StructDef))
     self.assertEqual(instance['house_s']._type_name(), 'struct')
 
-    #test_pycstruct.check_embedded_struct(self, instance['house_s'], 'embedded_struct.dat')
+    test_pycstruct.check_embedded_struct(self, instance['house_s'], 'embedded_struct.dat')
 
   @unittest.skipIf(shutil.which('castxml') == None, 'castxml is not installed')
   def test_run_castxml_real(self):
