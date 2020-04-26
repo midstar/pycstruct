@@ -70,6 +70,19 @@ class TestCParser(unittest.TestCase):
 
     test_pycstruct.check_struct(self, instance['Data'], 'struct_little.dat')
 
+  def test_xml_parse_nopack(self):
+    _CastXmlParser = pycstruct.cparser._CastXmlParser
+    parser = _CastXmlParser(os.path.join(test_dir, 'savestruct_nopack.xml'))
+    meta = parser.parse()
+    self.assertTrue('Data' in meta)
+    self.assertTrue(meta['Data']['type'] == 'struct')
+
+    type_meta_parser = pycstruct.cparser._TypeMetaParser(meta, 'little')
+    instance = type_meta_parser.parse() 
+    self.assertTrue('Data' in instance)
+    self.assertTrue(isinstance(instance['Data'], pycstruct.StructDef))
+
+    test_pycstruct.check_struct(self, instance['Data'], 'struct_little_nopack.dat')
 
   #@unittest.skipIf(True, 'temporary skipped')
   def test_xml_parse_embedded(self):
