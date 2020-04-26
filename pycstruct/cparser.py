@@ -1,17 +1,6 @@
 import xml.etree.ElementTree as ET
 import os, logging, pycstruct, subprocess, shutil, hashlib, tempfile
 
-# Temporary - remove this later
-import json # TODO Remove this later
-def _print(a_dict):
-    print(json.dumps(a_dict, indent=2))
-def _save(a_dict, filename):
-    json_str = json.dumps(a_dict, indent=2)
-    with open(filename, 'w') as f:
-        f.write(json_str)
-    
-
-
 
 ###############################################################################
 # Global constants

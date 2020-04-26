@@ -1,4 +1,4 @@
-import unittest, os, sys, shutil, tempfile
+import unittest, os, sys, shutil, tempfile, test_pycstruct
 
 test_dir = os.path.dirname(os.path.realpath(__file__))
 proj_dir = os.path.dirname(test_dir)
@@ -63,10 +63,12 @@ class TestCParser(unittest.TestCase):
     self.assertTrue('Data' in meta)
     self.assertTrue(meta['Data']['type'] == 'struct')
 
-    type_meta_parser = pycstruct.cparser._TypeMetaParser(meta, 'native')
+    type_meta_parser = pycstruct.cparser._TypeMetaParser(meta, 'little')
     instance = type_meta_parser.parse() 
     self.assertTrue('Data' in instance)
     self.assertTrue(isinstance(instance['Data'], pycstruct.StructDef))
+
+    test_pycstruct.check_struct(self, instance['Data'], 'struct_little.dat')
 
 
   #@unittest.skipIf(True, 'temporary skipped')
@@ -107,6 +109,8 @@ class TestCParser(unittest.TestCase):
     self.assertTrue('house_s' in instance)
     self.assertTrue(isinstance(instance['house_s'], pycstruct.StructDef))
     self.assertEqual(instance['house_s']._type_name(), 'struct')
+
+    #test_pycstruct.check_embedded_struct(self, instance['house_s'], 'embedded_struct.dat')
 
   @unittest.skipIf(shutil.which('castxml') == None, 'castxml is not installed')
   def test_run_castxml_real(self):
