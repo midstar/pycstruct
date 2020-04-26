@@ -110,7 +110,7 @@ class TestCParser(unittest.TestCase):
     self.assertTrue('house_s' in meta)
     self.assertTrue(meta['house_s']['type'] == 'struct')
 
-    type_meta_parser = pycstruct.cparser._TypeMetaParser(meta, 'native')
+    type_meta_parser = pycstruct.cparser._TypeMetaParser(meta, 'little')
     instance = type_meta_parser.parse() 
     self.assertTrue('car_type' in instance)
     self.assertTrue(isinstance(instance['car_type'], pycstruct.EnumDef))
@@ -124,6 +124,19 @@ class TestCParser(unittest.TestCase):
     self.assertEqual(instance['house_s']._type_name(), 'struct')
 
     test_pycstruct.check_embedded_struct(self, instance['house_s'], 'embedded_struct.dat')
+
+
+  def test_xml_parse_embedded_nopack(self):
+    _CastXmlParser = pycstruct.cparser._CastXmlParser
+    parser = _CastXmlParser(os.path.join(test_dir, 'embedded_struct_nopack.xml'))
+    meta = parser.parse()
+    self.assertTrue('car_type' in meta)
+
+    type_meta_parser = pycstruct.cparser._TypeMetaParser(meta, 'little')
+    instance = type_meta_parser.parse() 
+    self.assertTrue('car_type' in instance)
+
+    test_pycstruct.check_embedded_struct(self, instance['house_s'], 'embedded_struct_nopack.dat')
 
   @unittest.skipIf(shutil.which('castxml') == None, 'castxml is not installed')
   def test_run_castxml_real(self):
