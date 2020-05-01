@@ -156,6 +156,20 @@ Now myParentStruct includes myChildStruct.
 Note that you can also make an array of child structs by setting the length
 argument when adding the element.
 
+Unions
+------
+
+Unions are defined using the :py:meth:`pycstruct.StructDef` class, but the
+union argument in the construct shall be set to True.
+
+When deserializing a binary for a union, pycstruct tries to generate 
+a dictionary for each member. If any of the members fails due to formatting
+errors these members will be ignored.
+
+When serializing a dictionary into a binary pcstruct will just pick the
+first member it finds in the dictionary. Therefore you should only 
+define the member that you which to serialize in your dictionary.
+
 Bitfields
 ---------
 
