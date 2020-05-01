@@ -24,7 +24,7 @@ class TestCParser(unittest.TestCase):
     self.assertRaises(Exception, _run_castxml, input_files, 'out.xml', castxml_cmd='echo')
 
     # This one will pass - fake output
-    xml_filename = _get_hash(input_files)
+    _ = _get_hash(input_files)
 
 
 
@@ -87,7 +87,9 @@ class TestCParser(unittest.TestCase):
   def test_xml_parse_special_cases(self):
     _CastXmlParser = pycstruct.cparser._CastXmlParser
     parser = _CastXmlParser(os.path.join(test_dir, 'special_cases.xml'))
-    meta = parser.parse()
+    print("\n\n>> Below test will result in a Warning. This is expected!\n")
+    _ = parser.parse()
+    print("\n>> End of expected warning.\n")
 
 
   #@unittest.skipIf(True, 'temporary skipped')
@@ -164,11 +166,11 @@ class TestCParser(unittest.TestCase):
     self.assertRaises(Exception, _run_castxml, input_files, output_file, castxml_extra_args=['--invalid'])
 
   @unittest.skipIf(shutil.which('castxml') == None, 'castxml is not installed')
-  def test_run_parse_c_real(self):
+  def test_run_parse_file_real(self):
     input_file = os.path.join(test_dir, 'savestruct.c')
 
     # Use default cache
-    result = pycstruct.parse_c(input_file)
+    result = pycstruct.parse_file(input_file)
     self.assertTrue('Data' in result)
 
     xml_filename = pycstruct.cparser._get_hash(
@@ -178,13 +180,13 @@ class TestCParser(unittest.TestCase):
     os.remove(xml_path)
 
     # Use custom cache path
-    result = pycstruct.parse_c(input_file, cache_path='.')
+    result = pycstruct.parse_file(input_file, cache_path='.')
     self.assertTrue('Data' in result)  
     self.assertTrue(os.path.isfile(xml_filename))
     first_timestamp = os.path.getmtime(xml_filename)
 
     # Re-run using cache path
-    result = pycstruct.parse_c(input_file, cache_path='.', use_cached = True)
+    result = pycstruct.parse_file(input_file, cache_path='.', use_cached = True)
     self.assertTrue('Data' in result)  
     self.assertTrue(os.path.isfile(xml_filename))
     second_timestamp = os.path.getmtime(xml_filename)
@@ -193,7 +195,7 @@ class TestCParser(unittest.TestCase):
     self.assertEqual(first_timestamp, second_timestamp)
 
     # Re-run again not using cache path
-    result = pycstruct.parse_c(input_file, cache_path='.', use_cached = False)
+    result = pycstruct.parse_file(input_file, cache_path='.', use_cached = False)
     self.assertTrue('Data' in result)  
     self.assertTrue(os.path.isfile(xml_filename))
     third_timestamp = os.path.getmtime(xml_filename)
@@ -203,6 +205,23 @@ class TestCParser(unittest.TestCase):
 
     os.remove(xml_filename)
   
+  @unittest.skipIf(shutil.which('castxml') == None, 'castxml is not installed')
+  def test_run_parse_str_real(self):
+    c_str = '''
+    struct a_struct {
+      int member_a;
+      int member_b;
+    };
+    union a_union {
+      int umember_a;
+      int umember_b;
+    };
+    '''
+
+    result = pycstruct.parse_str(c_str)
+    self.assertTrue('a_struct' in result)
+    self.assertTrue('a_union' in result)
+
 
 if __name__ == '__main__':
   unittest.main()

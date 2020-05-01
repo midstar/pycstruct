@@ -390,7 +390,7 @@ class _TypeMetaParser():
 ###############################################################################
 # Public functions
 
-def parse_c(input_files, byteorder = 'native',  
+def parse_file(input_files, byteorder = 'native',  
             castxml_cmd = 'castxml', castxml_extra_args = [],
             cache_path = '', use_cached = False):
     input_files = _listify(input_files)
@@ -416,6 +416,22 @@ def parse_c(input_files, byteorder = 'native',
 
     return pycstruct_instances
 
+def parse_str(str, byteorder = 'native',  
+            castxml_cmd = 'castxml', castxml_extra_args = [],
+            cache_path = '', use_cached = False):
+
+    if cache_path == '':
+        # Use temporary path to store xml
+        cache_path = tempfile.gettempdir()
+
+    c_filename = _get_hash([str]) + '.c'
+    c_path = os.path.join(cache_path, c_filename)
+
+    with open(c_path, 'w') as file:
+        file.write(str)
+    
+    return parse_file(c_path, byteorder, castxml_cmd, 
+                      castxml_extra_args, cache_path, use_cached)
 
 
         
