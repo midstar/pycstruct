@@ -1,7 +1,19 @@
+#ifndef NO_PACK
+
 /**
  * This code assures no padding will be performed
  */
 #pragma pack(1)
+
+const char *out_file_little = "struct_little.dat";
+const char *out_file_big    = "struct_big.dat";
+
+#else
+
+const char *out_file_little = "struct_little_nopack.dat";
+const char *out_file_big    = "struct_big_nopack.dat";
+
+#endif // NO_PACK
 
 #include <stdio.h>
 #include <string.h>
@@ -87,7 +99,7 @@ typedef struct {
    char utf8_no_term[4];
 } Data;
 
-void main() {
+int main() {
    Data d;
    memset(&d, 0, sizeof(Data));
 
@@ -133,8 +145,8 @@ void main() {
    d.utf8_no_term[2] = 'C';
    d.utf8_no_term[3] = 'D';
 
-   printf("Saving struct_little.dat\n");
-   FILE *f = fopen("struct_little.dat", "w");
+   printf("Saving %s\n", out_file_little);
+   FILE *f = fopen(out_file_little, "w");
    fwrite(&d, sizeof(Data), 1, f);
    fclose(f);
 
@@ -168,9 +180,10 @@ void main() {
    for (int i=0 ; i < 5; i++)
       SWAP(d.int32_array[i]);
 
-   printf("Saving struct_big.dat\n");
-   f = fopen("struct_big.dat", "w");
+   printf("Saving %s\n", out_file_big);
+   f = fopen(out_file_big, "w");
    fwrite(&d, sizeof(Data), 1, f);
    fclose(f);
  
+   return 0;
 }

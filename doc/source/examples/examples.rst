@@ -78,3 +78,49 @@ To print the model number of the first car:
 
     my_house = house.deserialize(databuffer)
     print(my_house['garage']['cars'][0]['model'])
+
+
+Parsing source code
+-------------------
+
+Assume the C code listed in the first example is named
+simple_example.c. Then you could parse the source
+code instead of manually creating the definitions:
+
+.. code-block:: python
+    import pycstruct
+    
+    definitions = pycstruct.parse_file('simple_example.c')
+    
+    with open('simple_example.dat', 'rb') as f:
+        inbytes = f.read()
+
+    result = definitions['person'].deserialize(inbytes)
+
+    print(str(result))
+
+The produced output will be the same is in the first example.
+
+
+Parsing source code strings
+---------------------------
+
+You can also define the source in a string and parse it:
+
+.. code-block:: python
+
+    c_str = '''
+    struct a_struct {
+      int member_a;
+      int member_b;
+    };
+    struct a_bitfield {
+      unsigned int bmem_a : 3;
+      unsigned int bmem_b : 1;
+    };
+    '''
+
+    result = pycstruct.parse_str(c_str)
+
+In the above example result['a_struct'] will be a pcstruct.StructDef
+instance and result['a_bitfield'] will be a pycstruct.EnumDef instance.

@@ -1,5 +1,9 @@
 import struct, collections, math, sys
 
+###############################################################################
+# Global constants
+
+# Basic Types
 _TYPE = {
   'int8'    : {'format' : 'b', 'bytes' : 1},
   'uint8'   : {'format' : 'B', 'bytes' : 1},
@@ -15,8 +19,7 @@ _TYPE = {
   'int64'   : {'format' : 'q', 'bytes' : 8},
   'uint64'  : {'format' : 'Q', 'bytes' : 8},
   'bool64'  : {'format' : 'Q', 'bytes' : 8},
-  'float64' : {'format' : 'd', 'bytes' : 8},
-  'utf-8'   : {'format' : 'B', 'bytes' : 1}
+  'float64' : {'format' : 'd', 'bytes' : 8}
 }
 
 _BYTEORDER = {
@@ -24,6 +27,37 @@ _BYTEORDER = {
   'little' : {'format' : '<'},
   'big'    : {'format' : '>'}
 }
+
+
+###############################################################################
+# Internal functions
+
+def _get_padding(alignment, current_size, next_element_size):
+  """Calculate number of padding bytes required to get next element in 
+     the correct alignment
+  """
+  if alignment == 1:
+    return 0 # Always aligned
+
+  elem_size = min(alignment, next_element_size)
+  remainder = current_size % elem_size
+  if remainder == 0:
+    return 0
+  return elem_size - remainder
+
+def _round_pow_2(value):
+  """Round value to next power of 2 value - max 16"""
+  if value > 8:
+    return 16
+  elif value > 4:
+    return 8
+  elif value > 2:
+    return 4
+  
+  return value
+
+###############################################################################
+# BaseDef Class
 
 class BaseDef:
   """This is an abstract base class for definitions"""
@@ -36,36 +70,140 @@ class BaseDef:
   def deserialize(self, buffer):
     raise NotImplementedError
 
-  def create_empty_data(self):
-    """ Create an empty dictionary with all keys
+  def _largest_member(self, data):
+    raise NotImplementedError
 
-    :return: A dictionary keyed with the element names. Values are "empty" or 0.
-    :rtype: dict
-    """
+  def _type_name(self):
+    raise NotImplementedError
+
+
+###############################################################################
+# BasicTypeDef Class
+
+class BasicTypeDef(BaseDef):
+  """This class represents the basic types (int, float and bool)
+  """
+  def __init__(self, type, byteorder):
+    self.type = type
+    self.byteorder = byteorder
+    self.size_bytes = _TYPE[type]['bytes']
+    self.format = _TYPE[type]['format']
+
+  def serialize(self, data):
+    ''' Data needs to be an integer, floating point or boolean value '''
     buffer = bytearray(self.size())
-    return self.deserialize(buffer)
+    format = _BYTEORDER[self.byteorder]['format'] + self.format
+    struct.pack_into(format, buffer, 0, data)
+
+    return buffer
+
+  def deserialize(self, buffer):
+    ''' Result is an integer, floating point or boolean value '''
+    format = _BYTEORDER[self.byteorder]['format'] + self.format
+    value = struct.unpack_from(format, buffer, 0)[0]
+
+    if self.type.startswith("bool"):
+      if value == 0:
+        value = False
+      else:
+        value = True
+
+    return value
+
+  def size(self):
+    return self.size_bytes
+
+  def _largest_member(self):
+    return self.size_bytes
+
+  def _type_name(self):
+    return self.type
+
+
+###############################################################################
+# StringDef Class
+  
+class StringDef(BaseDef):
+  """This class represents UTF-8 strings
+  """
+  def __init__(self, length):
+    self.length = length
+
+  def serialize(self, data):
+    ''' Data needs to be a string '''
+    buffer = bytearray(self.size())
+
+    if not isinstance(data, str):
+      raise Exception('Not a valid string: {0}'.format(data))
+
+    utf8_bytes = data.encode('utf-8')
+    if len(utf8_bytes) > self.length:
+      raise Exception('String overflow. Produced size {0} but max is {1}'.format(
+        len(utf8_bytes), self.length))
+
+    for i in range(0, len(utf8_bytes)):
+      buffer[i] = utf8_bytes[i]
+    return buffer
+
+  def deserialize(self, buffer):
+    ''' Result is a string '''
+    # Find null termination
+    index = buffer.find(0)
+    if index >= 0:
+      buffer = buffer[:index]
+
+    return buffer.decode('utf-8') 
+
+  def size(self):
+    return self.length # Each element 1 byte
+
+  def _largest_member(self):
+    return 1 # 1 byte
+
+  def _type_name(self):
+    return 'utf-8'
+
+
+###############################################################################
+# StructDef Class
 
 class StructDef(BaseDef):
-  """This class represents a struct definition
-
-
+  """This class represents a struct or a union definition
 
   :param default_byteorder: Byte order of each element unless explicilty set 
                             for the element. Valid values are 'native', 
                             'little' and 'big'.
   :type default_byteorder: str, optional
+  :param alignment: Alignment of elements in bytes. If set to a value > 1
+                    padding will be added between elements when necessary.
+                    Use 4 for 32 bit architectures, 8 for 64 bit 
+                    architectures unless packing is performed.
+  :type alignment: str, optional
+  :param union: If this is set the True, the instance will behave like
+                a union instead of a struct, i.e. all elements share the
+                same data (same start address). Default is False.
+  :type union: boolean, optional
   """
 
-  def __init__(self, default_byteorder = 'native'):
+  def __init__(self, default_byteorder = 'native', alignment = 1, union = False):
     """Constructor method"""
     if default_byteorder not in _BYTEORDER:
       raise Exception('Invalid byteorder: {0}.'.format(default_byteorder))
     self.__default_byteorder = default_byteorder
+    self.__alignment = alignment
+    self.__union = union
+    self.__pad_count = 0
     self.__fields = collections.OrderedDict()
+
+    # Add end padding of 0 size
+    self.__pad_byte = BasicTypeDef('uint8', default_byteorder)
+    self.__pad_end = {'type' : self.__pad_byte, 'length' : 0}
   
   def add(self, type, name, length = 1, byteorder = ''):
-    """Add a new element in the struct definition. The element will be added 
-       directly after the previous element. Padding is never added.
+    """Add a new element in the struct/union definition. The element will be added 
+       directly after the previous element if a struct or in parallel with the
+       previous element if union. Padding might be added depending on the alignment
+       setting.
 
        - Supported data types:
 
@@ -131,6 +269,8 @@ class StructDef(BaseDef):
        :type byteorder: str, optional
        
        """
+
+    # Sanity checks
     if length < 1:
       raise Exception('Invalid length: {0}.'.format(length))
     if name in self.__fields:
@@ -139,26 +279,68 @@ class StructDef(BaseDef):
       byteorder = self.__default_byteorder
     elif byteorder not in _BYTEORDER:
       raise Exception('Invalid byteorder: {0}.'.format(byteorder))
-    if type not in _TYPE and not isinstance(type, BaseDef):
+
+    # Create objects when necessary
+    if type == "utf-8":
+      type = StringDef(length)
+      # String length is handled inside the definition
+      length = 1
+    elif type in _TYPE:
+      type = BasicTypeDef(type, byteorder)
+    elif not isinstance(type, BaseDef):
       raise Exception('Invalid type: {0}.'.format(type))
 
-    self.__fields[name] = {'type' : type, 'length' : length, 'byteorder' : byteorder}
+    # Remove end padding if it exists
+    self.__fields.pop('__pad_end','')
+
+    # Check if padding between elements is required (only struct not union)
+    if not self.__union:
+      padding = _get_padding(self.__alignment, self.size(), type._largest_member())
+      if padding > 0:
+        self.__fields['__pad_{0}'.format(self.__pad_count)] = \
+          {'type' : self.__pad_byte, 'length' : padding}
+        self.__pad_count += 1
+
+    # Add the element
+    self.__fields[name] = {'type' : type, 'length' : length}
+
+    # Check if end padding is required
+    padding = _get_padding(self.__alignment, self.size(), self._largest_member())
+    if padding > 0:
+      self.__pad_end['length'] = padding
+      self.__fields['__pad_end'] = self.__pad_end
 
   def size(self):
-    """ Get size of structure
+    """ Get size of structure or union.
 
-    :return: Number of bytes this structure represents
+    :return: Number of bytes this structure represents alternativly largest
+             of the elements (including end padding) if this is a union.
     :rtype: int
     """
-    size = 0
+    all_elem_size = 0
+    largest_size = 0
+    for name, field in self.__fields.items():
+      elem_size = field['length'] * field['type'].size()
+      if  not name.startswith('__pad') and elem_size > largest_size:
+        largest_size = elem_size
+      all_elem_size += elem_size
+    if self.__union:
+      return largest_size +  self.__pad_end['length'] # Union
+    return all_elem_size # Struct
+
+  def _largest_member(self):
+    """ Used for struct/union padding
+
+    :return: Largest member
+    :rtype: int
+    """
+    largest = 0
     for field in self.__fields.values():
-      nbr_bytes = 0
-      if isinstance(field['type'], BaseDef):
-        nbr_bytes = field['type'].size()
-      else:
-        nbr_bytes =  _TYPE[field['type']]['bytes']
-      size += field['length'] * nbr_bytes
-    return size
+      l = field['type']._largest_member()
+      if l > largest:
+        largest = l
+    
+    return largest
 
   def deserialize(self, buffer):
     """ Deserialize buffer into dictionary
@@ -175,49 +357,36 @@ class StructDef(BaseDef):
     for name, field in self.__fields.items():
       datatype = field['type']
       length = field['length']
-      datatype_size = 0
-      typeinfo = 0
-      if isinstance(datatype, BaseDef):
-        datatype_size = datatype.size()
-      else:
-        typeinfo = _TYPE[datatype]
-        datatype_size = typeinfo['bytes']
+      datatype_size = datatype.size()
 
-      if datatype == 'utf-8':
-        utf8_bytes = buffer[offset:offset + length]
-        # Find null termination
-        index = utf8_bytes.find(0)
-        if index >= 0:
-          utf8_bytes = utf8_bytes[:index]
-        result[name] = utf8_bytes.decode('utf-8') 
-      else: 
+      if not name.startswith('__pad'):
         values = []
-        if isinstance(datatype, BaseDef):
-          for i in range(0, length):
-            next_offset = offset + i*datatype_size
-            buffer_subset = buffer[next_offset:next_offset + datatype_size]
-            value = datatype.deserialize(buffer_subset)
-            values.append(value)
-        else:
-          format = _BYTEORDER[field['byteorder']]['format'] + typeinfo['format']
-          for i in range(0, length):
-            value = struct.unpack_from(format, buffer, offset + i*datatype_size)[0]
-            if field['type'].startswith("bool"):
-              if value == 0:
-                value = False
-              else:
-                value = True
-            values.append(value)
+
+        for i in range(0, length):
+          next_offset = offset + i*datatype_size
+          buffer_subset = buffer[next_offset:next_offset + datatype_size]
+          value = datatype.deserialize(buffer_subset)
+          values.append(value)
+
         if length == 1:
           result[name] = values[0]
         else:
           result[name] = values
 
-      offset += datatype_size * length
+      if not self.__union:
+        offset += datatype_size * length
+
     return result
 
   def serialize(self, data):
     """ Serialize dictionary into buffer
+
+    NOTE! If this is a union the method will try to serialize all the
+    elements into the buffer (at the same position in the buffer).
+    It is quite possible that the elements in the dictionary have 
+    contradicting data and the buffer of the last serialized element
+    will be ok while the others might be wrong. Thus you should only define
+    the element that you want to serialize in the dictionary. 
 
     :param data: A dictionary keyed with element names. Elements can be omitted from the dictionary (defaults to value 0).
     :type data: dict
@@ -229,64 +398,84 @@ class StructDef(BaseDef):
     for name, field in self.__fields.items():
       datatype = field['type']
       length = field['length']
-      datatype_size = 0
-      typeinfo = 0
-      if isinstance(datatype, BaseDef):
-        datatype_size = datatype.size()
-      else:
-        typeinfo = _TYPE[datatype]
-        datatype_size = typeinfo['bytes']
+      datatype_size = datatype.size()
 
-      if name in data:
+      if name in data and not name.startswith('__pad'):
         value = data[name]
-        if datatype == 'utf-8':
-          if not isinstance(value, str):
-            raise Exception('Key: {0} shall be a string'.format(name))
-          utf8_bytes = value.encode('utf-8')
-          if len(utf8_bytes) > length:
-            raise Exception('String in key: {0} is larger than {1}'.format(name, length))
-          for i in range(0, len(utf8_bytes)):
-            buffer[i+offset] = utf8_bytes[i]
-        else:
-          value_list = []
-          if length > 1:
-            if not isinstance(value, collections.Iterable):
-              raise Exception('Key: {0} shall be a list'.format(name))
-            if len(value) > length:
-              raise Exception('List in key: {0} is larger than {1}'.format(name, length))
-            value_list = value
-          else:
-            value_list.append(value) # Make list of single value
-          if isinstance(datatype, BaseDef):
-            for i in range(0, len(value_list)):
-              next_offset = offset + i*datatype_size
-              buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value_list[i])
-          else:
-            format = _BYTEORDER[field['byteorder']]['format'] + typeinfo['format']
-            for i in range(0, len(value_list)):
-              struct.pack_into(format, buffer, offset + i * datatype_size, value_list[i])
 
-      offset += datatype_size * length
+        value_list = []
+        if length > 1:
+          if not isinstance(value, collections.Iterable):
+            raise Exception('Key: {0} shall be a list'.format(name))
+          if len(value) > length:
+            raise Exception('List in key: {0} is larger than {1}'.format(name, length))
+          value_list = value
+        else:
+          value_list.append(value) # Make list of single value
+
+        for i in range(0, len(value_list)):
+          next_offset = offset + i*datatype_size
+          buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value_list[i])
+
+      if not self.__union:
+        offset += datatype_size * length
     return buffer
+
+  def create_empty_data(self):
+    """ Create an empty dictionary with all keys
+
+    :return: A dictionary keyed with the element names. Values are "empty" or 0.
+    :rtype: dict
+    """
+    buffer = bytearray(self.size())
+    return self.deserialize(buffer)
+
+  def __str__(self):
+    """ Create string representation
+
+    :return: A string illustrating all members
+    :rtype: string
+    """
+    result = []
+    result.append('{:<30}{:<15}{:<10}{:<10}{:<10}'.format(
+      'Name','Type', 'Size','Length','Largest type'))
+    for name, field in self.__fields.items():
+      type = field['type']
+      result.append('{:<30}{:<15}{:<10}{:<10}{:<10}'.format(
+        name,type._type_name(), type.size(),field['length'], type._largest_member()))
+    return '\n'.join(result)
+
+  def _type_name(self):
+    if self.__union:
+      return 'union'
+    return 'struct'
+
+
+###############################################################################
+# BitfieldDef Class
 
 class BitfieldDef(BaseDef):
   """This class represents a bit field definition
 
   The size of the bit field is 1, 2, 3, .., 8 bytes depending on the number of
-  elements added to the bit field. If a larger size is required than what
-  is required by the elements you have to add additional, "dummy", elements.
+  elements added to the bit field. You can also force the bitfield size by
+  setting the size argument.
 
   :param byteorder: Byte order of the bitfield. Valid values are 'native', 
                     'little' and 'big'.
   :type byteorder: str, optional
+  :param size: Force enum to be a certain size. By default it will expand
+               when new elements are added.
+  :type size: int, optional
   """
 
-  def __init__(self, byteorder = 'native'):
+  def __init__(self, byteorder = 'native', size = -1):
     if byteorder not in _BYTEORDER:
       raise Exception('Invalid byteorder: {0}.'.format(byteorder))
     if byteorder == 'native':
       byteorder = sys.byteorder
     self.__byteorder = byteorder
+    self.__size = size
     self.__fields = collections.OrderedDict()
 
   def add(self, name, nbr_of_bits = 1, signed = False):
@@ -308,8 +497,9 @@ class BitfieldDef(BaseDef):
     
       # Check that new size is not too large
       total_nbr_of_bits = self.assigned_bits() + nbr_of_bits
-      if total_nbr_of_bits > 64:
-        raise Exception('Maximum number of bits (64) exceeded: {0}.'.format(total_nbr_of_bits))
+      if total_nbr_of_bits > self._max_bits():
+        raise Exception('Maximum number of bits ({}) exceeded: {}.'.format(
+          self._max_bits(), total_nbr_of_bits))
 
       self.__fields[name] = {'nbr_of_bits' : nbr_of_bits, 'signed' : signed}
 
@@ -372,7 +562,23 @@ class BitfieldDef(BaseDef):
     :return: Number of bytes this bitfield represents
     :rtype: int
     """
+    if self.__size >= 0:
+      return self.__size # Force size
+
     return int(math.ceil(self.assigned_bits()/8.0))
+
+  def _max_bits(self):
+    if self.__size >= 0:
+      return self.__size * 8 # Force size
+    return 64    
+
+  def _largest_member(self):
+    """ Used for struct padding
+
+    :return: Closest power of 2 value of size
+    :rtype: int
+    """
+    return _round_pow_2(self.size())
   
   def _get_subvalue(self, value, nbr_of_bits, start_bit, signed):
     """ Get subvalue of value
@@ -425,28 +631,47 @@ class BitfieldDef(BaseDef):
 
     return value | shifted_subvalue
 
+  def create_empty_data(self):
+    """ Create an empty dictionary with all keys
+
+    :return: A dictionary keyed with the element names. Values are "empty" or 0.
+    :rtype: dict
+    """
+    buffer = bytearray(self.size())
+    return self.deserialize(buffer)
+
+  def _type_name(self):
+    return 'bitfield'
+
+
+###############################################################################
+# EnumDef Class
+
 
 class EnumDef(BaseDef):
   """This class represents an enum definition
 
   The size of the enum is 1, 2, 3, .., 8 bytes depending on the value of the
-  largest enum constant. If a larger size is required than what is required
-  by the constants you have to add a dummy constant with a value which will 
-  force a the enum to have a particular size.
+  largest enum constant. You can also force the enum size by setting 
+  the size argument.
 
   This implementation assumes that an enum is always signed.
 
   :param byteorder: Byte order of the enum. Valid values are 'native', 
                     'little' and 'big'.
   :type byteorder: str, optional
+  :param size: Force enum to be a certain size. By default it will expand
+               when new elements are added.
+  :type size: int, optional
   """
 
-  def __init__(self, byteorder = 'native'):
+  def __init__(self, byteorder = 'native', size = -1):
     if byteorder not in _BYTEORDER:
       raise Exception('Invalid byteorder: {0}.'.format(byteorder))
     if byteorder == 'native':
       byteorder = sys.byteorder
     self.__byteorder = byteorder
+    self.__size = size
     self.__constants = collections.OrderedDict()
 
   def add(self, name, value=None):
@@ -476,8 +701,9 @@ class EnumDef(BaseDef):
     
       # Check that new size is not too large
       bit_length = value.bit_length() + 1 # Including sign bit
-      if bit_length > 64:
-        raise Exception('Maximum number of bits (64) exceeded: {0}.'.format(bit_length))
+      if bit_length > self._max_bits():
+        raise Exception('Maximum number of bits ({}) exceeded: {}.'.format(
+          self._max_bits(), bit_length))
 
       self.__constants[name] = value
 
@@ -514,11 +740,27 @@ class EnumDef(BaseDef):
     :return: Number of bytes this enum represents
     :rtype: int
     """
+    if self.__size >= 0:
+      return self.__size # Force size
+
     max_value = 0
     for _, value in self.__constants.items():
       if value > max_value:
         max_value = value
     return int(math.ceil( (max_value.bit_length()+1) /8.0 ))
+
+  def _max_bits(self):
+    if self.__size >= 0:
+      return self.__size * 8 # Force size
+    return 64    
+
+  def _largest_member(self):
+    """ Used for struct padding
+
+    :return: Closest power of 2 value of size
+    :rtype: int
+    """
+    return _round_pow_2(self.size())
 
   def get_name(self, value):
     """ Get the name representation of the value
@@ -540,3 +782,6 @@ class EnumDef(BaseDef):
     if name not in self.__constants:
       raise Exception("{0} is not a valid name in this enum".format(name))
     return self.__constants[name]
+
+  def _type_name(self):
+    return 'enum'

@@ -17,12 +17,16 @@ Structs can be embedded inside other structs.
 
 Individual elements can be stored / read in any byte order.
 
+pycstruct also supports parsing of existing C language source code to
+automatically generate the pycstruct definitions / instances.
+
 .. toctree::
    :maxdepth: 2
 
    installation.rst
    overview.rst
    examples/examples.rst
+   faq.rst
    reference.rst
 
 
