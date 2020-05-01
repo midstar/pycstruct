@@ -11,7 +11,7 @@ Basic Installation
 
 Install pycstruct with :command:`pip`::
 
-    python -m pip install pycstruct
+    python3 -m pip install pycstruct
 
 Extra dependencies to parse source code
 ----------------------------------------
