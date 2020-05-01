@@ -87,9 +87,9 @@ class TestCParser(unittest.TestCase):
   def test_xml_parse_special_cases(self):
     _CastXmlParser = pycstruct.cparser._CastXmlParser
     parser = _CastXmlParser(os.path.join(test_dir, 'special_cases.xml'))
-    print("\n\n>> Below test will result in a Warning. This is expected!\n")
+    sys.stderr.write("\n\n>> Below test will result in a Warning. This is expected!\n\n")
     _ = parser.parse()
-    print("\n>> End of expected warning.\n")
+    sys.stderr.write("\n>> End of expected warning.\n")
 
 
   #@unittest.skipIf(True, 'temporary skipped')

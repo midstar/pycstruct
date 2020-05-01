@@ -310,3 +310,16 @@ The above example will now have following layout:
 +---------------+-----------------------+---------------------------+
 
 
+Parsing source code
+-------------------
+
+Instead of manually creating the definitions as described above,
+C source code files can be parsed and the definitions will be 
+generated automatically with :func:`pycstruct.parse_file`.
+
+It is also possible to write the source code into a string and
+parse it with :func:`pycstruct.parse_str`. 
+
+Internally pycstruct use the external tool 
+`castxml <https://github.com/CastXML/CastXML>`_ which needs to
+be installed and put in the current path.

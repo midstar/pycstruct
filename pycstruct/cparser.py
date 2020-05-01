@@ -393,6 +393,49 @@ class _TypeMetaParser():
 def parse_file(input_files, byteorder = 'native',  
             castxml_cmd = 'castxml', castxml_extra_args = [],
             cache_path = '', use_cached = False):
+    """Parse one or more C source files (C or C++) and generate pycstruct 
+       instances as a result.
+
+       The result is a dictionary where the keys are the names of the
+       struct, unions etc. typedef'ed names are also supported.
+
+       The values of the resulting dictinonary are the actual pycstruct 
+       instance connected to the name.
+
+       This function requires that the external tool 
+       `castxml <https://github.com/CastXML/CastXML>`_ is installed. 
+
+       Alignment will automatically be detected and configured for the pycstruct
+       instances.
+       
+       :param input_files: Source file name or a list of file names.
+       :type input_files: str or list
+       :param byteorder: Byteorder of all elements Valid values are 'native', 
+                         'little' and 'big'. If not specified the 'native' 
+                         byteorder is used.
+       :type byteorder: str, optional
+       :param castxml_cmd: Path to the castxml binary. If not specified
+                           castxml must be within the PATH.
+       :type castxml_cmd: str, optional
+       :param castxml_extra_args: Extra arguments to provide to castxml.
+                                  For example definitions etc. Check
+                                  castxml documentation for which 
+                                  arguments that are supported.
+       :type castxml_extra_args: list, optional
+       :param cache_path: Path where to store temporary files. If not
+                          provided, the default system temporary
+                          directory is used.
+       :type cache_path: str, optional
+       :param use_cached: If this is True, use previously cached
+                          output from castxml to avoid re-running
+                          castxml (since it could be time consuming).
+                          Default is False.
+       :type use_cached: boolean, optional
+       :return: A dictionary keyed on names of the structs, unions 
+                etc. The values are the actual pycstruct instances.
+       :rtype: dict      
+       """
+
     input_files = _listify(input_files)
     xml_filename = _get_hash(input_files) + '.xml'
 
@@ -419,7 +462,48 @@ def parse_file(input_files, byteorder = 'native',
 def parse_str(str, byteorder = 'native',  
             castxml_cmd = 'castxml', castxml_extra_args = [],
             cache_path = '', use_cached = False):
+    """Parse a string containing C source code, such as struct or
+       union defintions. Any valid C code is supported.
 
+       The result is a dictionary where the keys are the names of the
+       struct, unions etc. typedef'ed names are also supported.
+
+       The values of the resulting dictinonary are the actual pycstruct 
+       instance connected to the name.
+
+       This function requires that the external tool 
+       `castxml <https://github.com/CastXML/CastXML>`_ is installed. 
+
+       Alignment will automatically be detected and configured for the pycstruct
+       instances.
+       
+       :param str: A string of C source code.
+       :type str: str
+       :param byteorder: Byteorder of all elements Valid values are 'native', 
+                         'little' and 'big'. If not specified the 'native' 
+                         byteorder is used.
+       :type byteorder: str, optional
+       :param castxml_cmd: Path to the castxml binary. If not specified
+                           castxml must be within the PATH.
+       :type castxml_cmd: str, optional
+       :param castxml_extra_args: Extra arguments to provide to castxml.
+                                  For example definitions etc. Check
+                                  castxml documentation for which 
+                                  arguments that are supported.
+       :type castxml_extra_args: list, optional
+       :param cache_path: Path where to store temporary files. If not
+                          provided, the default system temporary
+                          directory is used.
+       :type cache_path: str, optional
+       :param use_cached: If this is True, use previously cached
+                          output from castxml to avoid re-running
+                          castxml (since it could be time consuming).
+                          Default is False.
+       :type use_cached: boolean, optional
+       :return: A dictionary keyed on names of the structs, unions 
+                etc. The values are the actual pycstruct instances.
+       :rtype: dict      
+       """
     if cache_path == '':
         # Use temporary path to store xml
         cache_path = tempfile.gettempdir()
