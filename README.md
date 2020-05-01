@@ -126,6 +126,30 @@ f.write(buffer)
 f.close()
 ```
 
+## Parsing source files
+
+pycstruct also supports parsing C source code defined in external
+files or defined in strings.
+
+Assume the C code listed in the first example is named
+simple_example.c. Then you could parse the source
+code instead of manually creating the definitions:
+
+```python
+import pycstruct
+
+definitions = pycstruct.parse_file('simple_example.c')
+
+with open('simple_example.dat', 'rb') as f:
+    inbytes = f.read()
+
+result = definitions['person'].deserialize(inbytes)
+
+print(str(result))
+```
+
+The produced output will be the same is in the first example.
+
 ## Full documentation
 
 Checkout the full documentation [here](https://pycstruct.readthedocs.io/en/latest/).

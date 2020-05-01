@@ -88,7 +88,8 @@ simple_example.c. Then you could parse the source
 code instead of manually creating the definitions:
 
 .. code-block:: python
-
+    import pycstruct
+    
     definitions = pycstruct.parse_file('simple_example.c')
     
     with open('simple_example.dat', 'rb') as f:
