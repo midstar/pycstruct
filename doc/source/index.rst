@@ -4,18 +4,26 @@ pycstruct
 pycstruct is a python library for converting binary data to and from ordinary
 python dictionaries.
 
-Data is defined similar to what is done in C language structs.
+Data is defined similar to what is done in C language structs, unions,
+bitfields and enums.
 
 Typical usage of this library is read/write binary files or binary data
 transmitted over a network.
 
-It supports all traditional data types (integer, unsigned integer, boolean and
-float) between 1 to 8 bytes large, arrays (lists), strings (UTF-8), bitfields
-and enums.
+Following complex C types are supported:
 
-Structs can be embedded inside other structs.
+- Structs
+- Unions
+- Bitfields
+- Enums
 
-Individual elements can be stored / read in any byte order.
+These types may consist of any traditional data types (integer, unsigned integer, 
+boolean and float) between 1 to 8 bytes large, arrays (lists), and strings (ASCII/UTF-8).
+
+Structs, unions, biftfields and enums can be embedded inside other structs/unions
+in any level. 
+
+Individual elements can be stored / read in any byte order and alignment.
 
 pycstruct also supports parsing of existing C language source code to
 automatically generate the pycstruct definitions / instances.

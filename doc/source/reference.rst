@@ -1,8 +1,8 @@
 Reference
 =========
 
-StructDef (struct representation)
----------------------------------
+StructDef (struct and union representation)
+-------------------------------------------
 .. autoclass:: pycstruct.StructDef
    :members:
 

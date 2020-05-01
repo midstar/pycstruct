@@ -7,11 +7,16 @@ except:
       long_description = ""
 
 setup(name='pycstruct',
-      version='0.2.0',
+      version='0.3.0',
       description='Binary data handling in Python using dictionaries',
       long_description=long_description,
        long_description_content_type="text/markdown",
       url='http://github.com/midstar/pycstruct',
+      project_urls={
+            'Bug Tracker': 'https://github.com/midstar/pycstruct/issues',
+            'Documentation': 'https://pycstruct.readthedocs.io/en/latest/',
+            'Source Code': 'https://github.com/midstar/pycstruct',
+      },
       author='Joel Midstjärna',
       author_email='joel.midstjarna@gmail.com',
       keywords = ['struct', 'enum', 'bitfield', 'binary', 'protocol', 'dict', 'dictionary'], 
