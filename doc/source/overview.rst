@@ -24,7 +24,7 @@ Strict memory layout is required when reading and writing binary data, such as:
 Structs
 -------
 
-Memory layout of an object is defined using the :py:meth:`StructDef` 
+Memory layout of an object is defined using the :py:meth:`pycstruct.StructDef` 
 object. For example:
 
 .. code-block:: python
@@ -160,7 +160,7 @@ Bitfields
 ---------
 
 The struct definition requires that the size of each member is 1, 2, 4 or 8 
-bytes. :py:meth:`BitfieldDef` allows you to define members that have any 
+bytes. :py:meth:`pycstruct.BitfieldDef` allows you to define members that have any 
 size between 1 to 64 bits.
 
 .. code-block:: python
@@ -203,7 +203,7 @@ To access myBitfield
 Enum
 ----
 
-:py:meth:`EnumDef` allows your to define a signed integer of size 1, 2, 3, ... 
+:py:meth:`pycstruct.EnumDef` allows your to define a signed integer of size 1, 2, 3, ... 
 or 8 bytes with a defined set of values (constants):
 
 .. code-block:: python
