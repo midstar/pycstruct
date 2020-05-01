@@ -84,6 +84,12 @@ class TestCParser(unittest.TestCase):
 
     test_pycstruct.check_struct(self, instance['Data'], 'struct_little_nopack.dat')
 
+  def test_xml_parse_special_cases(self):
+    _CastXmlParser = pycstruct.cparser._CastXmlParser
+    parser = _CastXmlParser(os.path.join(test_dir, 'special_cases.xml'))
+    meta = parser.parse()
+
+
   #@unittest.skipIf(True, 'temporary skipped')
   def test_xml_parse_embedded(self):
     _CastXmlParser = pycstruct.cparser._CastXmlParser
