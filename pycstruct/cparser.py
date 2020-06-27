@@ -281,12 +281,16 @@ class _CastXmlParser():
     
         member_type = {}
         member_type['length'] = 1
+
         if elem.tag == 'ArrayType':
             member_type['length'] = int(elem.attrib['max']) - int(elem.attrib['min']) + 1
             elem = self._get_basic_type_element(elem.attrib['type'])
             if elem.tag == 'ArrayType':
                 raise Exception('Nested arrays (matrixes) are not supported.')
         
+        if elem.tag == 'CvQualifiedType': # volatile
+            elem = self._get_basic_type_element(elem.attrib['type'])
+
         if elem.tag == 'FundamentalType':
             member_type['type_name'] = self._fundamental_type_to_pcstruct_type(elem, member_type['length'])
         elif elem.tag == 'PointerType':

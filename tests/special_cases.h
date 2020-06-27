@@ -10,3 +10,8 @@ typedef union {
 struct non_supported_member {
     int matrix[10][10];
 };
+
+struct with_volatile {
+    volatile int volatile_member;
+    volatile int volatile_array[2];
+};
