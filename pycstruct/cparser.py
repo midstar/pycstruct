@@ -1,3 +1,9 @@
+# Copyright 2020 by Joel Midstjärna.
+# All rights reserved.
+# This file is part of the pycstruct python library and is
+# released under the "MIT License Agreement". Please see the LICENSE
+# file that should have been included as part of this package.
+
 import xml.etree.ElementTree as ET
 import os, logging, pycstruct, subprocess, shutil, hashlib, tempfile
 
@@ -137,11 +143,18 @@ class _CastXmlParser():
         enum['type'] = 'enum'
         self._set_common_meta(xml_enum, enum)
         enum['members'] = []
+        has_negative = False
         for xml_member in xml_enum.findall('EnumValue'):
             member = {}
             member['name'] = xml_member.attrib['name']
             member['value'] = int(xml_member.attrib['init'])
+            if member['value'] < 0:
+                has_negative = True
             enum['members'].append(member)
+        if has_negative:
+            enum['signed'] = True
+        else:
+            enum['signed'] = False
         return enum    
 
     def _parse_union(self, xml_union):
@@ -281,12 +294,16 @@ class _CastXmlParser():
     
         member_type = {}
         member_type['length'] = 1
+
         if elem.tag == 'ArrayType':
             member_type['length'] = int(elem.attrib['max']) - int(elem.attrib['min']) + 1
             elem = self._get_basic_type_element(elem.attrib['type'])
             if elem.tag == 'ArrayType':
                 raise Exception('Nested arrays (matrixes) are not supported.')
         
+        if elem.tag == 'CvQualifiedType': # volatile
+            elem = self._get_basic_type_element(elem.attrib['type'])
+
         if elem.tag == 'FundamentalType':
             member_type['type_name'] = self._fundamental_type_to_pcstruct_type(elem, member_type['length'])
         elif elem.tag == 'PointerType':
@@ -361,7 +378,7 @@ class _TypeMetaParser():
         
         # Enum
         elif meta['type'] == 'enum':
-            instance = pycstruct.EnumDef(self._byteorder, meta['size'])
+            instance = pycstruct.EnumDef(self._byteorder, meta['size'], meta['signed'])
             for member in meta['members']:
                 instance.add(member['name'], member['value'])
         

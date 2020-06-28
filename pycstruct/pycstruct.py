@@ -1,3 +1,9 @@
+# Copyright 2020 by Joel Midstjärna.
+# All rights reserved.
+# This file is part of the pycstruct python library and is
+# released under the "MIT License Agreement". Please see the LICENSE
+# file that should have been included as part of this package.
+
 import struct, collections, math, sys
 
 ###############################################################################
@@ -655,23 +661,24 @@ class EnumDef(BaseDef):
   largest enum constant. You can also force the enum size by setting 
   the size argument.
 
-  This implementation assumes that an enum is always signed.
-
   :param byteorder: Byte order of the enum. Valid values are 'native', 
                     'little' and 'big'.
   :type byteorder: str, optional
   :param size: Force enum to be a certain size. By default it will expand
                when new elements are added.
   :type size: int, optional
+  :param signed: True if enum is signed (may contain negative values)
+  :type signed: bool, optional
   """
 
-  def __init__(self, byteorder = 'native', size = -1):
+  def __init__(self, byteorder = 'native', size = -1, signed = False):
     if byteorder not in _BYTEORDER:
       raise Exception('Invalid byteorder: {0}.'.format(byteorder))
     if byteorder == 'native':
       byteorder = sys.byteorder
     self.__byteorder = byteorder
     self.__size = size
+    self.__signed = signed
     self.__constants = collections.OrderedDict()
 
   def add(self, name, value=None):
@@ -698,12 +705,15 @@ class EnumDef(BaseDef):
           index += 1
         except:
           value = index  
+
+      # Secure that no negative number are added to signed enum
+      if not self.__signed and value < 0:
+        raise Exception('Negative value, {0}, not supported in unsigned enums.'.format(value))
     
       # Check that new size is not too large
-      bit_length = value.bit_length() + 1 # Including sign bit
-      if bit_length > self._max_bits():
+      if self._bit_length(value) > self._max_bits():
         raise Exception('Maximum number of bits ({}) exceeded: {}.'.format(
-          self._max_bits(), bit_length))
+          self._max_bits(), self._bit_length(value)))
 
       self.__constants[name] = value
 
@@ -718,7 +728,7 @@ class EnumDef(BaseDef):
     if len(buffer) != self.size():
       raise Exception("Invalid buffer size: {0}. Expected: {1}".format(len(buffer),self.size()))
 
-    value = int.from_bytes(buffer, self.__byteorder, signed=True)
+    value = int.from_bytes(buffer, self.__byteorder, signed = self.__signed)
 
     return self.get_name(value)
 
@@ -732,7 +742,7 @@ class EnumDef(BaseDef):
     """
     value = self.get_value(data)
 
-    return value.to_bytes(self.size(), self.__byteorder, signed=True)
+    return value.to_bytes(self.size(), self.__byteorder, signed = self.__signed)
 
   def size(self):
     """ Get size of enum in bytes
@@ -743,11 +753,13 @@ class EnumDef(BaseDef):
     if self.__size >= 0:
       return self.__size # Force size
 
-    max_value = 0
+    max_length = 1 # To avoid 0 size
     for _, value in self.__constants.items():
-      if value > max_value:
-        max_value = value
-    return int(math.ceil( (max_value.bit_length()+1) /8.0 ))
+      bit_length = self._bit_length(value)
+      if bit_length > max_length:
+        max_length = bit_length
+
+    return int(math.ceil( max_length / 8.0 ))
 
   def _max_bits(self):
     if self.__size >= 0:
@@ -785,3 +797,20 @@ class EnumDef(BaseDef):
 
   def _type_name(self):
     return 'enum'
+
+  def _bit_length(self, value):
+    """ Get number of bits a value represents.
+
+    Works for negative values based on two's complement,
+    which is not considered in the python built in 
+    bit_length method.
+
+    If enum is signed the extra sign bit is included
+    in the returned result.
+    """
+    if value < 0:
+      value += 1 # Two's complement reverse
+    bit_length = value.bit_length()
+    if self.__signed:
+      bit_length += 1
+    return bit_length

@@ -88,8 +88,14 @@ class TestCParser(unittest.TestCase):
     _CastXmlParser = pycstruct.cparser._CastXmlParser
     parser = _CastXmlParser(os.path.join(test_dir, 'special_cases.xml'))
     sys.stderr.write("\n\n>> Below test will result in a Warning. This is expected!\n\n")
-    _ = parser.parse()
+    meta = parser.parse()
     sys.stderr.write("\n>> End of expected warning.\n")
+
+    type_meta_parser = pycstruct.cparser._TypeMetaParser(meta, byteorder='little')
+    instance = type_meta_parser.parse() 
+    self.assertTrue('with_volatile' in instance)
+    self.assertTrue('filled_enum' in instance)
+    self.assertTrue('signed_enum' in instance)
 
 
   #@unittest.skipIf(True, 'temporary skipped')
