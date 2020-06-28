@@ -558,6 +558,51 @@ class TestPyCStruct(unittest.TestCase):
     # Get invalid name
     self.assertRaises(Exception, e.get_name, "invalid")
 
+  def test_enum_fixed_unsigned(self):
+    e = pycstruct.EnumDef(size = 4, signed = False)
+
+    self.assertEqual(e.size(), 4)
+
+    e.add("first")
+    self.assertEqual(e.get_value("first"), 0)
+    self.assertEqual(e.get_name(0), "first")
+    self.assertEqual(e.size(), 4)
+
+    e.add("largest", 0xFFFFFFFF)
+    self.assertEqual(e.size(), 4)
+
+    # Add a too large number
+    self.assertRaises(Exception, e.add, "too_large", 0xFFFFFFFF + 1)
+
+    # Add negative number to unsigned 
+    self.assertRaises(Exception, e.add, "negative", -1)
+
+  def test_enum_fixed_signed(self):
+    e = pycstruct.EnumDef(size = 4, signed = True)
+
+    self.assertEqual(e.size(), 4)
+
+    e.add("first")
+    self.assertEqual(e.get_value("first"), 0)
+    self.assertEqual(e.get_name(0), "first")
+    self.assertEqual(e.size(), 4)
+
+    e.add("negative", -1)
+    self.assertEqual(e.size(), 4)
+
+    e.add("largest_negative", 0x7FFFFFFF * -1 - 1)
+    self.assertEqual(e.size(), 4)
+
+    # Add too small value 
+    self.assertRaises(Exception, e.add, "too_small", 0x7FFFFFFF * -1 - 2)
+
+    e.add("largest_positive", 0x7FFFFFFF)
+    self.assertEqual(e.size(), 4)
+
+    # Add too large value 
+    self.assertRaises(Exception, e.add, "too_large", 0x7FFFFFFF + 1)
+
+
   def test_enum_serialize_deserialize(self):
     e = pycstruct.EnumDef(size = 1)
     e.add("zero", 0)
@@ -581,14 +626,43 @@ class TestPyCStruct(unittest.TestCase):
     self.assertEqual(outval, "twofiftysix")
 
     little = pycstruct.EnumDef('little', size = 2)
-    little.add("twofiftysix", 256)
     value = "twofiftysix"
+    little.add(value, 256)
     buf = little.serialize(value)
     self.assertEqual(len(buf), 2)
     self.assertEqual(buf[0], 0)
     self.assertEqual(buf[1], 1)
     outval = little.deserialize(buf)
-    self.assertEqual(outval, "twofiftysix")
+    self.assertEqual(outval, value)
+
+    value = "largest_uint16"
+    little.add(value, 0xFFFF)
+    buf = little.serialize(value)
+    self.assertEqual(len(buf), 2)
+    self.assertEqual(buf[0], 0xFF)
+    self.assertEqual(buf[1], 0xFF)
+    outval = little.deserialize(buf)
+    self.assertEqual(outval, value)
+
+    little_signed = pycstruct.EnumDef('little', size = 2, signed = True)
+    value = "largest_int16"
+    little_signed.add(value, 32767)
+    buf = little_signed.serialize(value)
+    self.assertEqual(len(buf), 2)
+    self.assertEqual(buf[0], 0xFF)
+    self.assertEqual(buf[1], 0x7F)
+    outval = little_signed.deserialize(buf)
+    self.assertEqual(outval, value)
+
+    value = "smallest_int16"
+    little_signed.add(value, -32768)
+    buf = little_signed.serialize(value)
+    self.assertEqual(len(buf), 2)
+    self.assertEqual(buf[0], 0x00)
+    self.assertEqual(buf[1], 0x80)
+    outval = little_signed.deserialize(buf)
+    self.assertEqual(outval, value)
+
 
   
   def test_union_no_pad(self):

@@ -94,6 +94,8 @@ class TestCParser(unittest.TestCase):
     type_meta_parser = pycstruct.cparser._TypeMetaParser(meta, byteorder='little')
     instance = type_meta_parser.parse() 
     self.assertTrue('with_volatile' in instance)
+    self.assertTrue('filled_enum' in instance)
+    self.assertTrue('signed_enum' in instance)
 
 
   #@unittest.skipIf(True, 'temporary skipped')
