@@ -76,7 +76,7 @@ class BaseDef:
   def deserialize(self, buffer):
     raise NotImplementedError
 
-  def _largest_member(self, data):
+  def _largest_member(self):
     raise NotImplementedError
 
   def _type_name(self):
@@ -371,7 +371,11 @@ class StructDef(BaseDef):
         for i in range(0, length):
           next_offset = offset + i*datatype_size
           buffer_subset = buffer[next_offset:next_offset + datatype_size]
-          value = datatype.deserialize(buffer_subset)
+          try:
+            value = datatype.deserialize(buffer_subset)
+          except Exception as e:
+            raise Exception('Unable to deserialize {} {}. Reason:\n{}'.format(
+            datatype._type_name(), name, e.args[0]))
           values.append(value)
 
         if length == 1:
@@ -421,7 +425,11 @@ class StructDef(BaseDef):
 
         for i in range(0, len(value_list)):
           next_offset = offset + i*datatype_size
-          buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value_list[i])
+          try:
+            buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value_list[i])
+          except Exception as e:
+            raise Exception('Unable to serialize {} {}. Reason:\n{}'.format(
+              datatype._type_name(), name, e.args[0]))
 
       if not self.__union:
         offset += datatype_size * length
@@ -720,6 +728,12 @@ class EnumDef(BaseDef):
   def deserialize(self, buffer):
     """ Deserialize buffer into a string (constant name)
 
+    If no constant name is defined for the value following name will be returned::
+
+         __VALUE__<value>
+    
+    Where <value> is the integer stored in the buffer.
+
     :param buffer: Buffer that contains the data to deserialize (1 - 8 bytes)
     :type buffer: bytearray
     :return: The constant name (string) 
@@ -730,7 +744,13 @@ class EnumDef(BaseDef):
 
     value = int.from_bytes(buffer, self.__byteorder, signed = self.__signed)
 
-    return self.get_name(value)
+    name = ''
+    try: 
+      name = self.get_name(value)
+    except:
+      # No constant name exist, generate a new
+      name = '__VALUE__{}'.format(value)
+    return name
 
   def serialize(self, data):
     """ Serialize string (constant name) into buffer
