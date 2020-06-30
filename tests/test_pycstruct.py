@@ -663,6 +663,14 @@ class TestPyCStruct(unittest.TestCase):
     outval = little_signed.deserialize(buf)
     self.assertEqual(outval, value)
 
+    # Unassigned values
+    outval = little_signed.deserialize(bytes([0, 0]))
+    self.assertEqual(outval, '__VALUE__0') 
+    outval = little_signed.deserialize(bytes([99, 0]))
+    self.assertEqual(outval, '__VALUE__99') 
+    outval = little_signed.deserialize(bytes([0xFC, 0xFF]))
+    self.assertEqual(outval, '__VALUE__-4') 
+
 
   
   def test_union_no_pad(self):
