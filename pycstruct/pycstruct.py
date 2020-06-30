@@ -76,7 +76,7 @@ class BaseDef:
   def deserialize(self, buffer):
     raise NotImplementedError
 
-  def _largest_member(self, data):
+  def _largest_member(self):
     raise NotImplementedError
 
   def _type_name(self):
@@ -371,7 +371,11 @@ class StructDef(BaseDef):
         for i in range(0, length):
           next_offset = offset + i*datatype_size
           buffer_subset = buffer[next_offset:next_offset + datatype_size]
-          value = datatype.deserialize(buffer_subset)
+          try:
+            value = datatype.deserialize(buffer_subset)
+          except Exception as e:
+            raise Exception('Unable to deserialize {} {}. Reason:\n{}'.format(
+            datatype._type_name(), name, e.args[0]))
           values.append(value)
 
         if length == 1:
@@ -421,7 +425,11 @@ class StructDef(BaseDef):
 
         for i in range(0, len(value_list)):
           next_offset = offset + i*datatype_size
-          buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value_list[i])
+          try:
+            buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value_list[i])
+          except Exception as e:
+            raise Exception('Unable to serialize {} {}. Reason:\n{}'.format(
+              datatype._type_name(), name, e.args[0]))
 
       if not self.__union:
         offset += datatype_size * length

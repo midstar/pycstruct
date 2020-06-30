@@ -127,6 +127,23 @@ def check_embedded_struct(t, structdef_instance, filename):
     for i in range(0, len(inbytes)):
       t.assertEqual(int(inbytes[i]), int(outbytes[i]), msg='Index {0}'.format(i))
 
+class UnserializableDef(pycstruct.pycstruct.BaseDef):
+  """Just for testing exceptions"""
+  def size(self):
+    return 1
+
+  def serialize(self, data):
+    raise Exception('Unable to serialize')
+
+  def deserialize(self, buffer):
+    raise Exception('Unable to deserialize')
+
+  def _largest_member(self):
+    return self.size()
+
+  def _type_name(self):
+    return 'Unserializable_Test'
+
 class TestPyCStruct(unittest.TestCase):
 
   def test_invalid_baseclass(self):
@@ -136,7 +153,7 @@ class TestPyCStruct(unittest.TestCase):
     self.assertRaises(NotImplementedError, b.size)
     self.assertRaises(NotImplementedError, b.serialize, 0)
     self.assertRaises(NotImplementedError, b.deserialize, 0)
-    self.assertRaises(NotImplementedError, b._largest_member, 0)
+    self.assertRaises(NotImplementedError, b._largest_member)
     self.assertRaises(NotImplementedError, b._type_name)
 
   def test_invalid_creation(self):
@@ -343,6 +360,15 @@ class TestPyCStruct(unittest.TestCase):
     #############################################
     # Load pre-stored binary data and deserialize and check
     check_embedded_struct(self, house, filename)
+
+  def test_embedded_exception(self):
+    unserializable = UnserializableDef()
+
+    s = pycstruct.StructDef()
+    s.add(unserializable, 'unserializable')  
+
+    self.assertRaises(Exception, s.deserialize, bytes([0]))
+    self.assertRaises(Exception, s.serialize, {'unserializable':'hello'})
 
 
   def test_bitfield_invalid_creation(self):
