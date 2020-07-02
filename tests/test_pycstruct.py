@@ -370,7 +370,7 @@ class TestPyCStruct(unittest.TestCase):
     self.assertRaises(Exception, s.deserialize, bytes([0]))
     self.assertRaises(Exception, s.serialize, {'unserializable':'hello'})
 
-  def test_struct_remove_elements_from(self):
+  def test_struct_remove_from(self):
 
     m = pycstruct.StructDef()
     m.add('int8', 'e1')
@@ -382,9 +382,9 @@ class TestPyCStruct(unittest.TestCase):
 
     self.assertEqual(m.size(), 14)
 
-    self.assertRaises(Exception, m.remove_elements_from, 'invalid')
+    self.assertRaises(Exception, m.remove_from, 'invalid')
 
-    m.remove_elements_from('e4')
+    m.remove_from('e4')
     self.assertEqual(m.size(), 4)
 
     d = m.create_empty_data()
@@ -393,7 +393,7 @@ class TestPyCStruct(unittest.TestCase):
     self.assertFalse('e4' in d)
     self.assertFalse('e6' in d)
 
-  def test_struct_remove_elements_to(self):
+  def test_struct_remove_to(self):
 
     m = pycstruct.StructDef()
     m.add('int8', 'e1')
@@ -405,9 +405,9 @@ class TestPyCStruct(unittest.TestCase):
 
     self.assertEqual(m.size(), 14)
 
-    self.assertRaises(Exception, m.remove_elements_to, 'invalid')
+    self.assertRaises(Exception, m.remove_to, 'invalid')
 
-    m.remove_elements_to('e4')
+    m.remove_to('e4')
     self.assertEqual(m.size(), 8)
     
     d = m.create_empty_data()
