@@ -464,7 +464,7 @@ class StructDef(BaseDef):
       return 'union'
     return 'struct'
   
-  def remove_elements_from(self, name):
+  def remove_from(self, name):
 
     """Remove all elements from a specific element
 
@@ -473,9 +473,9 @@ class StructDef(BaseDef):
        :param name: Name of element to remove and all after this element
        :type name: str
     """
-    self._remove_element_from_or_to(name, to = False)
+    self._remove_from_or_to(name, to = False)
 
-  def remove_elements_to(self, name):
+  def remove_to(self, name):
 
     """Remove all elements from beginning to a specific element
 
@@ -484,15 +484,15 @@ class StructDef(BaseDef):
        :param name: Name of element to remove and all before element
        :type name: str
     """
-    self._remove_element_from_or_to(name, to = True)
+    self._remove_from_or_to(name, to = True)
     
-  def _remove_element_from_or_to(self, name, to = True):
+  def _remove_from_or_to(self, name, to = True):
     if name not in self.__fields:
       raise Exception('Element {} does not exist'.format(name))
 
     keys = list(self.__fields)
     if to == False:
-      keys.sort(reverse = True)
+      keys.reverse()
     for key in keys:
       del self.__fields[key]
       if key == name:
