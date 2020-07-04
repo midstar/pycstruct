@@ -26,6 +26,9 @@ deploy_script:
 - ps: |
       if($env:PYTHON_VERSION -eq '37') {
         Write-Output "Deploying for this build"
+        python -m pip install -U --user setuptools wheel twine
+        python setup.py sdist bdist_wheel
+        python -m twine upload --repository testpypi dist/*
       } else {
         Write-Output "No deployment for this build"
       }
