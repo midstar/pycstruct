@@ -22,4 +22,10 @@ install:
 test_script:
 - tox -e py%PYTHON_VERSION%
 
+deploy:
+  on:
+    POST_COMMAND: coveralls # Only one of he matrix jobs
+  - echo deploy runned
+
+
 
