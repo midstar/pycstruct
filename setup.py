@@ -1,24 +1,16 @@
 from setuptools import setup
 
 try:
-    with open('README.md', 'r') as fh:
+    with open("README.md", "r") as fh:
         long_description = fh.read()
 except:
-      long_description = ''
-
-with open('appveyor.yml', 'r') as fh:
-      for line in fh.readlines():
-            if line.startswith('version: '):
-                  full_version = line.split(' ')[1]
-                  v = full_version.split('.') 
-                  version = '{}.{}.{}'.format(v[0], v[1], v[2])
-                  break
+      long_description = ""
 
 setup(name='pycstruct',
-      version=version,
+      version='0.4.2',
       description='Binary data handling in Python using dictionaries',
       long_description=long_description,
-      long_description_content_type="text/markdown",
+       long_description_content_type="text/markdown",
       url='http://github.com/midstar/pycstruct',
       project_urls={
             'Bug Tracker': 'https://github.com/midstar/pycstruct/issues',
