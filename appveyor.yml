@@ -1,4 +1,4 @@
-version: 0.4.2.{build}
+version: 0.4.3.{build}
 
 environment:
   PYTHONUNBUFFERED: 1
@@ -28,7 +28,7 @@ deploy_script:
         Write-Output "Deploying for this build"
         python -m pip install -U --user setuptools wheel twine
         python setup.py sdist bdist_wheel
-        python -m twine upload --repository testpypi dist/*
+        python -m twine upload dist/*
       } else {
         Write-Output "No deployment for this build"
       }
