@@ -22,10 +22,13 @@ install:
 test_script:
 - tox -e py%PYTHON_VERSION%
 
-deploy:
-  on:
-    POST_COMMAND: coveralls # Only one of he matrix jobs
-  - echo deploy runned
+deploy_script:
+- ps: |
+      if($env:PYTHON_VERSION -eq '37') {
+        Write-Output "Deploying for this build"
+      } else {
+        Write-Output "No deployment for this build"
+      }
 
 
 
