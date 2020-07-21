@@ -1,4 +1,4 @@
-version: 0.4.6.{build}
+version: 0.4.7.{build}
 
 environment:
   PYTHONUNBUFFERED: 1
@@ -25,7 +25,7 @@ test_script:
 
 deploy_script:
 - ps: |
-      if($env:PYTHON_VERSION -eq '37') {
+      if($env:PYTHON_VERSION -eq "37" -And $env:APPVEYOR_REPO_BRANCH -eq "master")) {
         Write-Output "Deploying for this build"
         python -m pip install -U --user setuptools wheel twine
         python setup.py sdist bdist_wheel
