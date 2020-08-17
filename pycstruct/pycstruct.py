@@ -506,12 +506,13 @@ class BitfieldDef(BaseDef):
 
   The size of the bit field is 1, 2, 3, .., 8 bytes depending on the number of
   elements added to the bit field. You can also force the bitfield size by
-  setting the size argument.
+  setting the size argument. When forcing the size larger bitfields than
+  8 bytes are allowed.
 
   :param byteorder: Byte order of the bitfield. Valid values are 'native', 
                     'little' and 'big'.
   :type byteorder: str, optional
-  :param size: Force enum to be a certain size. By default it will expand
+  :param size: Force bitfield to be a certain size. By default it will expand
                when new elements are added.
   :type size: int, optional
   """
