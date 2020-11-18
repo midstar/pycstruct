@@ -272,8 +272,15 @@ class _CastXmlParser():
         if 'float' in typename or 'double' in typename:
             pycstruct_type_name = 'float'
         elif length > 1 and 'char' in typename:
-            # char of length > 1 are considered UTF-8 data
-            pycstruct_type_name = 'utf-'
+            if 'unsigned' in typename:
+                # unsigned char of length > 1 are considered uint8 array
+                pycstruct_type_name = 'uint'
+            elif 'signed' in typename:
+                # signed char of length > 1 are considered int8 array
+                pycstruct_type_name = 'int'
+            else:
+                # char of length > 1 are considered UTF-8 data (string)
+                pycstruct_type_name = 'utf-'
         elif 'unsigned' in typename:
             pycstruct_type_name = 'uint'
         else:
@@ -424,6 +431,12 @@ def parse_file(input_files, byteorder = 'native',
 
        Alignment will automatically be detected and configured for the pycstruct
        instances.
+
+       Note that following pycstruct types will be used for char arrays:
+
+       - 'unsigned char []' = uint8 array
+       - 'signed char []' = int8 array
+       - 'char []' = utf-8 data (string) 
        
        :param input_files: Source file name or a list of file names.
        :type input_files: str or list
@@ -493,6 +506,12 @@ def parse_str(str, byteorder = 'native',
 
        Alignment will automatically be detected and configured for the pycstruct
        instances.
+
+       Note that following pycstruct types will be used for char arrays:
+
+       - 'unsigned char []' = uint8 array
+       - 'signed char []' = int8 array
+       - 'char []' = utf-8 data (string) 
        
        :param str: A string of C source code.
        :type str: str
