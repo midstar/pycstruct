@@ -96,6 +96,18 @@ class TestCParser(unittest.TestCase):
     self.assertTrue('with_volatile' in instance)
     self.assertTrue('filled_enum' in instance)
     self.assertTrue('signed_enum' in instance)
+    self.assertTrue('different_char_arrays' in instance)
+
+    # Check types of different_char_arrays members.
+    # Since type cannot be read out from StructDef
+    # for individual members we use the __str__ 
+    # representation
+    char_array_str = str(instance['different_char_arrays'])
+    rows = char_array_str.splitlines()
+    self.assertEqual(rows[1].split()[1], 'utf-8')
+    self.assertEqual(rows[2].split()[1], 'uint8')
+    self.assertEqual(rows[3].split()[1], 'int8')
+
 
 
   #@unittest.skipIf(True, 'temporary skipped')

@@ -29,3 +29,9 @@ enum signed_enum {
     semem3 = 2,
     semem_fill = 0xFFFFFFFF
 };
+
+struct different_char_arrays {
+    char char_array[10];
+    unsigned char unsigned_char_array[10];
+    signed char signed_char_array[10];
+};
