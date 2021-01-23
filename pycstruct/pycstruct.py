@@ -255,7 +255,7 @@ class StructDef(BaseDef):
           |            |               | type and not 'struct' string.        |
           +------------+---------------+--------------------------------------+
           | bitfield   | bitfield size | Bitfield. The actual                 |
-          |            |               |  :meth:`BitfieldDef` object shall be |
+          |            |               | :meth:`BitfieldDef` object shall be  |
           |            |               | set as type and not 'bitfield'       |
           |            |               | string.                              |
           +------------+---------------+--------------------------------------+
