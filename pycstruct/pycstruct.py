@@ -203,9 +203,9 @@ class StructDef(BaseDef):
 
     # Add end padding of 0 size
     self.__pad_byte = BasicTypeDef('uint8', default_byteorder)
-    self.__pad_end = {'type' : self.__pad_byte, 'length' : 0}
+    self.__pad_end = {'type' : self.__pad_byte, 'length' : 0, 'same_level' : False}
   
-  def add(self, type, name, length = 1, byteorder = ''):
+  def add(self, type, name, length = 1, byteorder = '', same_level = False):
     """Add a new element in the struct/union definition. The element will be added 
        directly after the previous element if a struct or in parallel with the
        previous element if union. Padding might be added depending on the alignment
@@ -268,11 +268,17 @@ class StructDef(BaseDef):
        :type type: str
        :param name: Name of element. Needs to be unique.
        :type name: str
-       :param length: Number of elements. If > 1 this is an array/list of elements with equal size. Default is 1.
+       :param length: Number of elements. If > 1 this is an array/list of 
+                      elements with equal size. Default is 1.
        :type length: int, optional
        :param byteorder: Byteorder of this element. Valid values are 'native', 
-                         'little' and 'big'. If not specified the default byteorder is used.
+                         'little' and 'big'. If not specified the default 
+                         byteorder is used.
        :type byteorder: str, optional
+       :param same_level: Relevant if adding embedded struct or bitfield. If 
+                          True, the serialized or deserialized dictionary keys
+                          will be on the same level as the parent. Default is False.
+       :type same_level: bool, optional
        
        """
 
@@ -285,9 +291,13 @@ class StructDef(BaseDef):
       byteorder = self.__default_byteorder
     elif byteorder not in _BYTEORDER:
       raise Exception('Invalid byteorder: {0}.'.format(byteorder))
+    if same_level and length > 1:
+      raise Exception('same_level not allowed in combination with length > 1')
+    if same_level and not (isinstance(type, StructDef) or isinstance(type, BitfieldDef)):
+      raise Exception('same_level only allowed in combination with StructDef or BitfieldDef')
 
     # Create objects when necessary
-    if type == "utf-8":
+    if type == 'utf-8':
       type = StringDef(length)
       # String length is handled inside the definition
       length = 1
@@ -304,11 +314,12 @@ class StructDef(BaseDef):
       padding = _get_padding(self.__alignment, self.size(), type._largest_member())
       if padding > 0:
         self.__fields['__pad_{0}'.format(self.__pad_count)] = \
-          {'type' : self.__pad_byte, 'length' : padding}
+          {'type' : self.__pad_byte, 'length' : padding, 'same_level' : False }
         self.__pad_count += 1
 
     # Add the element
-    self.__fields[name] = {'type' : type, 'length' : length}
+    self.__fields[name] = { 'type' : type, 'length' : length, 
+                            'same_level' : same_level }
 
     # Check if end padding is required
     padding = _get_padding(self.__alignment, self.size(), self._largest_member())
@@ -363,6 +374,7 @@ class StructDef(BaseDef):
     for name, field in self.__fields.items():
       datatype = field['type']
       length = field['length']
+      same_level = field['same_level']
       datatype_size = datatype.size()
 
       if not name.startswith('__pad'):
@@ -379,7 +391,10 @@ class StructDef(BaseDef):
           values.append(value)
 
         if length == 1:
-          result[name] = values[0]
+          if same_level and isinstance(values[0], dict):
+            result.update(values[0])
+          else:
+            result[name] = values[0]
         else:
           result[name] = values
 
@@ -408,6 +423,7 @@ class StructDef(BaseDef):
     for name, field in self.__fields.items():
       datatype = field['type']
       length = field['length']
+      same_level = field['same_level']
       datatype_size = datatype.size()
 
       if name in data and not name.startswith('__pad'):
@@ -415,7 +431,7 @@ class StructDef(BaseDef):
 
         value_list = []
         if length > 1:
-          if not isinstance(value, collections.Iterable):
+          if not isinstance(value, collections.abc.Iterable):
             raise Exception('Key: {0} shall be a list'.format(name))
           if len(value) > length:
             raise Exception('List in key: {0} is larger than {1}'.format(name, length))
@@ -426,7 +442,10 @@ class StructDef(BaseDef):
         for i in range(0, len(value_list)):
           next_offset = offset + i*datatype_size
           try:
-            buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value_list[i])
+            value_to_serialize = value_list[i]
+            if same_level:
+              value_to_serialize = data
+            buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value_to_serialize)
           except Exception as e:
             raise Exception('Unable to serialize {} {}. Reason:\n{}'.format(
               datatype._type_name(), name, e.args[0]))
