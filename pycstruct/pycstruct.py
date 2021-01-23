@@ -426,26 +426,23 @@ class StructDef(BaseDef):
       same_level = field['same_level']
       datatype_size = datatype.size()
 
-      if name in data and not name.startswith('__pad'):
-        value = data[name]
-
+      if same_level or (name in data and not name.startswith('__pad')):
         value_list = []
-        if length > 1:
-          if not isinstance(value, collections.abc.Iterable):
+        if same_level:
+          value_list.append(data) # Add all data for embedded object
+        elif length > 1:
+          if not isinstance(data[name], collections.abc.Iterable):
             raise Exception('Key: {0} shall be a list'.format(name))
-          if len(value) > length:
+          if len(data[name]) > length:
             raise Exception('List in key: {0} is larger than {1}'.format(name, length))
-          value_list = value
+          value_list = data[name]
         else:
-          value_list.append(value) # Make list of single value
+          value_list.append(data[name]) # Make list of single value
 
         for i in range(0, len(value_list)):
           next_offset = offset + i*datatype_size
           try:
-            value_to_serialize = value_list[i]
-            if same_level:
-              value_to_serialize = data
-            buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value_to_serialize)
+            buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value_list[i])
           except Exception as e:
             raise Exception('Unable to serialize {} {}. Reason:\n{}'.format(
               datatype._type_name(), name, e.args[0]))
