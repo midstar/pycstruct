@@ -164,6 +164,13 @@ class TestCParser(unittest.TestCase):
 
     test_pycstruct.check_embedded_struct(self, instance['house_s'], 'embedded_struct_nopack.dat')
 
+  def test_xml_parse_bitfield_struct(self):
+    _CastXmlParser = pycstruct.cparser._CastXmlParser
+    parser = _CastXmlParser(os.path.join(test_dir, 'bitfield_struct.xml'))
+    meta = parser.parse()
+    type_meta_parser = pycstruct.cparser._TypeMetaParser(meta, 'little')
+    instance = type_meta_parser.parse() 
+
   @unittest.skipIf(shutil.which('castxml') == None, 'castxml is not installed')
   def test_run_castxml_real(self):
     _run_castxml = pycstruct.cparser._run_castxml

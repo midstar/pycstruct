@@ -5,7 +5,7 @@
 # file that should have been included as part of this package.
 
 import xml.etree.ElementTree as ET
-import os, logging, pycstruct, subprocess, shutil, hashlib, tempfile
+import os, logging, pycstruct, subprocess, shutil, hashlib, tempfile, math
 
 
 ###############################################################################
@@ -69,6 +69,7 @@ class _CastXmlParser():
     def __init__(self, xml_filename):
         self._xml_filename = xml_filename
         self._anonymous_count = 0
+        self._embedded_bf_count = 0
 
     def parse(self):
 
@@ -122,12 +123,13 @@ class _CastXmlParser():
         return type_meta
 
     def _is_bitfield(self, xml_struct_or_bitfield):
-        ''' Returns true if this is a bitfield '''
+        ''' Returns true if this is a "true" bitfield, i.e. the
+            struct only contains bitfield members '''
         for field in self._get_fields(xml_struct_or_bitfield):
-            if 'bits' in field.attrib:
+            if 'bits' not in field.attrib:
                 # Only bitfield fields has the bits attribute set
-                return True
-        return False
+                return False
+        return True
     
     def _get_fields(self, xml_item):
         fields = []
@@ -171,12 +173,9 @@ class _CastXmlParser():
         self._set_struct_union_members(xml_struct, struct)
         return struct   
 
-    def _parse_bitfield(self, xml_bitfield):
-        bitfield = {}
-        bitfield['type'] = 'bitfield'
-        self._set_common_meta(xml_bitfield, bitfield)
-        bitfield['members'] = []
-        for field in self._get_fields(xml_bitfield):
+    def _parse_bitfield_members(self, xml_bitfield_members):
+        result = []
+        for field in xml_bitfield_members:
             member = {}
             member['name'] = field.attrib['name']
             member['bits'] = int(field.attrib['bits'])
@@ -192,9 +191,16 @@ class _CastXmlParser():
                 logger.warn('Unable to parse sign of bitfield {} member {}. Will be signed.'.format(
                         bitfield['name'], member['name']))
 
-            bitfield['members'].append(member)  
+            result.append(member)  
+        return result       
+
+    def _parse_bitfield(self, xml_bitfield):
+        bitfield = {}
+        bitfield['type'] = 'bitfield'
+        self._set_common_meta(xml_bitfield, bitfield)
+        bitfield['members'] = self._parse_bitfield_members(self._get_fields(xml_bitfield)) 
   
-        return bitfield   
+        return bitfield
 
     def _set_common_meta(self, xml_input, dict_output):
         ''' Set common metadata available for all types '''
@@ -211,21 +217,47 @@ class _CastXmlParser():
     def _set_struct_union_members(self, xml_input, dict_output):
         ''' Set members - common for struct and unions '''
         dict_output['members'] = []
-        for field in self._get_fields(xml_input):
-            member = {}
-            member['name'] = field.attrib['name']
-            try:
-                member_type = self._get_type(field.attrib['type'])
-                member['type'] = member_type['type_name']
-                member['length'] = member_type['length']
-                if 'reference' in member_type:
-                    member['reference'] = member_type['reference']
-            except Exception as e:
-                logger.warning('{0} has a member {1} could not be handled:\n  - {2}\n  - Composite type will be ignored.'.format(
-                    dict_output['name'], member['name'], e.args[0]))
-                dict_output['supported'] = False
-                break
-            dict_output['members'].append(member)        
+        fields = self._get_fields(xml_input)
+        while len(fields) > 0:
+            field = fields.pop(0)
+            if 'bits' in field.attrib:
+                # This is a bitfield, we need to create our
+                # own bitfield definition for this field and
+                # all bitfield members directly after this
+                # member
+                bf_fields = []
+                nbr_bits = 0
+                fields.insert(0, field)
+                while len(fields) > 0 and 'bits' in fields[0].attrib:
+                    bf_field = fields.pop(0)
+                    nbr_bits += int(self._get_attrib(bf_field, 'bits', '0'))
+                    bf_fields.append(bf_field)
+                bitfield = {}
+                bitfield['type'] = 'bitfield'
+                bitfield['name'] = 'auto_bitfield_{0}'.format(self._embedded_bf_count)
+                self._embedded_bf_count +=1
+                # WARNING! The size is compiler specific and not covered
+                # by the C standard. We guess:
+                bitfield['size'] = int(math.ceil(nbr_bits/8.0))
+                bitfield['align'] = dict_output['align'] # Same as parent
+                bitfield['supported'] = True 
+                bitfield['members'] = self._parse_bitfield_members(bf_fields)
+                print(str(bitfield))
+            else:
+                member = {}
+                member['name'] = field.attrib['name']
+                try:
+                    member_type = self._get_type(field.attrib['type'])
+                    member['type'] = member_type['type_name']
+                    member['length'] = member_type['length']
+                    if 'reference' in member_type:
+                        member['reference'] = member_type['reference']
+                except Exception as e:
+                    logger.warning('{0} has a member {1} could not be handled:\n  - {2}\n  - Composite type will be ignored.'.format(
+                        dict_output['name'], member['name'], e.args[0]))
+                    dict_output['supported'] = False
+                    break
+                dict_output['members'].append(member)        
 
     def _get_attrib(self, elem, attrib, default):
         if attrib in elem.attrib:
@@ -260,7 +292,7 @@ class _CastXmlParser():
             name = self._get_elem_with_attrib('Typedef', 'type', type_id).attrib['name']
         except:
             name = 'anonymous_{}'.format(self._anonymous_count)
-            self._anonymous_count
+            self._anonymous_count += 1
         return name
 
 
