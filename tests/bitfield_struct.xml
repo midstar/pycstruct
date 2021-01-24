@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<CastXML format="1.1.5">
+  <Namespace id="_1" name="::" members="_2 _3 _4 _5 _6 _7 _8"/>
+  <Typedef id="_2" name="__int128_t" type="_9" context="_1" location="f0:0" file="f0" line="0"/>
+  <Typedef id="_3" name="__uint128_t" type="_10" context="_1" location="f0:0" file="f0" line="0"/>
+  <Typedef id="_4" name="__NSConstantString" type="_11" context="_1" location="f0:0" file="f0" line="0"/>
+  <Typedef id="_5" name="__builtin_ms_va_list" type="_12" context="_1" location="f0:0" file="f0" line="0"/>
+  <Typedef id="_6" name="__builtin_va_list" type="_13" context="_1" location="f0:0" file="f0" line="0"/>
+  <Struct id="_7" name="" context="_1" location="f1:6" file="f1" line="6" members="_14 _15 _16 _17 _18 _19 _20 _21 _22" size="136" align="8"/>
+  <Typedef id="_8" name="Data" type="_23" context="_1" location="f1:16" file="f1" line="16"/>
+  <FundamentalType id="_9" name="__int128" size="128" align="128"/>
+  <FundamentalType id="_10" name="unsigned __int128" size="128" align="128"/>
+  <Struct id="_11" name="__NSConstantString_tag" context="_1" location="f0:0" file="f0" line="0" members="_24 _25 _26 _27" size="256" align="64"/>
+  <PointerType id="_12" type="_28" size="64" align="64"/>
+  <ArrayType id="_13" min="0" max="0" type="_29"/>
+  <Field id="_14" name="m1" type="_30" context="_7" access="public" location="f1:7" file="f1" line="7" offset="0"/>
+  <Field id="_15" name="bf1a" type="_31" bits="3" context="_7" access="public" location="f1:8" file="f1" line="8" offset="32"/>
+  <Field id="_16" name="bf1b" type="_31" bits="5" context="_7" access="public" location="f1:9" file="f1" line="9" offset="35"/>
+  <Field id="_17" name="m2" type="_32" context="_7" access="public" location="f1:10" file="f1" line="10" offset="40"/>
+  <Field id="_18" name="bf2a" type="_30" bits="4" context="_7" access="public" location="f1:11" file="f1" line="11" offset="48"/>
+  <Field id="_19" name="bf2b" type="_30" bits="10" context="_7" access="public" location="f1:12" file="f1" line="12" offset="52"/>
+  <Field id="_20" name="bf3a" type="_32" bits="3" context="_7" access="public" location="f1:13" file="f1" line="13" offset="62"/>
+  <Field id="_21" name="bf3b" type="_32" bits="5" context="_7" access="public" location="f1:14" file="f1" line="14" offset="65"/>
+  <Field id="_22" name="m3" type="_33" context="_7" access="public" location="f1:15" file="f1" line="15" offset="72"/>
+  <ElaboratedType id="_23" type="_7"/>
+  <Field id="_24" name="isa" type="_34" context="_11" access="public" offset="0"/>
+  <Field id="_25" name="flags" type="_30" context="_11" access="public" offset="64"/>
+  <Field id="_26" name="str" type="_35" context="_11" access="public" offset="128"/>
+  <Field id="_27" name="length" type="_33" context="_11" access="public" offset="192"/>
+  <Struct id="_29" name="__va_list_tag" context="_1" location="f0:0" file="f0" line="0" members="_36 _37 _38 _39" size="192" align="64"/>
+  <FundamentalType id="_30" name="int" size="32" align="32"/>
+  <FundamentalType id="_31" name="unsigned int" size="32" align="32"/>
+  <FundamentalType id="_32" name="unsigned char" size="8" align="8"/>
+  <FundamentalType id="_33" name="long int" size="64" align="64"/>
+  <PointerType id="_34" type="_30c" size="64" align="64"/>
+  <CvQualifiedType id="_30c" type="_30" const="1"/>
+  <PointerType id="_35" type="_28c" size="64" align="64"/>
+  <CvQualifiedType id="_28c" type="_28" const="1"/>
+  <Field id="_36" name="gp_offset" type="_31" context="_29" access="public" offset="0"/>
+  <Field id="_37" name="fp_offset" type="_31" context="_29" access="public" offset="32"/>
+  <Field id="_38" name="overflow_arg_area" type="_40" context="_29" access="public" offset="64"/>
+  <Field id="_39" name="reg_save_area" type="_40" context="_29" access="public" offset="128"/>
+  <PointerType id="_40" type="_41" size="64" align="64"/>
+  <FundamentalType id="_28" name="char" size="8" align="8"/>
+  <FundamentalType id="_41" name="void" size="0" align="8"/>
+  <File id="f0" name="&lt;builtin&gt;"/>
+  <File id="f1" name="bitfield_struct.h"/>
+</CastXML>
