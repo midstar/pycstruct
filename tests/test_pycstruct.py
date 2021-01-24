@@ -177,6 +177,14 @@ class TestPyCStruct(unittest.TestCase):
     m.add('int8', 'name1')
     self.assertRaises(Exception, m.add, 'uint8', 'name1')
 
+    # same_level with length > 1
+    self.assertRaises(Exception, m.add, pycstruct.StructDef(), 'same_level_err1', 
+                      length = 2, same_level = True)
+
+    # same_level with non StructDef/BitfieldDef
+    self.assertRaises(Exception, m.add, 'int8', 'same_level_err1', 
+                      same_level = True)
+
 
   def test_invalid_deserialize(self):
 
@@ -369,6 +377,47 @@ class TestPyCStruct(unittest.TestCase):
 
     self.assertRaises(Exception, s.deserialize, bytes([0]))
     self.assertRaises(Exception, s.serialize, {'unserializable':'hello'})
+
+  def test_embedded_same_level(self):
+    substruct = pycstruct.StructDef()
+    substruct.add('uint8', 'ss1')
+    substruct.add('int16', 'ss2')
+    substruct.add('uint32', 'ss3')
+
+    bitfield = pycstruct.BitfieldDef()
+    bitfield.add('bf1', 3)
+    bitfield.add('bf2', 1)
+    bitfield.add('bf3', 4)
+
+    parentstruct = pycstruct.StructDef()
+    parentstruct.add('uint16', 'ps1')
+    parentstruct.add('uint32', 'ps2')
+    parentstruct.add(substruct, 'ps3', same_level = True)
+    parentstruct.add(bitfield, 'ps4', same_level = True)
+    parentstruct.add('int8', 'ps5')
+
+    mydict = {
+      'ss1' : 1,
+      'ss2' : -1234,
+      'ss3' : 123456,
+      'bf1' : 5,
+      'bf2' : 0,
+      'bf3' : 11,
+      'ps1' : 789,
+      'ps2' : 91011,
+      'ps3' : 1213, # Should be ignored
+      'ps5' : -100
+    }
+
+    databin = parentstruct.serialize(mydict)
+    mydict2 = parentstruct.deserialize(databin)
+
+    # Check
+    for key, value in mydict.items():
+      if key != 'ps3':
+        self.assertEqual(value, mydict2[key], msg='Key {0}'.format(key))
+
+
 
   def test_struct_remove_from(self):
 

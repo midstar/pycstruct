@@ -35,6 +35,7 @@ automatically generate the pycstruct definitions / instances.
    overview.rst
    examples/examples.rst
    faq.rst
+   limitations.rst
    reference.rst
 
 
