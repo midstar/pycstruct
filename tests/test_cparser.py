@@ -171,6 +171,11 @@ class TestCParser(unittest.TestCase):
     type_meta_parser = pycstruct.cparser._TypeMetaParser(meta, 'little')
     instance = type_meta_parser.parse() 
 
+    with open(os.path.join(test_dir, 'bitfield_struct.dat'), 'rb') as f:
+      inbytes = f.read()
+    result = instance['Data'].deserialize(inbytes)
+    print(str(result))
+
   @unittest.skipIf(shutil.which('castxml') == None, 'castxml is not installed')
   def test_run_castxml_real(self):
     _run_castxml = pycstruct.cparser._run_castxml

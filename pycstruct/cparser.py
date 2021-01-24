@@ -99,6 +99,10 @@ class _CastXmlParser():
             else:
                 supported_types[id] = self._parse_struct(xml_struct_or_bitfield)
 
+        # Add all embedded bitfields in supported_types
+        for bitfield in self._embedded_bf:
+            supported_types[bitfield['name']] = bitfield
+
         # Change mapping from id to name
         type_meta = {}
         for id, type in supported_types.items():
@@ -246,9 +250,11 @@ class _CastXmlParser():
                 bitfield['members'] = self._parse_bitfield_members(bf_fields)
                 self._embedded_bf.append(bitfield)
                 
-                member['name'] = '_{0}'.format(bitfield['name'])
+                member['name'] = '__{0}'.format(bitfield['name'])
                 member['type'] = 'bitfield'
+                member['length'] = 1
                 member['reference'] = bitfield['name']
+                member['same_level'] = True
             else:
                 member['name'] = field.attrib['name']
                 try:
@@ -416,7 +422,11 @@ class _TypeMetaParser():
                     if other_instance == None:
                         raise Exception('Member {} is of type {} {} that is not supported'.format(
                             member['name'], member['type'], member['reference']))
-                    instance.add(other_instance, member['name'], member['length'])
+                    same_level = False
+                    if ('same_level' in member) and (member['same_level'] == True):
+                        same_level = True
+                    instance.add(other_instance, member['name'], 
+                                 member['length'], same_level = same_level)
                 else: 
                     instance.add(member['type'],member['name'], member['length'])
         
