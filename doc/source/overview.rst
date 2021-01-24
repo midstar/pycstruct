@@ -294,7 +294,7 @@ added automatically.
     noPadding_Default          = pycstruct.StructDef(alignment = 1)
     paddedFor16BitArchitecture = pycstruct.StructDef(alignment = 2)
     paddedFor32BitArchitecture = pycstruct.StructDef(alignment = 4)
-    paddedFor63BitArchitecture = pycstruct.StructDef(alignment = 8)
+    paddedFor64BitArchitecture = pycstruct.StructDef(alignment = 8)
 
 Lets add padding to the first example in this overview:
 
@@ -323,6 +323,8 @@ The above example will now have following layout:
 | 4             | Floating point number | myFloatingPointNumber     |
 +---------------+-----------------------+---------------------------+
 
+Note that when parsing source code, pycstruct has some 
+limitations regarding padding of bitfields. See :ref:`limitations`.
 
 Parsing source code
 -------------------
