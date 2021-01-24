@@ -70,6 +70,7 @@ class _CastXmlParser():
         self._xml_filename = xml_filename
         self._anonymous_count = 0
         self._embedded_bf_count = 0
+        self._embedded_bf = []
 
     def parse(self):
 
@@ -220,6 +221,7 @@ class _CastXmlParser():
         fields = self._get_fields(xml_input)
         while len(fields) > 0:
             field = fields.pop(0)
+            member = {}
             if 'bits' in field.attrib:
                 # This is a bitfield, we need to create our
                 # own bitfield definition for this field and
@@ -242,9 +244,12 @@ class _CastXmlParser():
                 bitfield['align'] = dict_output['align'] # Same as parent
                 bitfield['supported'] = True 
                 bitfield['members'] = self._parse_bitfield_members(bf_fields)
-                print(str(bitfield))
+                self._embedded_bf.append(bitfield)
+                
+                member['name'] = '_{0}'.format(bitfield['name'])
+                member['type'] = 'bitfield'
+                member['reference'] = bitfield['name']
             else:
-                member = {}
                 member['name'] = field.attrib['name']
                 try:
                     member_type = self._get_type(field.attrib['type'])
@@ -257,7 +262,7 @@ class _CastXmlParser():
                         dict_output['name'], member['name'], e.args[0]))
                     dict_output['supported'] = False
                     break
-                dict_output['members'].append(member)        
+            dict_output['members'].append(member)        
 
     def _get_attrib(self, elem, attrib, default):
         if attrib in elem.attrib:
