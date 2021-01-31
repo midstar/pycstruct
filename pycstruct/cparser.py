@@ -307,7 +307,7 @@ class _CastXmlParser():
         return name
 
 
-    def _fundamental_type_to_pcstruct_type(self, elem, length):
+    def _fundamental_type_to_pycstruct_type(self, elem, length):
         ''' Map the fundamental type to pycstruct type '''
         typename = elem.attrib['name']
         typesize = elem.attrib['size']
@@ -355,7 +355,7 @@ class _CastXmlParser():
             elem = self._get_basic_type_element(elem.attrib['type'])
 
         if elem.tag == 'FundamentalType':
-            member_type['type_name'] = self._fundamental_type_to_pcstruct_type(elem, member_type['length'])
+            member_type['type_name'] = self._fundamental_type_to_pycstruct_type(elem, member_type['length'])
         elif elem.tag == 'PointerType':
             member_type['type_name'] = 'uint{0}'.format(elem.attrib['size'])
         elif elem.tag == 'Struct':
@@ -470,7 +470,7 @@ def parse_file(input_files, byteorder = 'native',
        The result is a dictionary where the keys are the names of the
        struct, unions etc. typedef'ed names are also supported.
 
-       The values of the resulting dictinonary are the actual pycstruct 
+       The values of the resulting dictionary are the actual pycstruct 
        instance connected to the name.
 
        This function requires that the external tool 
@@ -545,7 +545,7 @@ def parse_str(str, byteorder = 'native',
        The result is a dictionary where the keys are the names of the
        struct, unions etc. typedef'ed names are also supported.
 
-       The values of the resulting dictinonary are the actual pycstruct 
+       The values of the resulting dictionary are the actual pycstruct 
        instance connected to the name.
 
        This function requires that the external tool 

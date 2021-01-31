@@ -176,7 +176,7 @@ class StringDef(BaseDef):
 class StructDef(BaseDef):
   """This class represents a struct or a union definition
 
-  :param default_byteorder: Byte order of each element unless explicilty set 
+  :param default_byteorder: Byte order of each element unless explicitly set 
                             for the element. Valid values are 'native', 
                             'little' and 'big'.
   :type default_byteorder: str, optional
@@ -330,7 +330,7 @@ class StructDef(BaseDef):
   def size(self):
     """ Get size of structure or union.
 
-    :return: Number of bytes this structure represents alternativly largest
+    :return: Number of bytes this structure represents alternatively largest
              of the elements (including end padding) if this is a union.
     :rtype: int
     """
@@ -744,7 +744,7 @@ class EnumDef(BaseDef):
        be assigned to the same value.
 
        The size of the enum will expand when required, but adding a value
-       requiering a size larger than 64 bits will generate an exception.
+       requiring a size larger than 64 bits will generate an exception.
        
        :param name: Name of constant. Needs to be unique.
        :type name: str

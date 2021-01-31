@@ -6,7 +6,7 @@ Limitations
 Matrixes not supported
 ----------------------
 
-pcstruct supports arrays but not matrixes
+pycstruct supports arrays but not matrixes
 
 .. code-block:: c
 
@@ -32,7 +32,7 @@ Padding of bitfields
 --------------------
 
 How bitfields are stored in memory is not defined by the C standard.
-pycstruct c parser triels to keep consecutive defined bitfields together, 
+pycstruct c parser tries to keep consecutive defined bitfields together, 
 however gcc (for example) will split bitfields when alignment is needed.
 
 Following example will be a problem:
@@ -45,7 +45,7 @@ Following example will be a problem:
       int bf2 : 23;  // = 23 bits
     };
 
-pcstruct c parser will layout the struct like this using 32 bit alignment:
+pycstruct c parser will layout the struct like this using 32 bit alignment:
 
 +---------------+-----------------------+---------------------------+
 | Size in bytes | Type                  | Name                      |

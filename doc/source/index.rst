@@ -20,7 +20,7 @@ Following complex C types are supported:
 These types may consist of any traditional data types (integer, unsigned integer, 
 boolean and float) between 1 to 8 bytes large, arrays (lists), and strings (ASCII/UTF-8).
 
-Structs, unions, biftfields and enums can be embedded inside other structs/unions
+Structs, unions, bitfields and enums can be embedded inside other structs/unions
 in any level. 
 
 Individual elements can be stored / read in any byte order and alignment.

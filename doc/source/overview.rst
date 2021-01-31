@@ -4,7 +4,7 @@ Overview
 Background
 ----------
 
-Typically python applications don't care about memory layout of the used varables 
+Typically python applications don't care about memory layout of the used variables 
 or objects. This is generally not a problem when parsing text based data such as
 JSON, XML data. However, when parsing binary data the Python language and standard
 library has limited support for this. 
@@ -59,7 +59,7 @@ ordinary python dictionaries.
     myByteArray = myStruct.serialize(myDict)
 
 myByteArray is now a byte array that can for example can be written to
-a file or transmittet over a network.
+a file or transmitted over a network.
 
 The reverse process looks like this (assuming data is stored in the
 file myDataFile.dat):
@@ -125,7 +125,7 @@ To write a string:
 
 If you need another encoding that UTF-8 or ASCII it is recommended that you
 define your element as an array of uint8. Then you can decode/encode the array
-to any format you wan't.
+to any format you want.
 
 Embedding Structs
 -----------------
@@ -166,7 +166,7 @@ When deserializing a binary for a union, pycstruct tries to generate
 a dictionary for each member. If any of the members fails due to formatting
 errors these members will be ignored.
 
-When serializing a dictionary into a binary pcstruct will just pick the
+When serializing a dictionary into a binary pycstruct will just pick the
 first member it finds in the dictionary. Therefore you should only 
 define the member that you which to serialize in your dictionary.
 
@@ -274,11 +274,11 @@ individual elements are put on addresses that can be accessed
 efficiently. Also, padding is added in the end of the structs when
 required so that an array of the struct can be made without "memory gaps".
 
-Padding dependes on the alignment of the CPU architecture (typically 32
+Padding depends on the alignment of the CPU architecture (typically 32
 or 64 bits on modern architectures), the size of individual items in
 the struct and the position of the items in the struct.
 
-The padding behaviour can be removed by most compilers, usually adding
+The padding behavior can be removed by most compilers, usually adding
 a compiler flag or directive such as:
 
 .. code-block:: c
