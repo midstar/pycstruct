@@ -210,7 +210,7 @@ class _CastXmlParser():
     def _set_common_meta(self, xml_input, dict_output):
         ''' Set common metadata available for all types '''
         id = xml_input.attrib['id']
-        name = xml_input.attrib['name']
+        name = self._get_attrib(xml_input, 'name', '')
         if name == '':
             # Does not have a name - check for TypeDef
             name = self._get_typedef_name(id)
