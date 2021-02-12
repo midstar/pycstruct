@@ -25,7 +25,7 @@ def _run_castxml(input_files, xml_filename, castxml_cmd = 'castxml',
     args = [castxml_cmd]
     args += castxml_extra_args
     args += input_files
-    args.append('--castxml-output=1')
+    args.append('--castxml-gccxml')
     args.append('-o')
     args.append(xml_filename)
 

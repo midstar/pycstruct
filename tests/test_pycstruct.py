@@ -516,6 +516,12 @@ class TestPyCStruct(unittest.TestCase):
     self.assertTrue('threebits' in data)
     self.assertTrue('onesignedbit' in data)
 
+    # Test to string method
+    stringrep = str(b)
+    self.assertTrue('onebit' in stringrep)
+    self.assertTrue('eightsignedbits' in stringrep)
+    self.assertTrue('fivebits' in stringrep)
+
   def create_bitfield(self, byteorder):
     b = pycstruct.BitfieldDef(byteorder)
 
@@ -790,6 +796,11 @@ class TestPyCStruct(unittest.TestCase):
     self.assertEqual(outval, '__VALUE__99') 
     outval = little_signed.deserialize(bytes([0xFC, 0xFF]))
     self.assertEqual(outval, '__VALUE__-4') 
+
+    # Test to string method
+    stringrep = str(e)
+    self.assertTrue('zero' in stringrep)
+    self.assertTrue('three' in stringrep)
 
 
   

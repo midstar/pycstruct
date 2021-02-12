@@ -97,6 +97,8 @@ class TestCParser(unittest.TestCase):
     self.assertTrue('filled_enum' in instance)
     self.assertTrue('signed_enum' in instance)
     self.assertTrue('different_char_arrays' in instance)
+    self.assertTrue('struct_with_struct_inside' in instance)
+    self.assertTrue('struct_inside' in instance)
 
     # Check types of different_char_arrays members.
     # Since type cannot be read out from StructDef
@@ -107,6 +109,14 @@ class TestCParser(unittest.TestCase):
     self.assertEqual(rows[1].split()[1], 'utf-8')
     self.assertEqual(rows[2].split()[1], 'uint8')
     self.assertEqual(rows[3].split()[1], 'int8')
+
+    # Check struct with struct inside
+    s_dict = instance['struct_with_struct_inside'].create_empty_data()
+    self.assertEqual(len(s_dict.keys()), 1)
+    self.assertTrue('inside' in s_dict)
+    self.assertEqual(len(s_dict['inside'].keys()), 2)
+    self.assertTrue('inside_a' in s_dict['inside'])
+    self.assertTrue('inside_b' in s_dict['inside'])
 
 
 

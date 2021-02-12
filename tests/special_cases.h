@@ -35,3 +35,10 @@ struct different_char_arrays {
     unsigned char unsigned_char_array[10];
     signed char signed_char_array[10];
 };
+
+struct struct_with_struct_inside {
+    struct struct_inside {
+        int inside_a;
+        int inside_b;
+    } inside;
+};
