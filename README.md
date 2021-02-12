@@ -159,7 +159,7 @@ result = definitions['person'].deserialize(inbytes)
 print(str(result))
 ```
 
-The produced output will be the same is in the first example.
+The produced output will be the same as in the first example.
 
 ## Full documentation
 

@@ -707,6 +707,23 @@ class BitfieldDef(BaseDef):
   def _type_name(self):
     return 'bitfield'
 
+  def __str__(self):
+    """ Create string representation
+
+    :return: A string illustrating all members
+    :rtype: string
+    """
+    result = []
+    result.append('{:<30}{:<10}{:<10}'.format(
+      'Name','Bits', 'Signed'))
+    for name, field in self.__fields.items():
+      signed = '-'
+      if field['signed']:
+        signed = 'x'
+      result.append('{:<30}{:<10}{:<10}'.format(
+        name,field['nbr_of_bits'], signed))
+    return '\n'.join(result)
+
 
 ###############################################################################
 # EnumDef Class
@@ -884,3 +901,17 @@ class EnumDef(BaseDef):
     if self.__signed:
       bit_length += 1
     return bit_length
+
+  def __str__(self):
+    """ Create string representation
+
+    :return: A string illustrating all constants
+    :rtype: string
+    """
+    result = []
+    result.append('{:<30}{:<10}'.format(
+      'Name','Value'))
+    for name, value in self.__constants.items():
+      result.append('{:<30}{:<10}'.format(
+        name,value))
+    return '\n'.join(result)
