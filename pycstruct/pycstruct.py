@@ -241,6 +241,7 @@ class StructDef(_BaseDef):
         self.__pad_count = 0
         self.__fields = collections.OrderedDict()
         self.__fields_same_level = collections.OrderedDict()
+        self.__dtype = None
 
         # Add end padding of 0 size
         self.__pad_byte = BasicTypeDef("uint8", default_byteorder)
@@ -327,6 +328,9 @@ class StructDef(_BaseDef):
         :type same_level: bool, optional
 
         """
+        # Invalidate the dtype cache
+        self.__dtype = None
+
         # pylint: disable=too-many-branches
         # Sanity checks
         if length < 1:
@@ -673,6 +677,9 @@ class StructDef(_BaseDef):
         if name not in self.__fields:
             raise Exception("Element {} does not exist".format(name))
 
+        # Invalidate the dtype cache
+        self.__dtype = None
+
         keys = list(self.__fields)
         if not to_criteria:
             keys.reverse()
@@ -739,6 +746,9 @@ class StructDef(_BaseDef):
         return 1
 
     def dtype(self):
+        if self.__dtype is not None:
+            return self.__dtype
+
         names = []
         formats = []
         offsets = []
