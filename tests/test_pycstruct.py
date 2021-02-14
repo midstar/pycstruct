@@ -379,11 +379,6 @@ class TestPyCStruct(unittest.TestCase):
     self.assertRaises(Exception, s.serialize, {'unserializable':'hello'})
 
   def test_embedded_same_level(self):
-    substruct = pycstruct.StructDef()
-    substruct.add('uint8', 'ss1')
-    substruct.add('int16', 'ss2')
-    substruct.add('uint32', 'ss3')
-
     bitfield = pycstruct.BitfieldDef()
     bitfield.add('bf1', 3)
     bitfield.add('bf2', 1)
@@ -392,20 +387,16 @@ class TestPyCStruct(unittest.TestCase):
     parentstruct = pycstruct.StructDef()
     parentstruct.add('uint16', 'ps1')
     parentstruct.add('uint32', 'ps2')
-    parentstruct.add(substruct, 'ps3', same_level = True)
     parentstruct.add(bitfield, 'ps4', same_level = True)
     parentstruct.add('int8', 'ps5')
 
     mydict = {
-      'ss1' : 1,
-      'ss2' : -1234,
-      'ss3' : 123456,
       'bf1' : 5,
       'bf2' : 0,
       'bf3' : 11,
       'ps1' : 789,
       'ps2' : 91011,
-      'ps3' : 1213, # Should be ignored
+      'ps4' : 1213, # Should be ignored
       'ps5' : -100
     }
 
@@ -414,7 +405,7 @@ class TestPyCStruct(unittest.TestCase):
 
     # Check
     for key, value in mydict.items():
-      if key != 'ps3':
+      if key != 'ps4':
         self.assertEqual(value, mydict2[key], msg='Key {0}'.format(key))
 
 
@@ -590,7 +581,7 @@ class TestPyCStruct(unittest.TestCase):
     b = pycstruct.BitfieldDef()
     b.add('afield')
 
-    buffer = bytearray(b.size() + 1)
+    buffer = bytearray(b.size() - 1) # Too small buffer
     self.assertRaises(Exception, b.deserialize, buffer)
 
   def test_bitfield_getsubvalue(self):

@@ -200,10 +200,12 @@ class StructDef(BaseDef):
     self.__union = union
     self.__pad_count = 0
     self.__fields = collections.OrderedDict()
+    self.__fields_same_level = collections.OrderedDict()
 
     # Add end padding of 0 size
     self.__pad_byte = BasicTypeDef('uint8', default_byteorder)
-    self.__pad_end = {'type' : self.__pad_byte, 'length' : 0, 'same_level' : False}
+    self.__pad_end = {'type' : self.__pad_byte, 'length' : 0, 
+                      'same_level' : False, 'offset' : 0}
   
   def add(self, type, name, length = 1, byteorder = '', same_level = False):
     """Add a new element in the struct/union definition. The element will be added 
@@ -275,9 +277,9 @@ class StructDef(BaseDef):
                          'little' and 'big'. If not specified the default 
                          byteorder is used.
        :type byteorder: str, optional
-       :param same_level: Relevant if adding embedded struct or bitfield. If 
-                          True, the serialized or deserialized dictionary keys
-                          will be on the same level as the parent. Default is False.
+       :param same_level: Relevant if adding embedded bitfield. If True, the
+                          serialized or deserialized dictionary keys will be
+                          on the same level as the parent. Default is False.
        :type same_level: bool, optional
        
        """
@@ -293,8 +295,8 @@ class StructDef(BaseDef):
       raise Exception('Invalid byteorder: {0}.'.format(byteorder))
     if same_level and length > 1:
       raise Exception('same_level not allowed in combination with length > 1')
-    if same_level and not (isinstance(type, StructDef) or isinstance(type, BitfieldDef)):
-      raise Exception('same_level only allowed in combination with StructDef or BitfieldDef')
+    if same_level and not isinstance(type, BitfieldDef):
+      raise Exception('same_level only allowed in combination with BitfieldDef')
 
     # Create objects when necessary
     if type == 'utf-8':
@@ -309,23 +311,37 @@ class StructDef(BaseDef):
     # Remove end padding if it exists
     self.__fields.pop('__pad_end','')
 
+    # Offset in buffer (for unions always 0)
+    offset = 0
+
     # Check if padding between elements is required (only struct not union)
     if not self.__union:
+      offset = self.size()
       padding = _get_padding(self.__alignment, self.size(), type._largest_member())
       if padding > 0:
         self.__fields['__pad_{0}'.format(self.__pad_count)] = \
-          {'type' : self.__pad_byte, 'length' : padding, 'same_level' : False }
+          {'type' : self.__pad_byte, 'length' : padding, 'same_level' : False,
+          'offset' : offset }
+        offset += padding
         self.__pad_count += 1
 
     # Add the element
     self.__fields[name] = { 'type' : type, 'length' : length, 
-                            'same_level' : same_level }
+                            'same_level' : same_level, 
+                            'offset' : offset }
 
     # Check if end padding is required
     padding = _get_padding(self.__alignment, self.size(), self._largest_member())
     if padding > 0:
+      offset += length * type.size()
       self.__pad_end['length'] = padding
       self.__fields['__pad_end'] = self.__pad_end
+      self.__fields['__pad_end']['offset'] = offset
+    
+    # If same_level, store the bitfield elements
+    if same_level:
+      for subname in type._element_names():
+        self.__fields_same_level[subname] = name
 
   def size(self):
     """ Get size of structure or union.
@@ -368,40 +384,56 @@ class StructDef(BaseDef):
     :rtype: dict
     """
     result = {}
+
     if len(buffer) != self.size():
       raise Exception("Invalid buffer size: {0}. Expected: {1}".format(len(buffer),self.size()))
-    offset = 0
-    for name, field in self.__fields.items():
-      datatype = field['type']
-      length = field['length']
-      same_level = field['same_level']
-      datatype_size = datatype.size()
 
+    for name in self._element_names():
       if not name.startswith('__pad'):
-        values = []
-
-        for i in range(0, length):
-          next_offset = offset + i*datatype_size
-          buffer_subset = buffer[next_offset:next_offset + datatype_size]
-          try:
-            value = datatype.deserialize(buffer_subset)
-          except Exception as e:
-            raise Exception('Unable to deserialize {} {}. Reason:\n{}'.format(
-            datatype._type_name(), name, e.args[0]))
-          values.append(value)
-
-        if length == 1:
-          if same_level and isinstance(values[0], dict):
-            result.update(values[0])
-          else:
-            result[name] = values[0]
-        else:
-          result[name] = values
-
-      if not self.__union:
-        offset += datatype_size * length
+        result[name] = self.deserialize_element(name, buffer)
 
     return result
+
+  def deserialize_element(self, name, buffer, buffer_offset = 0):
+    """ Deserialize one element from buffer
+
+    :param name: Name of element
+    :type data: str
+    :param buffer: Buffer that contains the data to deserialize data from.
+    :type buffer: bytearray
+    :param buffer_offset: Start address in buffer
+    :type buffer: int
+    :return: The value of the element
+    :rtype: varies
+    """
+    if name in self.__fields_same_level:
+      # This is a bitfield on same level
+      field = self.__fields[self.__fields_same_level[name]]
+      bitfield = field['type']
+      return bitfield.deserialize_element(name, buffer, field['offset'])
+
+    field = self.__fields[name]
+    datatype = field['type']
+    length = field['length']
+    offset = field['offset']
+    datatype_size = datatype.size()
+
+    values = []
+
+    for i in range(0, length):
+      next_offset = buffer_offset + offset + i*datatype_size
+      buffer_subset = buffer[next_offset:next_offset + datatype_size]
+      try:
+        value = datatype.deserialize(buffer_subset)
+      except Exception as e:
+        raise Exception('Unable to deserialize {} {}. Reason:\n{}'.format(
+        datatype._type_name(), name, e.args[0]))
+      values.append(value)
+
+    if length == 1:
+      return values[0]
+    else:
+      return values
 
   def serialize(self, data):
     """ Serialize dictionary into buffer
@@ -419,37 +451,55 @@ class StructDef(BaseDef):
     :rtype: bytearray
     """
     buffer = bytearray(self.size())
-    offset = 0
-    for name, field in self.__fields.items():
-      datatype = field['type']
-      length = field['length']
-      same_level = field['same_level']
-      datatype_size = datatype.size()
+    for name in self._element_names():
+      if name in data and not name.startswith('__pad'):
+        self.serialize_element(name, data[name], buffer)
 
-      if same_level or (name in data and not name.startswith('__pad')):
-        value_list = []
-        if same_level:
-          value_list.append(data) # Add all data for embedded object
-        elif length > 1:
-          if not isinstance(data[name], collections.abc.Iterable):
-            raise Exception('Key: {0} shall be a list'.format(name))
-          if len(data[name]) > length:
-            raise Exception('List in key: {0} is larger than {1}'.format(name, length))
-          value_list = data[name]
-        else:
-          value_list.append(data[name]) # Make list of single value
-
-        for i in range(0, len(value_list)):
-          next_offset = offset + i*datatype_size
-          try:
-            buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value_list[i])
-          except Exception as e:
-            raise Exception('Unable to serialize {} {}. Reason:\n{}'.format(
-              datatype._type_name(), name, e.args[0]))
-
-      if not self.__union:
-        offset += datatype_size * length
     return buffer
+  
+  def serialize_element(self, name, value, buffer, buffer_offset = 0):
+    """ Serialize one element into the buffer
+
+    :param name: Name of element
+    :type data: str
+    :param value: Value of element
+    :type data: varies
+    :param buffer: Buffer that contains the data to serialize data into. This is an output.
+    :type buffer: bytearray
+    :param buffer_offset: Start address in buffer
+    :type buffer: int
+    """
+    if name in self.__fields_same_level:
+      # This is a bitfield on same level
+      field = self.__fields[self.__fields_same_level[name]]
+      bitfield = field['type']
+      bitfield.serialize_element(name, value, buffer, field['offset'])
+      return # We are done
+
+    field = self.__fields[name]
+    datatype = field['type']
+    length = field['length']
+    offset = field['offset']
+    datatype_size = datatype.size()
+
+    value_list = []
+    if length > 1:
+      if not isinstance(value, collections.abc.Iterable):
+        raise Exception('Element: {0} shall be a list'.format(name))
+      if len(value) > length:
+        raise Exception('List in element: {0} is larger than {1}'.format(name, length))
+      value_list = value
+    else:
+      value_list.append(value) # Make list of single value
+
+    for i in range(0, len(value_list)):
+      next_offset = buffer_offset + offset + i*datatype_size
+      try:
+        buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value_list[i])
+      except Exception as e:
+        raise Exception('Unable to serialize {} {}. Reason:\n{}'.format(
+          datatype._type_name(), name, e.args[0]))
+
 
   def create_empty_data(self):
     """ Create an empty dictionary with all keys
@@ -467,12 +517,13 @@ class StructDef(BaseDef):
     :rtype: string
     """
     result = []
-    result.append('{:<30}{:<15}{:<10}{:<10}{:<10}'.format(
-      'Name','Type', 'Size','Length','Largest type'))
+    result.append('{:<30}{:<15}{:<10}{:<10}{:<10}{:<10}'.format(
+      'Name','Type', 'Size','Length','Offset','Largest type'))
     for name, field in self.__fields.items():
       type = field['type']
-      result.append('{:<30}{:<15}{:<10}{:<10}{:<10}'.format(
-        name,type._type_name(), type.size(),field['length'], type._largest_member()))
+      result.append('{:<30}{:<15}{:<10}{:<10}{:<10}{:<10}'.format(
+        name,type._type_name(), type.size(),field['length'], 
+        field['offset'],type._largest_member()))
     return '\n'.join(result)
 
   def _type_name(self):
@@ -513,6 +564,33 @@ class StructDef(BaseDef):
       del self.__fields[key]
       if key == name:
         break # Done
+    
+    if (len(self.__fields) > 0):
+      # Update offset of all elements
+      keys = list(self.__fields)
+      adjust_offset = self.__fields[keys[0]]['offset']
+      for _, field in self.__fields.items():
+        field['offset'] -= adjust_offset
+    
+
+
+  def _element_names(self):
+    """ Get a list of all element names (in correct order)
+
+    Note that this method also include elements of bitfields with same_level = True
+
+    :return: A string illustrating all members
+    :rtype: list
+    """
+    result = []
+    for name, field in self.__fields.items():
+      if field['same_level']:
+        for subname, parent_name in self.__fields_same_level.items():
+          if name == parent_name:
+            result.append(subname)
+      else:
+        result.append(name)
+    return result
 
 ###############################################################################
 # BitfieldDef Class
@@ -560,34 +638,51 @@ class BitfieldDef(BaseDef):
         raise Exception('Field with name {0} already exists.'.format(name))
     
       # Check that new size is not too large
-      total_nbr_of_bits = self.assigned_bits() + nbr_of_bits
+      assigned_bits = self.assigned_bits()
+      total_nbr_of_bits = assigned_bits + nbr_of_bits
       if total_nbr_of_bits > self._max_bits():
         raise Exception('Maximum number of bits ({}) exceeded: {}.'.format(
           self._max_bits(), total_nbr_of_bits))
 
-      self.__fields[name] = {'nbr_of_bits' : nbr_of_bits, 'signed' : signed}
+      self.__fields[name] = {'nbr_of_bits' : nbr_of_bits, 'signed' : signed, 
+                             'offset' : assigned_bits}
 
-  def deserialize(self, buffer):
+  def deserialize(self, buffer, buffer_offset = 0):
     """ Deserialize buffer into dictionary
 
     :param buffer: Buffer that contains the data to deserialize (1 - 8 bytes)
     :type buffer: bytearray
+    :param buffer_offset: Start address in buffer
+    :type buffer: int
     :return: A dictionary keyed with the element names
     :rtype: dict
     """
     result = {}
-    if len(buffer) != self.size():
-      raise Exception("Invalid buffer size: {0}. Expected: {1}".format(len(buffer),self.size()))
+    if len(buffer) - buffer_offset < self.size():
+      raise Exception("Invalid buffer size: {0}. Expected at least: {1}".format(
+                      len(buffer), self.size() + buffer_offset))
 
-    value = int.from_bytes(buffer, self.__byteorder, signed=False)
-
-    start_bit = 0
-    for name, field in self.__fields.items():
-      result[name] = self._get_subvalue(value, field['nbr_of_bits'], start_bit, field['signed'])
-      start_bit += field['nbr_of_bits']
+    for name in self._element_names():
+      result[name] = self.deserialize_element(name, buffer, buffer_offset)
 
     return result
 
+  def deserialize_element(self, name, buffer, buffer_offset = 0):
+      """ Deserialize one element from buffer
+
+      :param name: Name of element
+      :type data: str
+      :param buffer: Buffer that contains the data to deserialize data from (1 - 8 bytes).
+      :type buffer: bytearray
+      :param buffer_offset: Start address in buffer
+      :type buffer: int
+      :return: The value of the element
+      :rtype: int
+      """
+      full_value = int.from_bytes(buffer[buffer_offset:buffer_offset + self.size()], 
+                                  self.__byteorder, signed=False)
+      field = self.__fields[name]
+      return self._get_subvalue(full_value, field['nbr_of_bits'], field['offset'], field['signed'])
 
   def serialize(self, data):
     """ Serialize dictionary into buffer
@@ -597,16 +692,32 @@ class BitfieldDef(BaseDef):
     :return: A buffer that contains data
     :rtype: bytearray
     """
-    value = 0
-    start_bit = 0
-    for name, field in self.__fields.items():
-      subvalue = 0
+    buffer = bytearray(self.size())
+    for name in self._element_names():
       if name in data:
-        subvalue = data[name]
-      value = self._set_subvalue(value, subvalue, field['nbr_of_bits'], start_bit, field['signed'])
-      start_bit += field['nbr_of_bits']
+        self.serialize_element(name, data[name], buffer)
 
-    return value.to_bytes(self.size(), self.__byteorder, signed=False)
+    return buffer
+
+  def serialize_element(self, name, value, buffer, buffer_offset = 0):
+      """ Serialize one element into the buffer
+
+      :param name: Name of element
+      :type data: str
+      :param value: Value of element
+      :type data: int
+      :param buffer: Buffer that contains the data to serialize data into (1 - 8 bytes). This is an output.
+      :type buffer: bytearray
+      :param buffer_offset: Start address in buffer
+      :type buffer: int
+      """
+      full_value = int.from_bytes(buffer[buffer_offset:buffer_offset + self.size()], 
+                                  self.__byteorder, signed=False)
+      field = self.__fields[name]
+      value = self._set_subvalue(full_value, value, field['nbr_of_bits'], 
+                                 field['offset'], field['signed'])
+      buffer[buffer_offset:buffer_offset + self.size()] = value.to_bytes(
+        self.size(), self.__byteorder, signed=False)
 
   def assigned_bits(self):
     """ Get size of bitfield in bits excluding padding bits
@@ -714,15 +825,26 @@ class BitfieldDef(BaseDef):
     :rtype: string
     """
     result = []
-    result.append('{:<30}{:<10}{:<10}'.format(
-      'Name','Bits', 'Signed'))
+    result.append('{:<30}{:<10}{:<10}{:<10}'.format(
+      'Name','Bits', 'Offset', 'Signed'))
     for name, field in self.__fields.items():
       signed = '-'
       if field['signed']:
         signed = 'x'
-      result.append('{:<30}{:<10}{:<10}'.format(
-        name,field['nbr_of_bits'], signed))
+      result.append('{:<30}{:<10}{:<10}{:<10}'.format(
+        name,field['nbr_of_bits'], field['offset'], signed))
     return '\n'.join(result)
+  
+  def _element_names(self):
+    """ Get a list of all element names (in correct order)
+
+    :return: A string illustrating all members
+    :rtype: list
+    """
+    result = []
+    for name in self.__fields.keys():
+      result.append(name)
+    return result
 
 
 ###############################################################################
@@ -915,3 +1037,16 @@ class EnumDef(BaseDef):
       result.append('{:<30}{:<10}'.format(
         name,value))
     return '\n'.join(result)
+
+
+
+###############################################################################
+# Instance Class
+
+
+class Instance():
+  """TBD
+  """
+
+  def __init__(self, top_class):
+    print(str(top_class))
