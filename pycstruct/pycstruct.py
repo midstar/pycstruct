@@ -370,36 +370,31 @@ class StructDef(BaseDef):
     result = {}
     if len(buffer) != self.size():
       raise Exception("Invalid buffer size: {0}. Expected: {1}".format(len(buffer),self.size()))
-    offset = 0
-    for name, field in self.__fields.items():
+    for name, field, offset in self._iter_fileds_with_offsets():
       datatype = field['type']
       length = field['length']
       same_level = field['same_level']
       datatype_size = datatype.size()
 
-      if not name.startswith('__pad'):
-        values = []
+      values = []
 
-        for i in range(0, length):
-          next_offset = offset + i*datatype_size
-          buffer_subset = buffer[next_offset:next_offset + datatype_size]
-          try:
-            value = datatype.deserialize(buffer_subset)
-          except Exception as e:
-            raise Exception('Unable to deserialize {} {}. Reason:\n{}'.format(
-            datatype._type_name(), name, e.args[0]))
-          values.append(value)
+      for i in range(0, length):
+        next_offset = offset + i*datatype_size
+        buffer_subset = buffer[next_offset:next_offset + datatype_size]
+        try:
+          value = datatype.deserialize(buffer_subset)
+        except Exception as e:
+          raise Exception('Unable to deserialize {} {}. Reason:\n{}'.format(
+          datatype._type_name(), name, e.args[0]))
+        values.append(value)
 
-        if length == 1:
-          if same_level and isinstance(values[0], dict):
-            result.update(values[0])
-          else:
-            result[name] = values[0]
+      if length == 1:
+        if same_level and isinstance(values[0], dict):
+          result.update(values[0])
         else:
-          result[name] = values
-
-      if not self.__union:
-        offset += datatype_size * length
+          result[name] = values[0]
+      else:
+        result[name] = values
 
     return result
 
@@ -419,14 +414,13 @@ class StructDef(BaseDef):
     :rtype: bytearray
     """
     buffer = bytearray(self.size())
-    offset = 0
-    for name, field in self.__fields.items():
+    for name, field, offset in self._iter_fileds_with_offsets():
       datatype = field['type']
       length = field['length']
       same_level = field['same_level']
       datatype_size = datatype.size()
 
-      if same_level or (name in data and not name.startswith('__pad')):
+      if same_level or (name in data):
         value_list = []
         if same_level:
           value_list.append(data) # Add all data for embedded object
@@ -446,9 +440,6 @@ class StructDef(BaseDef):
           except Exception as e:
             raise Exception('Unable to serialize {} {}. Reason:\n{}'.format(
               datatype._type_name(), name, e.args[0]))
-
-      if not self.__union:
-        offset += datatype_size * length
     return buffer
 
   def create_empty_data(self):
