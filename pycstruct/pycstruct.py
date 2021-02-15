@@ -460,6 +460,20 @@ class StructDef(BaseDef):
     buffer = bytearray(self.size())
     return self.deserialize(buffer)
 
+  def _iter_fileds_with_offsets(self):
+    """Iter each name and field of the strcuture with the computer offset
+
+    Padding fields are not iterated.
+    """
+    offset = 0
+    for name, field in self.__fields.items():
+      if not name.startswith('__pad'):
+        yield name, field, offset
+      if not self.__union:
+        datatype = field['type']
+        length = field['length']
+        offset += datatype.size() * length
+
   def __str__(self):
     """ Create string representation
 
@@ -467,12 +481,12 @@ class StructDef(BaseDef):
     :rtype: string
     """
     result = []
-    result.append('{:<30}{:<15}{:<10}{:<10}{:<10}'.format(
-      'Name','Type', 'Size','Length','Largest type'))
-    for name, field in self.__fields.items():
+    result.append('{:<30}{:<15}{:<10}{:<10}{:<10}{:<10}'.format(
+      'Name', 'Type', 'Offset', 'Size', 'Length', 'Largest type'))
+    for name, field, offset in self._iter_fileds_with_offsets():
       type = field['type']
       result.append('{:<30}{:<15}{:<10}{:<10}{:<10}'.format(
-        name,type._type_name(), type.size(),field['length'], type._largest_member()))
+        name, type._type_name(), offset, type.size(), field['length'], type._largest_member()))
     return '\n'.join(result)
 
   def _type_name(self):
