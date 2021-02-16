@@ -611,6 +611,7 @@ class StructDef(BaseDef):
     """
     if name in self.__fields:
       return self.__fields[name]['type']
+    return None
 
   def _element_offset(self, name):
     """ Returns the offset of the element. 
@@ -620,6 +621,16 @@ class StructDef(BaseDef):
     """
     if name in self.__fields:
       return self.__fields[name]['offset']
+
+  def _element_length(self, name):
+    """ Returns the length of the element. 
+
+    :return: Length of element
+    :rtype: int
+    """
+    if name in self.__fields:
+      return self.__fields[name]['length']
+    return 1
 
 ###############################################################################
 # BitfieldDef Class
@@ -1129,3 +1140,51 @@ class Instance():
         result.append('{}{} : {}'.format(prefix, attribute, self.__getattr__(attribute)))
     return '\n'.join(result)
 
+class _InstanceList():
+  """TBD
+  """
+
+  def __init__(self, parenttype, name, buffer, buffer_offset):
+
+    self.__parenttype = parenttype
+    self.__name = name
+    self.__type = parenttype._element_type(name)
+    self.__length = parenttype._element_length(name)
+    self.__buffer = buffer
+    self.__buffer_offset = buffer_offset
+    self.__subinstances = []
+
+    element_offset = parenttype._element_offset(name)
+
+    if isinstance(self.__type, StructDef) or isinstance(self.__type, BitfieldDef):
+      for i in range(0, self.__length):
+        self.__subinstances.append(Instance(self.__type, buffer, 
+                          buffer_offset + element_offset + i * self.__type.size()))
+  
+  def _check_key(self, key):
+    if not isinstance(key, int):
+      raise KeyError('Invalid index: {} - needs to be an integer'.format(key))
+    if key < 0 or key >= self.__length:
+      raise KeyError('Invalid index: {} - supported 0 - {}'.format(key, self.__length))
+
+  def __getitem__(self, key):
+    self._check_key(key)
+    if len(self.__subinstances) == 0:
+      return self.__parenttype.deserialize_element(self.__name, self.__buffer, 
+                                      self.__buffer_offset, key)
+    else:
+      return self.__subinstances[key]
+
+  def __setitem__(self, key, value):
+    self._check_key(key)
+    if len(self.__subinstances) == 0:
+      self.__parenttype.serialize_element(self.__name, value, self.__buffer, 
+                                      self.__buffer_offset, key)
+    else:
+      raise AttributeError('You are not allowed to replace object. Use object properties.')
+
+  def __len__(self):
+    return self.__length
+
+  def __bytes__(self):
+    return bytes(self.__buffer)      
