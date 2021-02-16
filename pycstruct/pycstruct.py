@@ -340,7 +340,7 @@ class StructDef(BaseDef):
     
     # If same_level, store the bitfield elements
     if same_level:
-      for subname in type._element_names():
+      for subname in type.element_names():
         self.__fields_same_level[subname] = name
 
   def size(self):
@@ -388,7 +388,7 @@ class StructDef(BaseDef):
     if len(buffer) != self.size():
       raise Exception("Invalid buffer size: {0}. Expected: {1}".format(len(buffer),self.size()))
 
-    for name in self._element_names():
+    for name in self.element_names():
       if not name.startswith('__pad'):
         result[name] = self.deserialize_element(name, buffer)
 
@@ -451,7 +451,7 @@ class StructDef(BaseDef):
     :rtype: bytearray
     """
     buffer = bytearray(self.size())
-    for name in self._element_names():
+    for name in self.element_names():
       if name in data and not name.startswith('__pad'):
         self.serialize_element(name, data[name], buffer)
 
@@ -571,15 +571,13 @@ class StructDef(BaseDef):
       adjust_offset = self.__fields[keys[0]]['offset']
       for _, field in self.__fields.items():
         field['offset'] -= adjust_offset
-    
 
-
-  def _element_names(self):
+  def element_names(self):
     """ Get a list of all element names (in correct order)
 
     Note that this method also include elements of bitfields with same_level = True
 
-    :return: A string illustrating all members
+    :return: A list of all elements
     :rtype: list
     """
     result = []
@@ -591,6 +589,26 @@ class StructDef(BaseDef):
       else:
         result.append(name)
     return result
+
+  def _element_type(self, name):
+    """ Returns the type of element. 
+
+    Note that elements of bitfields with same_level = True will be returned as None.
+
+    :return: Type of element or None
+    :rtype: pycstruct class
+    """
+    if name in self.__fields:
+      return self.__fields[name]['type']
+
+  def _element_offset(self, name):
+    """ Returns the offset of the element. 
+
+    :return: Offset of element
+    :rtype: int
+    """
+    if name in self.__fields:
+      return self.__fields[name]['offset']
 
 ###############################################################################
 # BitfieldDef Class
@@ -662,7 +680,7 @@ class BitfieldDef(BaseDef):
       raise Exception("Invalid buffer size: {0}. Expected at least: {1}".format(
                       len(buffer), self.size() + buffer_offset))
 
-    for name in self._element_names():
+    for name in self.element_names():
       result[name] = self.deserialize_element(name, buffer, buffer_offset)
 
     return result
@@ -693,7 +711,7 @@ class BitfieldDef(BaseDef):
     :rtype: bytearray
     """
     buffer = bytearray(self.size())
-    for name in self._element_names():
+    for name in self.element_names():
       if name in data:
         self.serialize_element(name, data[name], buffer)
 
@@ -835,10 +853,10 @@ class BitfieldDef(BaseDef):
         name,field['nbr_of_bits'], field['offset'], signed))
     return '\n'.join(result)
   
-  def _element_names(self):
+  def element_names(self):
     """ Get a list of all element names (in correct order)
 
-    :return: A string illustrating all members
+    :return: A list of all elements
     :rtype: list
     """
     result = []
@@ -1043,10 +1061,60 @@ class EnumDef(BaseDef):
 ###############################################################################
 # Instance Class
 
-
 class Instance():
   """TBD
   """
 
-  def __init__(self, top_class):
-    print(str(top_class))
+  def __init__(self, type, buffer = None, buffer_offset = 0):
+    if not isinstance(type, StructDef) and not isinstance(type, BitfieldDef):
+      raise Exception('top_class needs to be of type StructDef or BitfieldDef')
+
+    if buffer == None:
+      buffer = bytearray(type.size())
+
+    # All private fields needs to be defined here to avoid
+    # recursive calls to __setattr__ and __getattr__ 
+    super().__setattr__('_Instance__type', type)
+    super().__setattr__('_Instance__buffer', buffer)
+    super().__setattr__('_Instance__buffer_offset', buffer_offset)
+    super().__setattr__('_Instance__attributes', type.element_names())
+    super().__setattr__('_Instance__subinstances', {})
+
+    if isinstance(type, StructDef):
+      # Create "sub-instances" for nested structs
+      for attribute in self.__attributes:
+        subtype = type._element_type(attribute)
+        if isinstance(subtype, StructDef) or isinstance(subtype, BitfieldDef):
+          self.__subinstances[attribute] = Instance(subtype, self.__buffer, 
+                          type._element_offset(attribute))
+
+  def __getattr__(self, item):
+    if item in self.__subinstances:
+      return self.__subinstances[item]
+    elif item in self.__attributes:
+      return self.__type.deserialize_element(item, self.__buffer, 
+                                      self.__buffer_offset)
+    else:
+      raise AttributeError('Instance has no element {}'.format(item))
+
+  def __setattr__(self, item, value):
+    if item in self.__subinstances:
+      raise AttributeError('You are not allowed to modify {}'.format(item))
+    elif item in self.__attributes:
+      self.__type.serialize_element(item, value, self.__buffer, 
+                                      self.__buffer_offset)
+    else:
+      raise AttributeError('Instance has no element {}'.format(item))
+
+  def __bytes__(self):
+    return bytes(self.__buffer)
+  
+  def __str__(self, prefix = ''):
+    result = []
+    for attribute in self.__attributes:
+      if attribute in self.__subinstances:
+        result.append(self.__subinstances[attribute].__str__('{}{}.'.format(prefix,attribute)))
+      else:
+        result.append('{}{} : {}'.format(prefix, attribute, self.__getattr__(attribute)))
+    return '\n'.join(result)
+
