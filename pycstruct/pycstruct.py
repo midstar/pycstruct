@@ -390,11 +390,21 @@ class StructDef(BaseDef):
 
     for name in self.element_names():
       if not name.startswith('__pad'):
-        result[name] = self.deserialize_element(name, buffer)
+        length = 1
+        if name in self.__fields:
+          length = self.__fields[name]['length']
+        if length > 1:
+          # This is a list (array)
+          l = []
+          for index in range(0, length):
+            l.append(self.deserialize_element(name, buffer, index = index))
+          result[name] = l
+        else:
+          result[name] = self.deserialize_element(name, buffer)
 
     return result
 
-  def deserialize_element(self, name, buffer, buffer_offset = 0):
+  def deserialize_element(self, name, buffer, buffer_offset = 0, index = 0):
     """ Deserialize one element from buffer
 
     :param name: Name of element
@@ -402,6 +412,8 @@ class StructDef(BaseDef):
     :param buffer: Buffer that contains the data to deserialize data from.
     :type buffer: bytearray
     :param buffer_offset: Start address in buffer
+    :type buffer: int
+    :param index: If this is a list (array) which index to deserialize?
     :type buffer: int
     :return: The value of the element
     :rtype: varies
@@ -418,22 +430,16 @@ class StructDef(BaseDef):
     offset = field['offset']
     datatype_size = datatype.size()
 
-    values = []
+    next_offset = buffer_offset + offset + index * datatype_size
+    buffer_subset = buffer[next_offset:next_offset + datatype_size]
 
-    for i in range(0, length):
-      next_offset = buffer_offset + offset + i*datatype_size
-      buffer_subset = buffer[next_offset:next_offset + datatype_size]
-      try:
-        value = datatype.deserialize(buffer_subset)
-      except Exception as e:
-        raise Exception('Unable to deserialize {} {}. Reason:\n{}'.format(
-        datatype._type_name(), name, e.args[0]))
-      values.append(value)
-
-    if length == 1:
-      return values[0]
-    else:
-      return values
+    try:
+      value = datatype.deserialize(buffer_subset)
+    except Exception as e:
+      raise Exception('Unable to deserialize {} {}. Reason:\n{}'.format(
+      datatype._type_name(), name, e.args[0]))
+    
+    return value
 
   def serialize(self, data):
     """ Serialize dictionary into buffer
@@ -453,11 +459,25 @@ class StructDef(BaseDef):
     buffer = bytearray(self.size())
     for name in self.element_names():
       if name in data and not name.startswith('__pad'):
-        self.serialize_element(name, data[name], buffer)
+        length = 1
+        if name in self.__fields:
+          length = self.__fields[name]['length']
+        if length > 1:
+          # This is a list (array)
+          if not isinstance(data[name], collections.abc.Iterable):
+            raise Exception('Element: {0} shall be a list'.format(name))
+          if len(data[name]) > length:
+            raise Exception('List in element: {0} is larger than {1}'.format(name, length))
+          index = 0
+          for item in data[name]:
+            self.serialize_element(name, item, buffer, index = index)
+            index += 1
+        else:
+          self.serialize_element(name, data[name], buffer)
 
     return buffer
   
-  def serialize_element(self, name, value, buffer, buffer_offset = 0):
+  def serialize_element(self, name, value, buffer, buffer_offset = 0, index = 0):
     """ Serialize one element into the buffer
 
     :param name: Name of element
@@ -467,6 +487,8 @@ class StructDef(BaseDef):
     :param buffer: Buffer that contains the data to serialize data into. This is an output.
     :type buffer: bytearray
     :param buffer_offset: Start address in buffer
+    :type buffer: int
+    :param index: If this is a list (array) which index to deserialize?
     :type buffer: int
     """
     if name in self.__fields_same_level:
@@ -482,21 +504,10 @@ class StructDef(BaseDef):
     offset = field['offset']
     datatype_size = datatype.size()
 
-    value_list = []
-    if length > 1:
-      if not isinstance(value, collections.abc.Iterable):
-        raise Exception('Element: {0} shall be a list'.format(name))
-      if len(value) > length:
-        raise Exception('List in element: {0} is larger than {1}'.format(name, length))
-      value_list = value
-    else:
-      value_list.append(value) # Make list of single value
-
-    for i in range(0, len(value_list)):
-      next_offset = buffer_offset + offset + i*datatype_size
-      try:
-        buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value_list[i])
-      except Exception as e:
+    next_offset = buffer_offset + offset + index * datatype_size
+    try:
+      buffer[next_offset:next_offset + datatype_size] = datatype.serialize(value)
+    except Exception as e:
         raise Exception('Unable to serialize {} {}. Reason:\n{}'.format(
           datatype._type_name(), name, e.args[0]))
 
