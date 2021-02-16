@@ -1078,6 +1078,12 @@ class TestPyCStruct(unittest.TestCase):
     # Create an instance of a complex Struct (house)
     instance = pycstruct.Instance(house)
 
+    print()
+    print(instance)
+    print()
+    print(instance.garage.cars[3])
+    print()
+
   def test_instance_list_basictype(self):
     struct = pycstruct.StructDef()
     struct.add('int16', 'list', length = 3)

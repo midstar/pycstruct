@@ -1103,11 +1103,17 @@ class Instance():
     super().__setattr__('_Instance__subinstances', {})
 
     if isinstance(type, StructDef):
-      # Create "sub-instances" for nested structs
+      # Create "sub-instances" for nested structs/bitfields and lists
       for attribute in self.__attributes:
-        subtype = type._element_type(attribute)
-        if isinstance(subtype, StructDef) or isinstance(subtype, BitfieldDef):
-          self.__subinstances[attribute] = Instance(subtype, self.__buffer, 
+        length = type._element_length(attribute)
+        if length > 1:
+          # This is a list
+          self.__subinstances[attribute] = _InstanceList(type, attribute, 
+                   self.__buffer, buffer_offset)
+        else:
+          subtype = type._element_type(attribute)
+          if isinstance(subtype, StructDef) or isinstance(subtype, BitfieldDef):
+            self.__subinstances[attribute] = Instance(subtype, self.__buffer, 
                           type._element_offset(attribute))
 
   def __getattr__(self, item):
@@ -1135,7 +1141,10 @@ class Instance():
     result = []
     for attribute in self.__attributes:
       if attribute in self.__subinstances:
-        result.append(self.__subinstances[attribute].__str__('{}{}.'.format(prefix,attribute)))
+        if isinstance(self.__subinstances[attribute], _InstanceList):
+          result.append(self.__subinstances[attribute].__str__('{}{} : '.format(prefix,attribute)))
+        else:
+          result.append(self.__subinstances[attribute].__str__('{}{}.'.format(prefix,attribute)))
       else:
         result.append('{}{} : {}'.format(prefix, attribute, self.__getattr__(attribute)))
     return '\n'.join(result)
@@ -1187,4 +1196,7 @@ class _InstanceList():
     return self.__length
 
   def __bytes__(self):
-    return bytes(self.__buffer)      
+    return bytes(self.__buffer)  
+
+  def __str__(self, prefix = ''):
+    return '{}[ {} elements ]'.format(prefix, self.__length)  
