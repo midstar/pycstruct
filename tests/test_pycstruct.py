@@ -981,7 +981,7 @@ class TestPyCStruct(unittest.TestCase):
     car.add('utf-8', 'registration_number', length=10)
     car.add('int32', 'last_owners', length=10)
     car.add(car_properties, 'properties')
-    car.add(car_properties, 'properties2', same_level=True)
+    car.add(car_properties2, 'properties2', same_level=True)
     car.add(car_type, 'type')
     car.add(type_specific_properties, 'type_properties')
 
@@ -1077,12 +1077,73 @@ class TestPyCStruct(unittest.TestCase):
     #####################################################################
     # Create an instance of a complex Struct (house)
     instance = pycstruct.Instance(house)
+    instance.nbr_of_levels = 92
+    instance.garage.cars[0].year = 2012
+    instance.garage.cars[0].registration_number = 'ABC123'
+    instance.garage.cars[0].last_owners[0] = 1
+    instance.garage.cars[0].properties.registered = True
+    instance.garage.cars[0].prop2 = 3
+    instance.garage.cars[0].type = 'Station_Wagon'
+    instance.garage.cars[0].type_properties.sedan.sedan_code = 5
+    instance.garage.cars[10].year = 1999
+    instance.garage.cars[10].registration_number = 'CDE456'
+    instance.garage.cars[10].last_owners[5] = 2
+    instance.garage.cars[10].properties.registered = False
+    instance.garage.cars[10].prop2 = 2
+    instance.garage.cars[10].type = 'Bus'
+    instance.garage.cars[10].type_properties.station_wagon.trunk_volume = 500
+    instance.garage.cars[19].year = 2021
+    instance.garage.cars[19].registration_number = 'EFG789'
+    instance.garage.cars[19].last_owners[9] = 3
+    instance.garage.cars[19].properties.registered = True
+    instance.garage.cars[19].prop2 = 1
+    instance.garage.cars[19].type = 'Pickup'
+    instance.garage.cars[19].type_properties.bus.number_of_entries = 3
+    instance.garage.nbr_registered_parkings = 255
 
-    print()
-    print(instance)
-    print()
-    print(instance.garage.cars[3])
-    print()
+    # Test that buffer is updated correctly
+    bytes_instance = bytes(instance)
+    dict_repr = house.deserialize(bytes_instance)
+    self.assertEqual(dict_repr['nbr_of_levels'], 92)
+    self.assertEqual(dict_repr['garage']['cars'][0]['year'], 2012)
+    self.assertEqual(dict_repr['garage']['cars'][0]['registration_number'], 'ABC123')
+    self.assertEqual(dict_repr['garage']['cars'][0]['last_owners'][0], 1)
+    self.assertEqual(dict_repr['garage']['cars'][0]['properties']['registered'], True)
+    self.assertEqual(dict_repr['garage']['cars'][0]['prop2'], 3)
+    self.assertEqual(dict_repr['garage']['cars'][0]['type'], 'Station_Wagon')
+    self.assertEqual(dict_repr['garage']['cars'][0]['type_properties']['sedan']['sedan_code'], 5)
+    self.assertEqual(dict_repr['garage']['cars'][10]['year'], 1999)
+    self.assertEqual(dict_repr['garage']['cars'][10]['registration_number'], 'CDE456')
+    self.assertEqual(dict_repr['garage']['cars'][10]['last_owners'][5], 2)
+    self.assertEqual(dict_repr['garage']['cars'][10]['properties']['registered'], False)
+    self.assertEqual(dict_repr['garage']['cars'][10]['prop2'], 2)
+    self.assertEqual(dict_repr['garage']['cars'][10]['type'], 'Bus')
+    self.assertEqual(dict_repr['garage']['cars'][10]['type_properties']['station_wagon']['trunk_volume'], 500)
+    self.assertEqual(dict_repr['garage']['cars'][19]['year'], 2021)
+    self.assertEqual(dict_repr['garage']['cars'][19]['registration_number'], 'EFG789')
+    self.assertEqual(dict_repr['garage']['cars'][19]['last_owners'][9], 3)
+    self.assertEqual(dict_repr['garage']['cars'][19]['properties']['registered'], True)
+    self.assertEqual(dict_repr['garage']['cars'][19]['prop2'], 1)
+    self.assertEqual(dict_repr['garage']['cars'][19]['type'], 'Pickup')
+    self.assertEqual(dict_repr['garage']['cars'][19]['type_properties']['bus']['number_of_entries'], 3)
+    self.assertEqual(dict_repr['garage']['nbr_registered_parkings'], 255)
+
+    #############################################
+    # Test to string method
+    stringrep = str(instance)
+    self.assertTrue('type_properties.station_wagon.trunk_volume : 5' in stringrep)
+    self.assertTrue('last_owners : [0, 0, 0, 0, 0, 2, 0, 0, 0, 0]' in stringrep)
+    self.assertTrue('garage.nbr_registered_parkings : 255' in stringrep)
+
+    #############################################
+    # Invalid usage
+    self.assertRaises(Exception, house._element_offset, 'invalid')    
+    self.assertRaises(Exception, pycstruct.Instance, car_type) # Enum not possible 
+    try:
+      instance.garage = 5
+      t.assertTrue(False)
+    except:
+      pass
 
   def test_instance_list_basictype(self):
     struct = pycstruct.StructDef()

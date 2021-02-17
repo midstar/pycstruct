@@ -422,7 +422,7 @@ class StructDef(BaseDef):
       # This is a bitfield on same level
       field = self.__fields[self.__fields_same_level[name]]
       bitfield = field['type']
-      return bitfield.deserialize_element(name, buffer, field['offset'])
+      return bitfield.deserialize_element(name, buffer, buffer_offset + field['offset'])
 
     field = self.__fields[name]
     datatype = field['type']
@@ -495,7 +495,7 @@ class StructDef(BaseDef):
       # This is a bitfield on same level
       field = self.__fields[self.__fields_same_level[name]]
       bitfield = field['type']
-      bitfield.serialize_element(name, value, buffer, field['offset'])
+      bitfield.serialize_element(name, value, buffer, buffer_offset + field['offset'])
       return # We are done
 
     field = self.__fields[name]
@@ -524,7 +524,7 @@ class StructDef(BaseDef):
   def __str__(self):
     """ Create string representation
 
-    :return: A string illustrating all members
+    :return: A string illustrating all members (not Bitfield fields with same_level = True)
     :rtype: string
     """
     result = []
@@ -621,6 +621,7 @@ class StructDef(BaseDef):
     """
     if name in self.__fields:
       return self.__fields[name]['offset']
+    raise Exception('Invalid element {}'.format(name))
 
   def _element_length(self, name):
     """ Returns the length of the element. 
@@ -687,7 +688,7 @@ class BitfieldDef(BaseDef):
       self.__fields[name] = {'nbr_of_bits' : nbr_of_bits, 'signed' : signed, 
                              'offset' : assigned_bits}
 
-  def deserialize(self, buffer, buffer_offset = 0):
+  def deserialize(self, buffer):
     """ Deserialize buffer into dictionary
 
     :param buffer: Buffer that contains the data to deserialize (1 - 8 bytes)
@@ -698,12 +699,12 @@ class BitfieldDef(BaseDef):
     :rtype: dict
     """
     result = {}
-    if len(buffer) - buffer_offset < self.size():
+    if len(buffer) < self.size():
       raise Exception("Invalid buffer size: {0}. Expected at least: {1}".format(
-                      len(buffer), self.size() + buffer_offset))
+                      len(buffer), self.size()))
 
     for name in self.element_names():
-      result[name] = self.deserialize_element(name, buffer, buffer_offset)
+      result[name] = self.deserialize_element(name, buffer)
 
     return result
 
@@ -1114,7 +1115,7 @@ class Instance():
           subtype = type._element_type(attribute)
           if isinstance(subtype, StructDef) or isinstance(subtype, BitfieldDef):
             self.__subinstances[attribute] = Instance(subtype, self.__buffer, 
-                          type._element_offset(attribute))
+                          buffer_offset + type._element_offset(attribute))
 
   def __getattr__(self, item):
     if item in self.__subinstances:
@@ -1163,9 +1164,8 @@ class _InstanceList():
     self.__buffer_offset = buffer_offset
     self.__subinstances = []
 
-    element_offset = parenttype._element_offset(name)
-
     if isinstance(self.__type, StructDef) or isinstance(self.__type, BitfieldDef):
+      element_offset = parenttype._element_offset(name)
       for i in range(0, self.__length):
         self.__subinstances.append(Instance(self.__type, buffer, 
                           buffer_offset + element_offset + i * self.__type.size()))
@@ -1199,4 +1199,16 @@ class _InstanceList():
     return bytes(self.__buffer)  
 
   def __str__(self, prefix = ''):
-    return '{}[ {} elements ]'.format(prefix, self.__length)  
+    elements = []
+
+    if len(self.__subinstances) == 0:
+      for i in range(0, self.__length):
+        elements.append(str(self.__getitem__(i)))
+      elements_str = ', '.join(elements)
+    else:
+      indent = ' ' * len(prefix)
+      for i in range(0, self.__length):
+        elements.append(self.__getitem__(i).__str__(indent))
+      elements_str = '\n' + ('\n' + indent + ',\n').join(elements) + '\n' + indent
+
+    return '{}[{}]'.format(prefix, elements_str)  
