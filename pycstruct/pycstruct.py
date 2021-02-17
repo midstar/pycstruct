@@ -397,14 +397,14 @@ class StructDef(BaseDef):
           # This is a list (array)
           l = []
           for index in range(0, length):
-            l.append(self.deserialize_element(name, buffer, index = index))
+            l.append(self._deserialize_element(name, buffer, index = index))
           result[name] = l
         else:
-          result[name] = self.deserialize_element(name, buffer)
+          result[name] = self._deserialize_element(name, buffer)
 
     return result
 
-  def deserialize_element(self, name, buffer, buffer_offset = 0, index = 0):
+  def _deserialize_element(self, name, buffer, buffer_offset = 0, index = 0):
     """ Deserialize one element from buffer
 
     :param name: Name of element
@@ -422,7 +422,7 @@ class StructDef(BaseDef):
       # This is a bitfield on same level
       field = self.__fields[self.__fields_same_level[name]]
       bitfield = field['type']
-      return bitfield.deserialize_element(name, buffer, buffer_offset + field['offset'])
+      return bitfield._deserialize_element(name, buffer, buffer_offset + field['offset'])
 
     field = self.__fields[name]
     datatype = field['type']
@@ -470,14 +470,14 @@ class StructDef(BaseDef):
             raise Exception('List in element: {0} is larger than {1}'.format(name, length))
           index = 0
           for item in data[name]:
-            self.serialize_element(name, item, buffer, index = index)
+            self._serialize_element(name, item, buffer, index = index)
             index += 1
         else:
-          self.serialize_element(name, data[name], buffer)
+          self._serialize_element(name, data[name], buffer)
 
     return buffer
   
-  def serialize_element(self, name, value, buffer, buffer_offset = 0, index = 0):
+  def _serialize_element(self, name, value, buffer, buffer_offset = 0, index = 0):
     """ Serialize one element into the buffer
 
     :param name: Name of element
@@ -495,7 +495,7 @@ class StructDef(BaseDef):
       # This is a bitfield on same level
       field = self.__fields[self.__fields_same_level[name]]
       bitfield = field['type']
-      bitfield.serialize_element(name, value, buffer, buffer_offset + field['offset'])
+      bitfield._serialize_element(name, value, buffer, buffer_offset + field['offset'])
       return # We are done
 
     field = self.__fields[name]
@@ -704,11 +704,11 @@ class BitfieldDef(BaseDef):
                       len(buffer), self.size()))
 
     for name in self.element_names():
-      result[name] = self.deserialize_element(name, buffer)
+      result[name] = self._deserialize_element(name, buffer)
 
     return result
 
-  def deserialize_element(self, name, buffer, buffer_offset = 0):
+  def _deserialize_element(self, name, buffer, buffer_offset = 0):
       """ Deserialize one element from buffer
 
       :param name: Name of element
@@ -736,11 +736,11 @@ class BitfieldDef(BaseDef):
     buffer = bytearray(self.size())
     for name in self.element_names():
       if name in data:
-        self.serialize_element(name, data[name], buffer)
+        self._serialize_element(name, data[name], buffer)
 
     return buffer
 
-  def serialize_element(self, name, value, buffer, buffer_offset = 0):
+  def _serialize_element(self, name, value, buffer, buffer_offset = 0):
       """ Serialize one element into the buffer
 
       :param name: Name of element
@@ -1121,7 +1121,7 @@ class Instance():
     if item in self.__subinstances:
       return self.__subinstances[item]
     elif item in self.__attributes:
-      return self.__type.deserialize_element(item, self.__buffer, 
+      return self.__type._deserialize_element(item, self.__buffer, 
                                       self.__buffer_offset)
     else:
       raise AttributeError('Instance has no element {}'.format(item))
@@ -1130,7 +1130,7 @@ class Instance():
     if item in self.__subinstances:
       raise AttributeError('You are not allowed to modify {}'.format(item))
     elif item in self.__attributes:
-      self.__type.serialize_element(item, value, self.__buffer, 
+      self.__type._serialize_element(item, value, self.__buffer, 
                                       self.__buffer_offset)
     else:
       raise AttributeError('Instance has no element {}'.format(item))
@@ -1179,7 +1179,7 @@ class _InstanceList():
   def __getitem__(self, key):
     self._check_key(key)
     if len(self.__subinstances) == 0:
-      return self.__parenttype.deserialize_element(self.__name, self.__buffer, 
+      return self.__parenttype._deserialize_element(self.__name, self.__buffer, 
                                       self.__buffer_offset, key)
     else:
       return self.__subinstances[key]
@@ -1187,7 +1187,7 @@ class _InstanceList():
   def __setitem__(self, key, value):
     self._check_key(key)
     if len(self.__subinstances) == 0:
-      self.__parenttype.serialize_element(self.__name, value, self.__buffer, 
+      self.__parenttype._serialize_element(self.__name, value, self.__buffer, 
                                       self.__buffer_offset, key)
     else:
       raise AttributeError('You are not allowed to replace object. Use object properties.')
