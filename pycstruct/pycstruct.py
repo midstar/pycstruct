@@ -340,7 +340,7 @@ class StructDef(BaseDef):
     
     # If same_level, store the bitfield elements
     if same_level:
-      for subname in type.element_names():
+      for subname in type._element_names():
         self.__fields_same_level[subname] = name
 
   def size(self):
@@ -388,7 +388,7 @@ class StructDef(BaseDef):
     if len(buffer) != self.size():
       raise Exception("Invalid buffer size: {0}. Expected: {1}".format(len(buffer),self.size()))
 
-    for name in self.element_names():
+    for name in self._element_names():
       if not name.startswith('__pad'):
         length = 1
         if name in self.__fields:
@@ -457,7 +457,7 @@ class StructDef(BaseDef):
     :rtype: bytearray
     """
     buffer = bytearray(self.size())
-    for name in self.element_names():
+    for name in self._element_names():
       if name in data and not name.startswith('__pad'):
         length = 1
         if name in self.__fields:
@@ -583,7 +583,7 @@ class StructDef(BaseDef):
       for _, field in self.__fields.items():
         field['offset'] -= adjust_offset
 
-  def element_names(self):
+  def _element_names(self):
     """ Get a list of all element names (in correct order)
 
     Note that this method also include elements of bitfields with same_level = True
@@ -703,7 +703,7 @@ class BitfieldDef(BaseDef):
       raise Exception("Invalid buffer size: {0}. Expected at least: {1}".format(
                       len(buffer), self.size()))
 
-    for name in self.element_names():
+    for name in self._element_names():
       result[name] = self._deserialize_element(name, buffer)
 
     return result
@@ -734,7 +734,7 @@ class BitfieldDef(BaseDef):
     :rtype: bytearray
     """
     buffer = bytearray(self.size())
-    for name in self.element_names():
+    for name in self._element_names():
       if name in data:
         self._serialize_element(name, data[name], buffer)
 
@@ -876,7 +876,7 @@ class BitfieldDef(BaseDef):
         name,field['nbr_of_bits'], field['offset'], signed))
     return '\n'.join(result)
   
-  def element_names(self):
+  def _element_names(self):
     """ Get a list of all element names (in correct order)
 
     :return: A list of all elements
@@ -1100,7 +1100,7 @@ class Instance():
     super().__setattr__('_Instance__type', type)
     super().__setattr__('_Instance__buffer', buffer)
     super().__setattr__('_Instance__buffer_offset', buffer_offset)
-    super().__setattr__('_Instance__attributes', type.element_names())
+    super().__setattr__('_Instance__attributes', type._element_names())
     super().__setattr__('_Instance__subinstances', {})
 
     if isinstance(type, StructDef):
