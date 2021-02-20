@@ -11,7 +11,7 @@ library has limited support for this.
 
 The pycstruct library solves this problem by allowing the user to define the memory
 layout of an "object". Once the memory layout has been defined data can serialized
-or deserialized into/from simple python dictionaries.
+or deserialized into/from simple python dictionaries or specific instance objects.
 
 Why and when does the memory layout matter?
 -------------------------------------------
@@ -339,3 +339,32 @@ parse it with :func:`pycstruct.parse_str`.
 Internally pycstruct use the external tool 
 `castxml <https://github.com/CastXML/CastXML>`_ which needs to
 be installed and put in the current path.
+
+Instance objects
+----------------
+
+Most examples in this section are using dictionaries. An alternative
+of using dictionaries to represent the object is to use 
+:py:meth:`pycstruct.Instance` objects. 
+
+Instance objects has following advantages over dictionaries:
+
+- Data is only serialized/deserialized when accessed
+- Data is validated for each element/attribute access. I.e. you will
+  get an exception if you try to set an element/attribute to a value
+  that is not supported by the definition.
+- Data is accessed by attribute name instead of key indexing
+
+Instance objects are created from the :py:meth:`pycstruct.StructDef`
+or :py:meth:`pycstruct.BitfieldDef` object.
+
+.. code-block:: python
+
+    myStruct = pycstruct.StructDef()
+    #.... Add some elements to myStruct here
+    instanceOfMyStruct = myStruct.instance()
+
+    myBitfield = pycstruct.BitfieldDef()
+    #.... Add some elements to myBitfield here
+    instanceOfMyBitfield = myBitfield.instance()
+

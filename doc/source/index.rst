@@ -2,7 +2,7 @@ pycstruct
 =========
 
 pycstruct is a python library for converting binary data to and from ordinary
-python dictionaries.
+python dictionaries or specific instance objects.
 
 Data is defined similar to what is done in C language structs, unions,
 bitfields and enums.

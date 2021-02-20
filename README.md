@@ -5,7 +5,7 @@
 [![Documentation](https://readthedocs.org/projects/pycstruct/badge/?version=latest)](https://pycstruct.readthedocs.io/en/latest/?badge=latest)
 
 pycstruct is a python library for converting binary data to and from ordinary
-python dictionaries.
+python dictionaries or specific instance objects.
 
 Data is defined similar to what is done in C language structs, unions,
 bitfields and enums.
@@ -94,12 +94,20 @@ person.add('bool8', 'is_male')
 person.add('uint32', 'nbr_of_children')
 person.add('uint32', 'child_ages', length=10)
 
-f = open('simple_example.dat','rb')
-inbytes = f.read()
-result = person.deserialize(inbytes)
-f.close()
+with open('simple_example.dat', 'rb') as f:
+    inbytes = f.read()
 
+# Dictionary representation
+result = person.deserialize(inbytes)
+print('Dictionary object:')
 print(str(result))
+
+# Alternative, Instance representation
+instance = person.instance(inbytes)
+print('\nInstance object:')
+print('name: {}'.format(instance.name))
+print('nbr_of_children: {}'.format(instance.nbr_of_children))
+print('child_ages[1]: {}'.format(instance.child_ages[1]))
 ```
 
 The produced output will be::
@@ -107,6 +115,11 @@ The produced output will be::
     {'name': 'Foo Bar', 'is_male': True, 'nbr_of_children': 2, 
      'age': 42, 'child_ages': [7, 9, 0, 0, 0, 0, 0, 0, 0, 0], 
      'height': 1.75}
+
+    Instance object:
+    name: Foo Bar
+    nbr_of_children: 2
+    child_ages[1]: 9
 
 To write a binary file from python using the same structure
 using pycstruct following code is required.
@@ -122,6 +135,7 @@ person.add('bool8', 'is_male')
 person.add('uint32', 'nbr_of_children')
 person.add('uint32', 'child_ages', length=10)
 
+# Dictionary representation
 mrGreen = {}
 mrGreen['name'] = "MR Green"
 mrGreen['age'] = 50
@@ -129,9 +143,21 @@ mrGreen['height'] = 1.93
 mrGreen['is_male'] = True
 mrGreen['nbr_of_children'] = 3
 mrGreen['child_ages'] = [13,24,12]
-
 buffer = person.serialize(mrGreen)
 
+# Alternative, Instance representation
+mrGreen = person.instance()
+mrGreen.name = "MR Green"
+mrGreen.age = 50
+mrGreen.height = 1.93
+mrGreen.is_male = True
+mrGreen.nbr_of_children = 3
+mrGreen.child_ages[0] = 13
+mrGreen.child_ages[1] = 24
+mrGreen.child_ages[2] = 12
+buffer = bytes(mrGreen)
+
+# Write to file
 f = open('simple_example_mr_green.dat','wb')
 f.write(buffer)
 f.close()
@@ -154,12 +180,15 @@ definitions = pycstruct.parse_file('simple_example.c')
 with open('simple_example.dat', 'rb') as f:
     inbytes = f.read()
 
+# Dictionary representation
 result = definitions['person'].deserialize(inbytes)
-
 print(str(result))
+
+# Alternative, Instance representation
+instance = definitions['person'].instance(inbytes)
 ```
 
-The produced output will be the same as in the first example.
+The produced output will be the same as in the first example (the dictionary).
 
 ## Full documentation
 

@@ -11,6 +11,14 @@ person.add('uint32', 'child_ages', length=10)
 with open('simple_example.dat', 'rb') as f:
     inbytes = f.read()
 
+# Dictionary representation
 result = person.deserialize(inbytes)
-
+print('Dictionary object:')
 print(str(result))
+
+# Alternative, Instance representation
+instance = person.instance(inbytes)
+print('\nInstance object:')
+print('name: {}'.format(instance.name))
+print('nbr_of_children: {}'.format(instance.nbr_of_children))
+print('child_ages[1]: {}'.format(instance.child_ages[1]))

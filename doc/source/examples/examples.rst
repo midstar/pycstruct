@@ -18,9 +18,15 @@ required.
 
 The produced output will be::
 
+    Dictionary object:
     {'name': 'Foo Bar', 'is_male': True, 'nbr_of_children': 2, 
      'age': 42, 'child_ages': [7, 9, 0, 0, 0, 0, 0, 0, 0, 0], 
      'height': 1.75}
+
+    Instance object:
+    name: Foo Bar
+    nbr_of_children: 2
+    child_ages[1]: 9
 
 To write a binary file from python using the same structure
 using pycstruct following code is required.
@@ -76,8 +82,13 @@ To print the model number of the first car:
 
 .. code-block:: python
 
+    # Dictionary representation
     my_house = house.deserialize(databuffer)
     print(my_house['garage']['cars'][0]['model'])
+
+    # Alternative, Instance representation
+    my_house = house.instance(databuffer)
+    print(my_house.garage.cars[0].model)
 
 
 Parsing source code
@@ -96,9 +107,12 @@ code instead of manually creating the definitions:
     with open('simple_example.dat', 'rb') as f:
         inbytes = f.read()
 
+    # Dictionary representation
     result = definitions['person'].deserialize(inbytes)
-
     print(str(result))
+
+    # Alternative, Instance representation
+    instance = definitions['person'].instance(inbytes)
 
 The produced output will be the same is in the first example.
 
