@@ -997,7 +997,7 @@ class TestPyCStruct(unittest.TestCase):
     # Create an instance of a Bitfield (car_properties)
 
     # Buffer is empty
-    instance = pycstruct.Instance(car_properties)
+    instance = car_properties.instance() # Create from BitfieldDef
     self.assertEqual(instance.env_class, 0)
     self.assertEqual(instance.registered, 0)
     self.assertEqual(instance.over_3500_kg, 0)
@@ -1076,7 +1076,7 @@ class TestPyCStruct(unittest.TestCase):
 
     #####################################################################
     # Create an instance of a complex Struct (house)
-    instance = pycstruct.Instance(house)
+    instance = house.instance() # Create directly from StructDef
     instance.nbr_of_levels = 92
     instance.garage.cars[0].year = 2012
     instance.garage.cars[0].registration_number = 'ABC123'

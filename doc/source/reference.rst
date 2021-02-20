@@ -23,3 +23,7 @@ Parse source code files
 Parse source code strings
 -------------------------
 .. autofunction:: pycstruct.parse_str
+
+Instance (instance of StructDef or BitfieldDef)
+-----------------------------------------------
+.. autofunction:: pycstruct.Instance

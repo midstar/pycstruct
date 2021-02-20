@@ -512,6 +512,24 @@ class StructDef(BaseDef):
           datatype._type_name(), name, e.args[0]))
 
 
+  def instance(self, buffer = None, buffer_offset = 0):
+      """ Create an instance of this struct / union.
+
+      This is an alternative of using dictionaries and the :meth:`StructDef.serialize`/
+      :meth:`StructDef.deserialize` methods for representing the data.
+
+      :param buffer: Byte buffer where data is stored. If no buffer is provided a new byte
+                     buffer will be created and the instance will be 'empty'.
+      :type buffer: bytearray, optional
+      :param buffer_offset: Start offset in the buffer. This means that you
+                            can have multiple Instances (or other data) that
+                            shares the same buffer.
+      :type buffer_offset: int, optional
+      :return: A new Instance object
+      :rtype: :meth:`Instance`
+      """
+      return Instance(self, buffer, buffer_offset)
+
   def create_empty_data(self):
     """ Create an empty dictionary with all keys
 
@@ -759,6 +777,24 @@ class BitfieldDef(BaseDef):
                                  field['offset'], field['signed'])
       buffer[buffer_offset:buffer_offset + self.size()] = value.to_bytes(
         self.size(), self.__byteorder, signed=False)
+
+  def instance(self, buffer = None, buffer_offset = 0):
+      """ Create an instance of this bitfield.
+
+      This is an alternative of using dictionaries and the :meth:`BitfieldDef.serialize`/
+      :meth:`BitfieldDef.deserialize` methods for representing the data.
+
+      :param buffer: Byte buffer where data is stored. If no buffer is provided a new byte
+                     buffer will be created and the instance will be 'empty'.
+      :type buffer: bytearray, optional
+      :param buffer_offset: Start offset in the buffer. This means that you
+                            can have multiple Instances (or other data) that
+                            shares the same buffer.
+      :type buffer_offset: int, optional
+      :return: A new Instance object
+      :rtype: :meth:`Instance`
+      """
+      return Instance(self, buffer, buffer_offset)
 
   def assigned_bits(self):
     """ Get size of bitfield in bits excluding padding bits
@@ -1085,7 +1121,31 @@ class EnumDef(BaseDef):
 # Instance Class
 
 class Instance():
-  """TBD
+  """This class represents an Instance of either a :meth:`StructDef` or
+  a :meth:`BitfieldDef`. The instance object contains a bytearray
+  buffer where 'raw data' is stored.
+  
+  The Instance object has following advantages over using dictionary 
+  objects:
+
+  - Data is only serialized/deserialized when accessed
+  - Data is validated for each element/attribute access. I.e. you will
+    get an exception if you try to set an element/attribute to a value
+    that is not supported by the definition.
+  - Data is accessed by attribute name instead of key indexing
+
+
+  :param type: The :meth:`StructDef` class or :meth:`BitfieldDef` class
+               that we would like to create an instance of.
+  :type type: :meth:`StructDef` or :meth:`BitfieldDef`
+  :param buffer: Byte buffer where data is stored. If no buffer is 
+                 provided a new byte buffer will be created and the 
+                 instance will be 'empty'.
+  :type buffer: bytearray, optional
+  :param buffer_offset: Start offset in the buffer. This means that you
+                        can have multiple Instances (or other data) that
+                        shares the same buffer.
+  :type buffer_offset: int, optional
   """
 
   def __init__(self, type, buffer = None, buffer_offset = 0):
@@ -1151,7 +1211,24 @@ class Instance():
     return '\n'.join(result)
 
 class _InstanceList():
-  """TBD
+  """This class represents a list within an Instance. Note that this
+  is a private class and shall not be created manually. It is created
+  as a support class of Instance class.
+
+  It overrides __setitem__, __getitem__ so that it is possible to use
+  indexing with [].
+
+  :param parenttype: The StructDef class which contains the list element.
+  :type parenttype: StructDef
+  :param name: Name of the element in parenttype that contains the list
+               we would like to represent.
+  :type name: str
+  :param buffer: Byte buffer where data is stored
+  :type buffer: bytearray
+  :param buffer_offset: Start offset in the buffer. Note that this should
+                        be the offset to where parenttype starts, not the
+                        actual list element (name)
+  :type buffer_offset: int
   """
 
   def __init__(self, parenttype, name, buffer, buffer_offset):
@@ -1170,14 +1247,14 @@ class _InstanceList():
         self.__subinstances.append(Instance(self.__type, buffer, 
                           buffer_offset + element_offset + i * self.__type.size()))
   
-  def _check_key(self, key):
+  def __check_key(self, key):
     if not isinstance(key, int):
       raise KeyError('Invalid index: {} - needs to be an integer'.format(key))
     if key < 0 or key >= self.__length:
       raise KeyError('Invalid index: {} - supported 0 - {}'.format(key, self.__length))
 
   def __getitem__(self, key):
-    self._check_key(key)
+    self.__check_key(key)
     if len(self.__subinstances) == 0:
       return self.__parenttype._deserialize_element(self.__name, self.__buffer, 
                                       self.__buffer_offset, key)
@@ -1185,7 +1262,7 @@ class _InstanceList():
       return self.__subinstances[key]
 
   def __setitem__(self, key, value):
-    self._check_key(key)
+    self.__check_key(key)
     if len(self.__subinstances) == 0:
       self.__parenttype._serialize_element(self.__name, value, self.__buffer, 
                                       self.__buffer_offset, key)
