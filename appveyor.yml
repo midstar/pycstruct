@@ -3,7 +3,6 @@ version: 0.8.0.{build}
 environment:
   PYTHONUNBUFFERED: 1
   matrix:
-    - PYTHON_VERSION: "35"
     - PYTHON_VERSION: "36"
     - PYTHON_VERSION: "37"
       POST_COMMAND: "coveralls" # Only export coverage in this version
@@ -18,7 +17,6 @@ build: off
 install:
 - python -m pip install -U --user pip
 - python -m pip install -U --user tox
-- python -m pip install -U --user black
 
 test_script:
 - tox -e py%PYTHON_VERSION%
