@@ -140,7 +140,7 @@ def bytes_equals(t, bytes1, bytes2):
         t.assertEqual(int(bytes1[i]), int(bytes2[i]), msg="Index {0}".format(i))
 
 
-class UnserializableDef(pycstruct.pycstruct.BaseDef):
+class UnserializableDef(pycstruct.pycstruct._BaseDef):
     """Just for testing exceptions"""
 
     def size(self):
@@ -162,7 +162,7 @@ class UnserializableDef(pycstruct.pycstruct.BaseDef):
 class TestPyCStruct(unittest.TestCase):
     def test_invalid_baseclass(self):
 
-        b = pycstruct.pycstruct.BaseDef()
+        b = pycstruct.pycstruct._BaseDef()
 
         self.assertRaises(NotImplementedError, b.size)
         self.assertRaises(NotImplementedError, b.serialize, 0)

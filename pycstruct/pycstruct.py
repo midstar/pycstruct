@@ -7,7 +7,14 @@ released under the "MIT License Agreement". Please see the LICENSE
 file that should have been included as part of this package.
 """
 
-import struct, collections, math, sys, pycstruct
+# In this specific file we allow more than 1000 lines
+# pylint: disable=C0302
+
+import collections
+import math
+import pycstruct
+import struct
+import sys
 
 ###############################################################################
 # Global constants
@@ -60,28 +67,31 @@ def _round_pow_2(value):
     """Round value to next power of 2 value - max 16"""
     if value > 8:
         return 16
-    elif value > 4:
+    if value > 4:
         return 8
-    elif value > 2:
+    if value > 2:
         return 4
 
     return value
 
 
 ###############################################################################
-# BaseDef Class
+# _BaseDef Class
 
 
-class BaseDef:
+class _BaseDef:
     """This is an abstract base class for definitions"""
 
     def size(self):
+        """Returns size in bytes"""
         raise NotImplementedError
 
     def serialize(self, data):
+        """Serialize dictionary. Returns bytearray"""
         raise NotImplementedError
 
     def deserialize(self, buffer):
+        """Deserialize buffer. Returns dictionary"""
         raise NotImplementedError
 
     def _largest_member(self):
@@ -95,27 +105,27 @@ class BaseDef:
 # BasicTypeDef Class
 
 
-class BasicTypeDef(BaseDef):
+class BasicTypeDef(_BaseDef):
     """This class represents the basic types (int, float and bool)"""
 
-    def __init__(self, type, byteorder):
-        self.type = type
+    def __init__(self, datatype, byteorder):
+        self.type = datatype
         self.byteorder = byteorder
-        self.size_bytes = _TYPE[type]["bytes"]
-        self.format = _TYPE[type]["format"]
+        self.size_bytes = _TYPE[datatype]["bytes"]
+        self.format = _TYPE[datatype]["format"]
 
     def serialize(self, data):
         """ Data needs to be an integer, floating point or boolean value """
         buffer = bytearray(self.size())
-        format = _BYTEORDER[self.byteorder]["format"] + self.format
-        struct.pack_into(format, buffer, 0, data)
+        dataformat = _BYTEORDER[self.byteorder]["format"] + self.format
+        struct.pack_into(dataformat, buffer, 0, data)
 
         return buffer
 
     def deserialize(self, buffer):
         """ Result is an integer, floating point or boolean value """
-        format = _BYTEORDER[self.byteorder]["format"] + self.format
-        value = struct.unpack_from(format, buffer, 0)[0]
+        dataformat = _BYTEORDER[self.byteorder]["format"] + self.format
+        value = struct.unpack_from(dataformat, buffer, 0)[0]
 
         if self.type.startswith("bool"):
             if value == 0:
@@ -139,7 +149,7 @@ class BasicTypeDef(BaseDef):
 # StringDef Class
 
 
-class StringDef(BaseDef):
+class StringDef(_BaseDef):
     """This class represents UTF-8 strings"""
 
     def __init__(self, length):
@@ -160,8 +170,8 @@ class StringDef(BaseDef):
                 )
             )
 
-        for i in range(0, len(utf8_bytes)):
-            buffer[i] = utf8_bytes[i]
+        for i, value in enumerate(utf8_bytes):
+            buffer[i] = value
         return buffer
 
     def deserialize(self, buffer):
@@ -187,7 +197,7 @@ class StringDef(BaseDef):
 # StructDef Class
 
 
-class StructDef(BaseDef):
+class StructDef(_BaseDef):
     """This class represents a struct or a union definition
 
     :param default_byteorder: Byte order of each element unless explicitly set
@@ -225,7 +235,7 @@ class StructDef(BaseDef):
             "offset": 0,
         }
 
-    def add(self, type, name, length=1, byteorder="", same_level=False):
+    def add(self, datatype, name, length=1, byteorder="", same_level=False):
         """Add a new element in the struct/union definition. The element will be added
         directly after the previous element if a struct or in parallel with the
         previous element if union. Padding might be added depending on the alignment
@@ -284,8 +294,8 @@ class StructDef(BaseDef):
            |            |               | 'enum' string.                       |
            +------------+---------------+--------------------------------------+
 
-        :param type: Element data type. See above.
-        :type type: str
+        :param datatype: Element data type. See above.
+        :type datatype: str
         :param name: Name of element. Needs to be unique.
         :type name: str
         :param length: Number of elements. If > 1 this is an array/list of
@@ -313,18 +323,18 @@ class StructDef(BaseDef):
             raise Exception("Invalid byteorder: {0}.".format(byteorder))
         if same_level and length > 1:
             raise Exception("same_level not allowed in combination with length > 1")
-        if same_level and not isinstance(type, BitfieldDef):
+        if same_level and not isinstance(datatype, BitfieldDef):
             raise Exception("same_level only allowed in combination with BitfieldDef")
 
         # Create objects when necessary
-        if type == "utf-8":
-            type = StringDef(length)
+        if datatype == "utf-8":
+            datatype = StringDef(length)
             # String length is handled inside the definition
             length = 1
-        elif type in _TYPE:
-            type = BasicTypeDef(type, byteorder)
-        elif not isinstance(type, BaseDef):
-            raise Exception("Invalid type: {0}.".format(type))
+        elif datatype in _TYPE:
+            datatype = BasicTypeDef(datatype, byteorder)
+        elif not isinstance(datatype, _BaseDef):
+            raise Exception("Invalid datatype: {0}.".format(datatype))
 
         # Remove end padding if it exists
         self.__fields.pop("__pad_end", "")
@@ -336,7 +346,7 @@ class StructDef(BaseDef):
         if not self.__union:
             offset = self.size()
             padding = _get_padding(
-                self.__alignment, self.size(), type._largest_member()
+                self.__alignment, self.size(), datatype._largest_member()
             )
             if padding > 0:
                 self.__fields["__pad_{0}".format(self.__pad_count)] = {
@@ -350,7 +360,7 @@ class StructDef(BaseDef):
 
         # Add the element
         self.__fields[name] = {
-            "type": type,
+            "type": datatype,
             "length": length,
             "same_level": same_level,
             "offset": offset,
@@ -359,14 +369,14 @@ class StructDef(BaseDef):
         # Check if end padding is required
         padding = _get_padding(self.__alignment, self.size(), self._largest_member())
         if padding > 0:
-            offset += length * type.size()
+            offset += length * datatype.size()
             self.__pad_end["length"] = padding
             self.__fields["__pad_end"] = self.__pad_end
             self.__fields["__pad_end"]["offset"] = offset
 
         # If same_level, store the bitfield elements
         if same_level:
-            for subname in type._element_names():
+            for subname in datatype._element_names():
                 self.__fields_same_level[subname] = name
 
     def size(self):
@@ -712,7 +722,7 @@ class StructDef(BaseDef):
 # BitfieldDef Class
 
 
-class BitfieldDef(BaseDef):
+class BitfieldDef(_BaseDef):
     """This class represents a bit field definition
 
     The size of the bit field is 1, 2, 3, .., 8 bytes depending on the number of
@@ -1019,7 +1029,7 @@ class BitfieldDef(BaseDef):
 # EnumDef Class
 
 
-class EnumDef(BaseDef):
+class EnumDef(_BaseDef):
     """This class represents an enum definition
 
     The size of the enum is 1, 2, 3, .., 8 bytes depending on the value of the
