@@ -7,14 +7,14 @@ released under the "MIT License Agreement". Please see the LICENSE
 file that should have been included as part of this package.
 """
 
-# In this specific file we allow more than 1000 lines
-# pylint: disable=C0302
+# pylint: disable=too-many-lines, protected-access
 
 import collections
 import math
-import pycstruct
 import struct
 import sys
+
+import pycstruct
 
 ###############################################################################
 # Global constants
@@ -215,6 +215,8 @@ class StructDef(_BaseDef):
     :type union: boolean, optional
     """
 
+    # pylint: disable=too-many-instance-attributes, too-many-arguments
+
     def __init__(self, default_byteorder="native", alignment=1, union=False):
         """Constructor method"""
         if default_byteorder not in _BYTEORDER:
@@ -311,7 +313,7 @@ class StructDef(_BaseDef):
         :type same_level: bool, optional
 
         """
-
+        # pylint: disable=too-many-branches
         # Sanity checks
         if length < 1:
             raise Exception("Invalid length: {0}.".format(length))
@@ -405,9 +407,9 @@ class StructDef(_BaseDef):
         """
         largest = 0
         for field in self.__fields.values():
-            l = field["type"]._largest_member()
-            if l > largest:
-                largest = l
+            current_largest = field["type"]._largest_member()
+            if current_largest > largest:
+                largest = current_largest
 
         return largest
 
@@ -435,10 +437,11 @@ class StructDef(_BaseDef):
                     length = self.__fields[name]["length"]
                 if length > 1:
                     # This is a list (array)
-                    l = []
+                    result[name] = []
                     for index in range(0, length):
-                        l.append(self._deserialize_element(name, buffer, index=index))
-                    result[name] = l
+                        result[name].append(
+                            self._deserialize_element(name, buffer, index=index)
+                        )
                 else:
                     result[name] = self._deserialize_element(name, buffer)
 
@@ -468,7 +471,6 @@ class StructDef(_BaseDef):
 
         field = self.__fields[name]
         datatype = field["type"]
-        length = field["length"]
         offset = field["offset"]
         datatype_size = datatype.size()
 
@@ -477,12 +479,12 @@ class StructDef(_BaseDef):
 
         try:
             value = datatype.deserialize(buffer_subset)
-        except Exception as e:
+        except Exception as exception:
             raise Exception(
                 "Unable to deserialize {} {}. Reason:\n{}".format(
-                    datatype._type_name(), name, e.args[0]
+                    datatype._type_name(), name, exception.args[0]
                 )
-            )
+            ) from exception
 
         return value
 
@@ -552,7 +554,6 @@ class StructDef(_BaseDef):
 
         field = self.__fields[name]
         datatype = field["type"]
-        length = field["length"]
         offset = field["offset"]
         datatype_size = datatype.size()
 
@@ -561,12 +562,12 @@ class StructDef(_BaseDef):
             buffer[next_offset : next_offset + datatype_size] = datatype.serialize(
                 value
             )
-        except Exception as e:
+        except Exception as exception:
             raise Exception(
                 "Unable to serialize {} {}. Reason:\n{}".format(
-                    datatype._type_name(), name, e.args[0]
+                    datatype._type_name(), name, exception.args[0]
                 )
-            )
+            ) from exception
 
     def instance(self, buffer=None, buffer_offset=0):
         """Create an instance of this struct / union.
@@ -608,15 +609,15 @@ class StructDef(_BaseDef):
             )
         )
         for name, field in self.__fields.items():
-            type = field["type"]
+            datatype = field["type"]
             result.append(
                 "{:<30}{:<15}{:<10}{:<10}{:<10}{:<10}".format(
                     name,
-                    type._type_name(),
-                    type.size(),
+                    datatype._type_name(),
+                    datatype.size(),
                     field["length"],
                     field["offset"],
-                    type._largest_member(),
+                    datatype._largest_member(),
                 )
             )
         return "\n".join(result)
@@ -635,7 +636,7 @@ class StructDef(_BaseDef):
          :param name: Name of element to remove and all after this element
          :type name: str
         """
-        self._remove_from_or_to(name, to=False)
+        self._remove_from_or_to(name, to_criteria=False)
 
     def remove_to(self, name):
 
@@ -646,14 +647,14 @@ class StructDef(_BaseDef):
          :param name: Name of element to remove and all before element
          :type name: str
         """
-        self._remove_from_or_to(name, to=True)
+        self._remove_from_or_to(name, to_criteria=True)
 
-    def _remove_from_or_to(self, name, to=True):
+    def _remove_from_or_to(self, name, to_criteria=True):
         if name not in self.__fields:
             raise Exception("Element {} does not exist".format(name))
 
         keys = list(self.__fields)
-        if to == False:
+        if not to_criteria:
             keys.reverse()
         for key in keys:
             del self.__fields[key]
@@ -926,10 +927,11 @@ class BitfieldDef(_BaseDef):
         :return: The subvalue
         :rtype: int
         """
+        # pylint: disable=no-self-use
         shifted_value = value >> start_bit
         mask = 0xFFFFFFFFFFFFFFFF >> (64 - nbr_of_bits)
         non_signed_value = shifted_value & mask
-        if signed == False:
+        if not signed:
             return non_signed_value
         sign_bit = 0x1 << (nbr_of_bits - 1)
         if non_signed_value & sign_bit == 0:
@@ -944,28 +946,28 @@ class BitfieldDef(_BaseDef):
         :return: New value where subvalue is included
         :rtype: int
         """
-
+        # pylint: disable=too-many-arguments,no-self-use
         # Validate size according to nbr_of_bits
-        max = 2 ** nbr_of_bits - 1
-        min = 0
+        max_value = 2 ** nbr_of_bits - 1
+        min_value = 0
         if signed:
-            max = 2 ** (nbr_of_bits - 1) - 1
-            min = -1 * (2 ** (nbr_of_bits - 1))
+            max_value = 2 ** (nbr_of_bits - 1) - 1
+            min_value = -1 * (2 ** (nbr_of_bits - 1))
 
         signed_str = "Unsigned"
         if signed:
             signed_str = "Signed"
 
-        if subvalue > max:
+        if subvalue > max_value:
             raise Exception(
                 "{0} value {1} is too large to fit in {2} bits. Max value is {3}.".format(
-                    signed_str, subvalue, nbr_of_bits, max
+                    signed_str, subvalue, nbr_of_bits, max_value
                 )
             )
-        if subvalue < min:
+        if subvalue < min_value:
             raise Exception(
                 "{0} value {1} is too small to fit in {2} bits. Min value is {3}.".format(
-                    signed_str, subvalue, nbr_of_bits, max
+                    signed_str, subvalue, nbr_of_bits, min_value
                 )
             )
 
@@ -1068,13 +1070,14 @@ class EnumDef(_BaseDef):
         :param value: Value of the constant. Automatically assigned to next
                       available value (0, 1, 2, ...) if not provided.
         :type value: int, optional"""
+        # pylint: disable=bare-except
         # Check for same bitfield name
         if name in self.__constants:
             raise Exception("Constant with name {0} already exists.".format(name))
 
         # Automatically assigned to next available value
         index = 0
-        while value == None:
+        while value is None:
             try:
                 self.get_name(index)
                 index += 1
@@ -1111,6 +1114,7 @@ class EnumDef(_BaseDef):
         :return: The constant name (string)
         :rtype: str
         """
+        # pylint: disable=bare-except
         if len(buffer) != self.size():
             raise Exception(
                 "Invalid buffer size: {0}. Expected: {1}".format(
@@ -1176,8 +1180,8 @@ class EnumDef(_BaseDef):
         :return: The constant name
         :rtype: str
         """
-        for constant, v in self.__constants.items():
-            if value == v:
+        for constant, item_value in self.__constants.items():
+            if value == item_value:
                 return constant
         raise Exception("Value {0} is not a valid value for this enum.".format(value))
 
