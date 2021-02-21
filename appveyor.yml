@@ -1,9 +1,8 @@
-version: 0.8.0.{build}
+version: 0.8.1.{build}
 
 environment:
   PYTHONUNBUFFERED: 1
   matrix:
-    - PYTHON_VERSION: "35"
     - PYTHON_VERSION: "36"
     - PYTHON_VERSION: "37"
       POST_COMMAND: "coveralls" # Only export coverage in this version

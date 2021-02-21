@@ -4,7 +4,7 @@ Installation
 Python version compatibility
 ----------------------------
 
-pycstruct is only compatible with python version 3.4 or later.
+pycstruct is only compatible with python version 3.6 or later.
 
 Basic Installation
 ------------------

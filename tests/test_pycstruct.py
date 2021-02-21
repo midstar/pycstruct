@@ -6,57 +6,57 @@ proj_dir = os.path.dirname(test_dir)
 sys.path.append(proj_dir)
 import pycstruct
 
+
 def check_struct(t, structdef_instance, filename):
     #############################################
     # Load pre-stored binary data and deserialize
 
-    f = open(os.path.join(test_dir, filename),'rb')
+    f = open(os.path.join(test_dir, filename), "rb")
     inbytes = f.read()
     result = structdef_instance.deserialize(inbytes)
     f.close()
 
-
     #############################################
     # Check expected values
 
-    t.assertEqual(result['int8_low'],   -128)
-    t.assertEqual(result['int8_high'],   127)
-    t.assertEqual(result['uint8_low'],   0)
-    t.assertEqual(result['uint8_high'],  255)
-    t.assertEqual(result['bool8_false'], False)
-    t.assertEqual(result['bool8_true'],  True)
+    t.assertEqual(result["int8_low"], -128)
+    t.assertEqual(result["int8_high"], 127)
+    t.assertEqual(result["uint8_low"], 0)
+    t.assertEqual(result["uint8_high"], 255)
+    t.assertEqual(result["bool8_false"], False)
+    t.assertEqual(result["bool8_true"], True)
 
-    t.assertEqual(result['int16_low'],   -32768)
-    t.assertEqual(result['int16_high'],   32767)
-    t.assertEqual(result['uint16_low'],   0)
-    t.assertEqual(result['uint16_high'],  65535)
-    t.assertEqual(result['bool16_false'], False)
-    t.assertEqual(result['bool16_true'],  True)
+    t.assertEqual(result["int16_low"], -32768)
+    t.assertEqual(result["int16_high"], 32767)
+    t.assertEqual(result["uint16_low"], 0)
+    t.assertEqual(result["uint16_high"], 65535)
+    t.assertEqual(result["bool16_false"], False)
+    t.assertEqual(result["bool16_true"], True)
 
-    t.assertEqual(result['int32_low'],   -2147483648)
-    t.assertEqual(result['int32_high'],   2147483647)
-    t.assertEqual(result['uint32_low'],   0)
-    t.assertEqual(result['uint32_high'],  4294967295)
-    t.assertEqual(result['bool32_false'], False)
-    t.assertEqual(result['bool32_true'],  True)
-    t.assertEqual(round(result['float32_low'], 5), 1.23456)
-    t.assertEqual(round(result['float32_high'], 1), 12345.6)
+    t.assertEqual(result["int32_low"], -2147483648)
+    t.assertEqual(result["int32_high"], 2147483647)
+    t.assertEqual(result["uint32_low"], 0)
+    t.assertEqual(result["uint32_high"], 4294967295)
+    t.assertEqual(result["bool32_false"], False)
+    t.assertEqual(result["bool32_true"], True)
+    t.assertEqual(round(result["float32_low"], 5), 1.23456)
+    t.assertEqual(round(result["float32_high"], 1), 12345.6)
 
-    t.assertEqual(result['int64_low'],   -9223372036854775808)
-    t.assertEqual(result['int64_high'],   9223372036854775807)
-    t.assertEqual(result['uint64_low'],   0)
-    t.assertEqual(result['uint64_high'],  18446744073709551615)
-    t.assertEqual(result['bool64_false'], False)
-    t.assertEqual(result['bool64_true'],  True)
-    t.assertEqual(round(result['float64_low'], 8), 1.23456789)
-    t.assertEqual(round(result['float64_high'], 1), 12345678.9)
+    t.assertEqual(result["int64_low"], -9223372036854775808)
+    t.assertEqual(result["int64_high"], 9223372036854775807)
+    t.assertEqual(result["uint64_low"], 0)
+    t.assertEqual(result["uint64_high"], 18446744073709551615)
+    t.assertEqual(result["bool64_false"], False)
+    t.assertEqual(result["bool64_true"], True)
+    t.assertEqual(round(result["float64_low"], 8), 1.23456789)
+    t.assertEqual(round(result["float64_high"], 1), 12345678.9)
 
-    for i in range(0,5):
-      t.assertEqual(result['int32_array'][i], i)
+    for i in range(0, 5):
+        t.assertEqual(result["int32_array"][i], i)
 
-    t.assertEqual(result['utf8_ascii'],   'This is a normal ASCII string!')
-    t.assertEqual(result['utf8_nonascii'],'This string has special characters ÅÄÖü')
-    t.assertEqual(result['utf8_no_term'], 'ABCD') 
+    t.assertEqual(result["utf8_ascii"], "This is a normal ASCII string!")
+    t.assertEqual(result["utf8_nonascii"], "This string has special characters ÅÄÖü")
+    t.assertEqual(result["utf8_no_term"], "ABCD")
 
     #############################################
     # Serialize result into new byte array
@@ -68,52 +68,61 @@ def check_struct(t, structdef_instance, filename):
 
     t.assertEqual(len(inbytes), len(outbytes))
     for i in range(0, len(inbytes)):
-      t.assertEqual(int(inbytes[i]), int(outbytes[i]), msg='Index {0}'.format(i))
-
+        t.assertEqual(int(inbytes[i]), int(outbytes[i]), msg="Index {0}".format(i))
 
 
 def check_embedded_struct(t, structdef_instance, filename):
     #############################################
     # Load pre-stored binary data and deserialize
 
-    f = open(os.path.join(test_dir, filename),'rb')
+    f = open(os.path.join(test_dir, filename), "rb")
     inbytes = f.read()
     result = structdef_instance.deserialize(inbytes)
     f.close()
 
-
-
     #############################################
     # Check expected values
 
-    t.assertEqual(result['nbr_of_levels'], 5)
-    t.assertEqual(result['garage']['nbr_registered_parkings'], 3)
-    t.assertEqual(result['garage']['cars'][0]['year'], 2011)
-    t.assertEqual(result['garage']['cars'][0]['properties']['env_class'], 0)
-    t.assertEqual(result['garage']['cars'][0]['properties']['registered'], 1)
-    t.assertEqual(result['garage']['cars'][0]['properties']['over_3500_kg'], 0)
-    t.assertEqual(result['garage']['cars'][0]['type'], 'Sedan')
-    t.assertEqual(result['garage']['cars'][0]['type_properties']['sedan']['sedan_code'], 20)
-    t.assertEqual(result['garage']['cars'][0]['registration_number'], 'AHF432')
-    t.assertEqual(result['garage']['cars'][0]['model'], 'Nissan Micra')
-    t.assertEqual(result['garage']['cars'][1]['year'], 2005)
-    t.assertEqual(result['garage']['cars'][1]['properties']['env_class'], 1)
-    t.assertEqual(result['garage']['cars'][1]['properties']['registered'], 1)
-    t.assertEqual(result['garage']['cars'][1]['properties']['over_3500_kg'], 1)
-    t.assertEqual(result['garage']['cars'][1]['type'], 'Bus')
-    t.assertEqual(result['garage']['cars'][1]['type_properties']['bus']['number_of_passangers'], 44)
-    t.assertEqual(result['garage']['cars'][1]['type_properties']['bus']['number_of_entries'], 3)
-    t.assertEqual(result['garage']['cars'][1]['type_properties']['bus']['is_accordion_bus'], False)
-    t.assertEqual(result['garage']['cars'][1]['registration_number'], 'CCO544')
-    t.assertEqual(result['garage']['cars'][1]['model'], 'Ford Focus')
-    t.assertEqual(result['garage']['cars'][2]['year'], 1998)
-    t.assertEqual(result['garage']['cars'][2]['properties']['env_class'], 3)
-    t.assertEqual(result['garage']['cars'][2]['properties']['registered'], 0)
-    t.assertEqual(result['garage']['cars'][2]['properties']['over_3500_kg'], 0)
-    t.assertEqual(result['garage']['cars'][2]['type'], 'Pickup')
-    t.assertEqual(result['garage']['cars'][2]['type_properties']['pickup']['truck_bed_volume'], 155)
-    t.assertEqual(result['garage']['cars'][2]['registration_number'], 'HHT434')
-    t.assertEqual(result['garage']['cars'][2]['model'], 'Volkswagen Golf')
+    t.assertEqual(result["nbr_of_levels"], 5)
+    t.assertEqual(result["garage"]["nbr_registered_parkings"], 3)
+    t.assertEqual(result["garage"]["cars"][0]["year"], 2011)
+    t.assertEqual(result["garage"]["cars"][0]["properties"]["env_class"], 0)
+    t.assertEqual(result["garage"]["cars"][0]["properties"]["registered"], 1)
+    t.assertEqual(result["garage"]["cars"][0]["properties"]["over_3500_kg"], 0)
+    t.assertEqual(result["garage"]["cars"][0]["type"], "Sedan")
+    t.assertEqual(
+        result["garage"]["cars"][0]["type_properties"]["sedan"]["sedan_code"], 20
+    )
+    t.assertEqual(result["garage"]["cars"][0]["registration_number"], "AHF432")
+    t.assertEqual(result["garage"]["cars"][0]["model"], "Nissan Micra")
+    t.assertEqual(result["garage"]["cars"][1]["year"], 2005)
+    t.assertEqual(result["garage"]["cars"][1]["properties"]["env_class"], 1)
+    t.assertEqual(result["garage"]["cars"][1]["properties"]["registered"], 1)
+    t.assertEqual(result["garage"]["cars"][1]["properties"]["over_3500_kg"], 1)
+    t.assertEqual(result["garage"]["cars"][1]["type"], "Bus")
+    t.assertEqual(
+        result["garage"]["cars"][1]["type_properties"]["bus"]["number_of_passangers"],
+        44,
+    )
+    t.assertEqual(
+        result["garage"]["cars"][1]["type_properties"]["bus"]["number_of_entries"], 3
+    )
+    t.assertEqual(
+        result["garage"]["cars"][1]["type_properties"]["bus"]["is_accordion_bus"], False
+    )
+    t.assertEqual(result["garage"]["cars"][1]["registration_number"], "CCO544")
+    t.assertEqual(result["garage"]["cars"][1]["model"], "Ford Focus")
+    t.assertEqual(result["garage"]["cars"][2]["year"], 1998)
+    t.assertEqual(result["garage"]["cars"][2]["properties"]["env_class"], 3)
+    t.assertEqual(result["garage"]["cars"][2]["properties"]["registered"], 0)
+    t.assertEqual(result["garage"]["cars"][2]["properties"]["over_3500_kg"], 0)
+    t.assertEqual(result["garage"]["cars"][2]["type"], "Pickup")
+    t.assertEqual(
+        result["garage"]["cars"][2]["type_properties"]["pickup"]["truck_bed_volume"],
+        155,
+    )
+    t.assertEqual(result["garage"]["cars"][2]["registration_number"], "HHT434")
+    t.assertEqual(result["garage"]["cars"][2]["model"], "Volkswagen Golf")
 
     #############################################
     # Serialize result into new byte array
@@ -124,1185 +133,881 @@ def check_embedded_struct(t, structdef_instance, filename):
     # Check that generated bytes match read ones
     bytes_equals(t, inbytes, outbytes)
 
+
 def bytes_equals(t, bytes1, bytes2):
     t.assertEqual(len(bytes1), len(bytes2))
     for i in range(0, len(bytes1)):
-      t.assertEqual(int(bytes1[i]), int(bytes2[i]), msg='Index {0}'.format(i))
+        t.assertEqual(int(bytes1[i]), int(bytes2[i]), msg="Index {0}".format(i))
 
-class UnserializableDef(pycstruct.pycstruct.BaseDef):
-  """Just for testing exceptions"""
-  def size(self):
-    return 1
 
-  def serialize(self, data):
-    raise Exception('Unable to serialize')
+class UnserializableDef(pycstruct.pycstruct._BaseDef):
+    """Just for testing exceptions"""
 
-  def deserialize(self, buffer):
-    raise Exception('Unable to deserialize')
+    def size(self):
+        return 1
 
-  def _largest_member(self):
-    return self.size()
+    def serialize(self, data):
+        raise Exception("Unable to serialize")
 
-  def _type_name(self):
-    return 'Unserializable_Test'
+    def deserialize(self, buffer):
+        raise Exception("Unable to deserialize")
+
+    def _largest_member(self):
+        return self.size()
+
+    def _type_name(self):
+        return "Unserializable_Test"
+
 
 class TestPyCStruct(unittest.TestCase):
+    def test_invalid_baseclass(self):
 
-  def test_invalid_baseclass(self):
+        b = pycstruct.pycstruct._BaseDef()
 
-    b = pycstruct.pycstruct.BaseDef()
+        self.assertRaises(NotImplementedError, b.size)
+        self.assertRaises(NotImplementedError, b.serialize, 0)
+        self.assertRaises(NotImplementedError, b.deserialize, 0)
+        self.assertRaises(NotImplementedError, b._largest_member)
+        self.assertRaises(NotImplementedError, b._type_name)
 
-    self.assertRaises(NotImplementedError, b.size)
-    self.assertRaises(NotImplementedError, b.serialize, 0)
-    self.assertRaises(NotImplementedError, b.deserialize, 0)
-    self.assertRaises(NotImplementedError, b._largest_member)
-    self.assertRaises(NotImplementedError, b._type_name)
+    def test_invalid_creation(self):
+        # Invalid byteorder on creation
+        self.assertRaises(Exception, pycstruct.StructDef, "invalid")
 
-  def test_invalid_creation(self):
-    # Invalid byteorder on creation
-    self.assertRaises(Exception, pycstruct.StructDef, 'invalid')
+    def test_invalid_add(self):
 
-  def test_invalid_add(self):
+        m = pycstruct.StructDef()
 
-    m = pycstruct.StructDef()
+        # Invalid type
+        self.assertRaises(Exception, m.add, "invalid", "aname")
 
-    # Invalid type
-    self.assertRaises(Exception, m.add, 'invalid', 'aname')
-
-    # Invalid length
-    self.assertRaises(Exception, m.add, 'int8', 'aname', 0)
-
-    # Invalid byteorder in member
-    self.assertRaises(Exception, m.add, 'int8', 'aname', 1, 'invalid')
-
-    # Duplicaded member
-    m.add('int8', 'name1')
-    self.assertRaises(Exception, m.add, 'uint8', 'name1')
-
-    # same_level with length > 1
-    self.assertRaises(Exception, m.add, pycstruct.StructDef(), 'same_level_err1', 
-                      length = 2, same_level = True)
-
-    # same_level with non StructDef/BitfieldDef
-    self.assertRaises(Exception, m.add, 'int8', 'same_level_err1', 
-                      same_level = True)
-
-
-  def test_invalid_deserialize(self):
-
-    m = pycstruct.StructDef()
-    m.add('int8', 'name1')
-
-    buffer = bytearray(m.size() + 1)
-    self.assertRaises(Exception, m.deserialize, buffer)
-
-  def test_invalid_serialize(self):
+        # Invalid length
+        self.assertRaises(Exception, m.add, "int8", "aname", 0)
+
+        # Invalid byteorder in member
+        self.assertRaises(Exception, m.add, "int8", "aname", 1, "invalid")
+
+        # Duplicaded member
+        m.add("int8", "name1")
+        self.assertRaises(Exception, m.add, "uint8", "name1")
+
+        # same_level with length > 1
+        self.assertRaises(
+            Exception,
+            m.add,
+            pycstruct.StructDef(),
+            "same_level_err1",
+            length=2,
+            same_level=True,
+        )
+
+        # same_level with non StructDef/BitfieldDef
+        self.assertRaises(Exception, m.add, "int8", "same_level_err1", same_level=True)
 
-    m = pycstruct.StructDef()
-    m.add('utf-8', 'astring', length=5)
+    def test_invalid_deserialize(self):
+
+        m = pycstruct.StructDef()
+        m.add("int8", "name1")
 
-    data = {}
-    data['astring'] = 5 # no valid string
-    self.assertRaises(Exception, m.serialize, data)
+        buffer = bytearray(m.size() + 1)
+        self.assertRaises(Exception, m.deserialize, buffer)
 
-    data['astring'] = 'too long string'
-    self.assertRaises(Exception, m.serialize, data)
+    def test_invalid_serialize(self):
+
+        m = pycstruct.StructDef()
+        m.add("utf-8", "astring", length=5)
 
-    m.add('int32', 'alist', length=5)
-    data['astring'] = 'valid'
-    data['alist'] = 3 # no valid list
-    self.assertRaises(Exception, m.serialize, data)
-
-    data['alist'] = [1,2,3,4,5,6,7] # to long
-    self.assertRaises(Exception, m.serialize, data)
+        data = {}
+        data["astring"] = 5  # no valid string
+        self.assertRaises(Exception, m.serialize, data)
 
-  def test_struct_empty_data(self):
-    m = self.create_struct('native', 1)
-    data = m.create_empty_data()
-    # Check a few of the fields
-    self.assertTrue('int8_low' in data)
-    self.assertTrue('utf8_nonascii' in data)
+        data["astring"] = "too long string"
+        self.assertRaises(Exception, m.serialize, data)
+
+        m.add("int32", "alist", length=5)
+        data["astring"] = "valid"
+        data["alist"] = 3  # no valid list
+        self.assertRaises(Exception, m.serialize, data)
 
-  def test_str(self):
-    m = self.create_struct('native', 1)
-    a_string = str(m)
-    # Check a few of the fields that they are listed in the result string
-    self.assertTrue('int8_low' in a_string)
-    self.assertTrue('utf8_nonascii' in a_string)
-    
+        data["alist"] = [1, 2, 3, 4, 5, 6, 7]  # to long
+        self.assertRaises(Exception, m.serialize, data)
 
-  def test_deserialize_serialize_little(self):
-    self.deserialize_serialize('little', 1, 'struct_little.dat')
-
-  def test_deserialize_serialize_little_nopack(self):
-    self.deserialize_serialize('little', 8, 'struct_little_nopack.dat')
-
-  def test_deserialize_serialize_big(self):
-    self.deserialize_serialize('big', 1, 'struct_big.dat')
-
-  def test_deserialize_serialize_big_nopack(self):
-    self.deserialize_serialize('big', 8, 'struct_big_nopack.dat')
-
-  def create_struct(self, byteorder, alignment):
-    m = pycstruct.StructDef(byteorder, alignment)
-
-    m.add('int8', 'int8_low')
-    m.add('int8', 'int8_high')
-    m.add('uint8','uint8_low')
-    m.add('uint8','uint8_high')
-    m.add('bool8','bool8_false')
-    m.add('bool8','bool8_true')
-    
-    m.add('int16', 'int16_low')
-    m.add('int16', 'int16_high')
-    m.add('uint16','uint16_low')
-    m.add('uint16','uint16_high')
-    m.add('bool16','bool16_false')
-    m.add('bool16','bool16_true')
-    
-    m.add('int32',  'int32_low')
-    m.add('int32',  'int32_high')
-    m.add('uint32', 'uint32_low')
-    m.add('uint32', 'uint32_high')
-    m.add('bool32', 'bool32_false')
-    m.add('bool32', 'bool32_true')
-    m.add('float32','float32_low')
-    m.add('float32','float32_high')
-    
-    m.add('int64',  'int64_low')
-    m.add('int64',  'int64_high')
-    m.add('uint64', 'uint64_low')
-    m.add('uint64', 'uint64_high')
-    m.add('bool64', 'bool64_false')
-    m.add('bool64', 'bool64_true')
-    m.add('float64','float64_low')
-    m.add('float64','float64_high')
-
-    m.add('int32', 'int32_array', length = 5)
-
-    m.add('utf-8', 'utf8_ascii', 100)
-    m.add('utf-8', 'utf8_nonascii', 80)
-    m.add('utf-8', 'utf8_no_term', 4)
-
-    return m
-
-  def deserialize_serialize(self, byteorder, alignment, filename):
-
-    #############################################
-    # Define PyCStruct
-    m = self.create_struct(byteorder, alignment)
-
-    #############################################
-    # Load pre-stored binary data and deserialize and check
-    check_struct(self, m, filename)
-
-
-  def test_embedded_struct(self):
-    self.embedded_struct('embedded_struct.dat', alignment = 1)
-
-  def test_embedded_struct_nopack(self):
-    self.embedded_struct('embedded_struct_nopack.dat', alignment = 8)
-
-  def embedded_struct(self, filename, alignment = 1):
-    car_type = pycstruct.EnumDef(size = 4)
-    car_type.add('Sedan', 0)
-    car_type.add('Station_Wagon', 5)
-    car_type.add('Bus', 7)
-    car_type.add('Pickup', 12)
-
-    sedan_properties = pycstruct.StructDef(alignment = alignment)
-    sedan_properties.add('uint16', 'sedan_code')
-
-    station_wagon_properties = pycstruct.StructDef(alignment = alignment)
-    station_wagon_properties.add('int32', 'trunk_volume')
-
-    bus_properties = pycstruct.StructDef(alignment = alignment)
-    bus_properties.add('int32', 'number_of_passangers')
-    bus_properties.add('uint16', 'number_of_entries')
-    bus_properties.add('bool8', 'is_accordion_bus')
-
-    pickup_properties = pycstruct.StructDef(alignment = alignment)
-    pickup_properties.add('int32', 'truck_bed_volume')
-
-    type_specific_properties = pycstruct.StructDef(alignment = alignment, union = True)
-    type_specific_properties.add(sedan_properties, 'sedan')
-    type_specific_properties.add(station_wagon_properties, 'station_wagon')
-    type_specific_properties.add(bus_properties, 'bus')
-    type_specific_properties.add(pickup_properties, 'pickup')
-
-    # gcc is setting the size of car_properties_s to
-    # 4 bytes when no packing is added of some strange
-    # reason.
-    size = 1
-    if alignment > 1:
-      size = 4
-    car_properties = pycstruct.BitfieldDef(size = size)
-    car_properties.add('env_class', 3)
-    car_properties.add('registered', 1)
-    car_properties.add('over_3500_kg', 1)
-
-
-    car = pycstruct.StructDef(alignment = alignment)
-    car.add('uint16', 'year')
-    car.add('utf-8', 'model', length=50)
-    car.add('utf-8', 'registration_number', length=10)
-    car.add(car_properties, 'properties')
-    car.add(car_type, 'type')
-    car.add(type_specific_properties, 'type_properties')
-
-    garage = pycstruct.StructDef(alignment = alignment)
-    garage.add(car, 'cars', length=20)
-    garage.add('uint8', 'nbr_registered_parkings')
-
-    house = pycstruct.StructDef(alignment = alignment)
-    house.add('uint8', 'nbr_of_levels')
-    house.add(garage, 'garage')
-
-    #############################################
-    # Test to string method
-    stringrep = str(car)
-    self.assertTrue('model' in stringrep)
-    stringrep = str(garage)
-    self.assertTrue('nbr_registered_parkings' in stringrep)
-    stringrep = str(house)
-    self.assertTrue('nbr_of_levels' in stringrep)
-
-    #############################################
-    # Load pre-stored binary data and deserialize and check
-    check_embedded_struct(self, house, filename)
-
-  def test_embedded_exception(self):
-    unserializable = UnserializableDef()
-
-    s = pycstruct.StructDef()
-    s.add(unserializable, 'unserializable')  
-
-    self.assertRaises(Exception, s.deserialize, bytes([0]))
-    self.assertRaises(Exception, s.serialize, {'unserializable':'hello'})
-
-  def test_embedded_same_level(self):
-    bitfield = pycstruct.BitfieldDef()
-    bitfield.add('bf1', 3)
-    bitfield.add('bf2', 1)
-    bitfield.add('bf3', 4)
-
-    parentstruct = pycstruct.StructDef()
-    parentstruct.add('uint16', 'ps1')
-    parentstruct.add('uint32', 'ps2')
-    parentstruct.add(bitfield, 'ps4', same_level = True)
-    parentstruct.add('int8', 'ps5')
-
-    mydict = {
-      'bf1' : 5,
-      'bf2' : 0,
-      'bf3' : 11,
-      'ps1' : 789,
-      'ps2' : 91011,
-      'ps4' : 1213, # Should be ignored
-      'ps5' : -100
-    }
-
-    databin = parentstruct.serialize(mydict)
-    mydict2 = parentstruct.deserialize(databin)
-
-    # Check
-    for key, value in mydict.items():
-      if key != 'ps4':
-        self.assertEqual(value, mydict2[key], msg='Key {0}'.format(key))
-
-
-
-  def test_struct_remove_from(self):
-
-    m = pycstruct.StructDef()
-    m.add('int8', 'e1')
-    m.add('int8', 'e2')
-    m.add('int16', 'e3')
-    m.add('int16', 'e4')
-    m.add('int32', 'e5')
-    m.add('int32', 'e6')
-
-    self.assertEqual(m.size(), 14)
-
-    self.assertRaises(Exception, m.remove_from, 'invalid')
-
-    m.remove_from('e4')
-    self.assertEqual(m.size(), 4)
-
-    d = m.create_empty_data()
-    self.assertTrue('e1' in d)
-    self.assertTrue('e3' in d)
-    self.assertFalse('e4' in d)
-    self.assertFalse('e6' in d)
-
-  def test_struct_remove_to(self):
-
-    m = pycstruct.StructDef()
-    m.add('int8', 'e1')
-    m.add('int8', 'e2')
-    m.add('int16', 'e3')
-    m.add('int16', 'e4')
-    m.add('int32', 'e5')
-    m.add('int32', 'e6')
-
-    self.assertEqual(m.size(), 14)
-
-    self.assertRaises(Exception, m.remove_to, 'invalid')
-
-    m.remove_to('e4')
-    self.assertEqual(m.size(), 8)
-    
-    d = m.create_empty_data()
-    self.assertFalse('e1' in d)
-    self.assertFalse('e4' in d)
-    self.assertTrue('e5' in d)
-    self.assertTrue('e6' in d)
-
-  def test_bitfield_invalid_creation(self):
-    # Invalid byteorder on creation
-    self.assertRaises(Exception, pycstruct.BitfieldDef, 'invalid')
-
-  def test_bitfield_add(self):
-    bitfield = pycstruct.BitfieldDef()
-
-    self.assertEqual(bitfield.assigned_bits(), 0)
-    self.assertEqual(bitfield.size(), 0)
-
-    bitfield.add("one_bit")
-    self.assertEqual(bitfield.assigned_bits(), 1)
-    bitfield.add("two_bits", 2)
-    bitfield.add("three_bits", 3)
-    bitfield.add("two_bits_signed", 2, signed=True)
-    self.assertEqual(bitfield.assigned_bits(), 8)
-    self.assertEqual(bitfield.size(), 1)
-
-    bitfield.add("one_more_bit")
-    self.assertEqual(bitfield.assigned_bits(), 9)
-    self.assertEqual(bitfield.size(), 2)
-    bitfield.add("seven_bits", 7)
-    self.assertEqual(bitfield.assigned_bits(), 16)
-    self.assertEqual(bitfield.size(), 2)
-
-    bitfield.add("three_bits_signed", 3, signed=True)
-    self.assertEqual(bitfield.assigned_bits(), 19)
-    self.assertEqual(bitfield.size(), 3)
-
-    bitfield.add("32_bits", 32)
-    self.assertEqual(bitfield.assigned_bits(), 51)
-    self.assertEqual(bitfield.size(), 7)
-
-    bitfield.add("13_signed_bits", 13, signed=True)
-    self.assertEqual(bitfield.assigned_bits(), 64)
-    self.assertEqual(bitfield.size(), 8)
-
-    # Should overflow
-    self.assertRaises(Exception, bitfield.add, 'this_wont_fit_in_64_bits')
-
-
-    # Same bit field name again - forbidden
-    self.assertRaises(Exception, bitfield.add, 'three_bits')
-
-  def test_bitfield_empty_data(self):
-    b = self.create_bitfield('native')
-    data = b.create_empty_data()
-    # Check a few of the fields
-    self.assertTrue('threebits' in data)
-    self.assertTrue('onesignedbit' in data)
-
-    # Test to string method
-    stringrep = str(b)
-    self.assertTrue('onebit' in stringrep)
-    self.assertTrue('eightsignedbits' in stringrep)
-    self.assertTrue('fivebits' in stringrep)
-
-  def create_bitfield(self, byteorder):
-    b = pycstruct.BitfieldDef(byteorder)
-
-    b.add("onebit",1 ,signed=False)
-    b.add("twobits",2 ,signed=False)
-    b.add("threebits",3 ,signed=False)
-    b.add("fourbits",4 ,signed=False)
-    b.add("fivesignedbits",5 ,signed=True)
-    b.add("eightbits",8 ,signed=False)
-    b.add("eightsignedbits",8 ,signed=True)
-    b.add("onesignedbit",1 ,signed=True)
-    b.add("foursignedbits",4 ,signed=True)
-    b.add("sixteensignedbits",16 ,signed=True)
-    b.add("fivebits",5 ,signed=False)
-
-    return b
-
-  def deserialize_serialize_bitfield(self, byteorder):
-
-    #############################################
-    # Define Bitfield
-    b = self.create_bitfield(byteorder)
-
-    #############################################
-    # Load pre-stored binary data and deserialize
-
-    f = open(os.path.join(test_dir, 'bitfield_{0}.dat'.format(byteorder)),'rb')
-    inbytes = f.read()
-    result = b.deserialize(inbytes)
-    f.close()
-
-    #############################################
-    # Check expected values
-    self.assertEqual(result['onebit'], 1)
-    self.assertEqual(result['twobits'], 3)
-    self.assertEqual(result['threebits'], 1)
-    self.assertEqual(result['fourbits'], 3)
-    self.assertEqual(result['fivesignedbits'], -2)
-    self.assertEqual(result['eightbits'], 255)
-    self.assertEqual(result['eightsignedbits'], -128)
-    self.assertEqual(result['onesignedbit'], -1)
-    self.assertEqual(result['foursignedbits'], 5)
-    self.assertEqual(result['sixteensignedbits'], -12345)
-    self.assertEqual(result['fivebits'], 16)
-
-    #############################################
-    # Serialize result into new byte array
-
-    outbytes = b.serialize(result)
-
-    #############################################
-    # Check that generated bytes match read ones
-
-    self.assertEqual(len(inbytes), len(outbytes))
-    for i in range(0, len(inbytes)):
-      self.assertEqual(int(inbytes[i]), int(outbytes[i]), msg='Index {0}'.format(i))
-
-  def test_bitfield_deserialize_serialize_little(self):
-    self.deserialize_serialize_bitfield('little')
-
-  def test_bitfield_deserialize_serialize_big(self):
-    self.deserialize_serialize_bitfield('big')
-
-  def test_bitfield_invalid_deserialize(self):
-
-    b = pycstruct.BitfieldDef()
-    b.add('afield')
-
-    buffer = bytearray(b.size() - 1) # Too small buffer
-    self.assertRaises(Exception, b.deserialize, buffer)
-
-  def test_bitfield_getsubvalue(self):
-    bitstruct = pycstruct.BitfieldDef()
-    value = int('0101110001010011', 2)
-
-    # Unsigned tests
-    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 1, start_bit = 0, signed = False), 1)
-    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 4, start_bit = 0, signed = False), 3)
-    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 16, start_bit = 0, signed = False), 23635)
-    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 15, start_bit = 0, signed = False), 23635)
-    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 14, start_bit = 2, signed = False), 5908)
-    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 3, start_bit = 4, signed = False), 5)
-
-    # Signed tests
-    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 1, start_bit = 0, signed = True), -1)
-    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 4, start_bit = 0, signed = True), 3)
-    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 16, start_bit = 0, signed = True), 23635)
-    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 15, start_bit = 0, signed = True), -9133)
-    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 14, start_bit = 2, signed = True), 5908)
-    self.assertEqual(bitstruct._get_subvalue(value, nbr_of_bits = 3, start_bit = 4, signed = True), -3)
-
-
-  def test_bitfield_setsubvalue(self):
-    bitstruct = pycstruct.BitfieldDef()
-    
-
-    # Unsigned tests
-    self.assertEqual(bin(bitstruct._set_subvalue(0, 1, nbr_of_bits = 1, start_bit = 0, signed = False)), '0b1')
-    self.assertEqual(bin(bitstruct._set_subvalue(0, 1, nbr_of_bits = 1, start_bit = 2, signed = False)), '0b100')
-    self.assertEqual(bin(bitstruct._set_subvalue(0, 5, nbr_of_bits = 3, start_bit = 5, signed = False)), '0b10100000')
-
-    value = int('010100001111', 2)
-    self.assertEqual(bin(bitstruct._set_subvalue(value, 15, nbr_of_bits = 4, start_bit = 4, signed = False)), '0b10111111111')
-
-    # Signed tests
-    value = 0
-    self.assertEqual(bin(bitstruct._set_subvalue(0, -1, nbr_of_bits = 1, start_bit = 0, signed = True)), '0b1')
-    self.assertEqual(bin(bitstruct._set_subvalue(0, -1, nbr_of_bits = 1, start_bit = 2, signed = True)), '0b100')
-    self.assertEqual(bin(bitstruct._set_subvalue(0, -5, nbr_of_bits = 4, start_bit = 5, signed = True)), '0b101100000')
-    self.assertEqual(bin(bitstruct._set_subvalue(0,  5, nbr_of_bits = 4, start_bit = 5, signed = True)), '0b10100000')
-
-    # Invalid values
-    self.assertRaises(Exception, bitstruct._set_subvalue, 0, -1, 1, 0, False)
-    self.assertRaises(Exception, bitstruct._set_subvalue, 0, 2, 1, 0, False)
-    self.assertRaises(Exception, bitstruct._set_subvalue, 0, 8, 3, 0, False)
-    self.assertRaises(Exception, bitstruct._set_subvalue, 0, -2, 1, 0, True)
-    self.assertRaises(Exception, bitstruct._set_subvalue, 0, 2, 1, 0, True)
-    self.assertRaises(Exception, bitstruct._set_subvalue, 0, 7, 3, 0, True)
-
-
-  def test_enum_invalid_creation(self):
-    # Invalid byteorder on creation
-    self.assertRaises(Exception, pycstruct.EnumDef, 'invalid')
-
-
-  def test_enum_add(self):
-    e = pycstruct.EnumDef()
-
-    self.assertEqual(e.size(), 1)
-
-    e.add("first")
-    self.assertEqual(e.get_value("first"), 0)
-    self.assertEqual(e.get_name(0), "first")
-    self.assertEqual(e.size(), 1)
-
-    e.add("second", 1)
-    self.assertEqual(e.get_value("second"), 1)
-    self.assertEqual(e.get_name(1), "second")
-    self.assertEqual(e.size(), 1)
-
-    e.add("fitbyte", 127)
-    self.assertEqual(e.get_value("fitbyte"), 127)
-    self.assertEqual(e.get_name(127), "fitbyte")
-    self.assertEqual(e.size(), 1)
-
-    e.add("third")
-    self.assertEqual(e.get_value("third"), 2)
-    self.assertEqual(e.get_name(2), "third")
-    self.assertEqual(e.size(), 1)
-
-    # Duplicate
-    self.assertRaises(Exception, e.add, "second")
-
-    # > 64 bits
-    self.assertRaises(Exception, e.add, "too_big", 12345678901234561234567)
-
-    # Get invalid value
-    self.assertRaises(Exception, e.get_value, 33)
-
-    # Get invalid name
-    self.assertRaises(Exception, e.get_name, "invalid")
-
-  def test_enum_fixed_unsigned(self):
-    e = pycstruct.EnumDef(size = 4, signed = False)
-
-    self.assertEqual(e.size(), 4)
-
-    e.add("first")
-    self.assertEqual(e.get_value("first"), 0)
-    self.assertEqual(e.get_name(0), "first")
-    self.assertEqual(e.size(), 4)
-
-    e.add("largest", 0xFFFFFFFF)
-    self.assertEqual(e.size(), 4)
-
-    # Add a too large number
-    self.assertRaises(Exception, e.add, "too_large", 0xFFFFFFFF + 1)
-
-    # Add negative number to unsigned 
-    self.assertRaises(Exception, e.add, "negative", -1)
-
-  def test_enum_fixed_signed(self):
-    e = pycstruct.EnumDef(size = 4, signed = True)
-
-    self.assertEqual(e.size(), 4)
-
-    e.add("first")
-    self.assertEqual(e.get_value("first"), 0)
-    self.assertEqual(e.get_name(0), "first")
-    self.assertEqual(e.size(), 4)
-
-    e.add("negative", -1)
-    self.assertEqual(e.size(), 4)
-
-    e.add("largest_negative", 0x7FFFFFFF * -1 - 1)
-    self.assertEqual(e.size(), 4)
-
-    # Add too small value 
-    self.assertRaises(Exception, e.add, "too_small", 0x7FFFFFFF * -1 - 2)
-
-    e.add("largest_positive", 0x7FFFFFFF)
-    self.assertEqual(e.size(), 4)
-
-    # Add too large value 
-    self.assertRaises(Exception, e.add, "too_large", 0x7FFFFFFF + 1)
-
-
-  def test_enum_serialize_deserialize(self):
-    e = pycstruct.EnumDef(size = 1)
-    e.add("zero", 0)
-    e.add("one", 1)
-    e.add("two", 2)
-    e.add("three", 2)
-
-    value = "two"
-    buf = e.serialize(value)
-    self.assertEqual(len(buf), 1)
-    self.assertEqual(buf[0], 2)
-
-    big = pycstruct.EnumDef('big', size = 2)
-    big.add("twofiftysix", 256)
-    value = "twofiftysix"
-    buf = big.serialize(value)
-    self.assertEqual(len(buf), 2)
-    self.assertEqual(buf[0], 1)
-    self.assertEqual(buf[1], 0)
-    outval = big.deserialize(buf)
-    self.assertEqual(outval, "twofiftysix")
-
-    little = pycstruct.EnumDef('little', size = 2)
-    value = "twofiftysix"
-    little.add(value, 256)
-    buf = little.serialize(value)
-    self.assertEqual(len(buf), 2)
-    self.assertEqual(buf[0], 0)
-    self.assertEqual(buf[1], 1)
-    outval = little.deserialize(buf)
-    self.assertEqual(outval, value)
-
-    value = "largest_uint16"
-    little.add(value, 0xFFFF)
-    buf = little.serialize(value)
-    self.assertEqual(len(buf), 2)
-    self.assertEqual(buf[0], 0xFF)
-    self.assertEqual(buf[1], 0xFF)
-    outval = little.deserialize(buf)
-    self.assertEqual(outval, value)
-
-    little_signed = pycstruct.EnumDef('little', size = 2, signed = True)
-    value = "largest_int16"
-    little_signed.add(value, 32767)
-    buf = little_signed.serialize(value)
-    self.assertEqual(len(buf), 2)
-    self.assertEqual(buf[0], 0xFF)
-    self.assertEqual(buf[1], 0x7F)
-    outval = little_signed.deserialize(buf)
-    self.assertEqual(outval, value)
-
-    value = "smallest_int16"
-    little_signed.add(value, -32768)
-    buf = little_signed.serialize(value)
-    self.assertEqual(len(buf), 2)
-    self.assertEqual(buf[0], 0x00)
-    self.assertEqual(buf[1], 0x80)
-    outval = little_signed.deserialize(buf)
-    self.assertEqual(outval, value)
-
-    # Unassigned values
-    outval = little_signed.deserialize(bytes([0, 0]))
-    self.assertEqual(outval, '__VALUE__0') 
-    outval = little_signed.deserialize(bytes([99, 0]))
-    self.assertEqual(outval, '__VALUE__99') 
-    outval = little_signed.deserialize(bytes([0xFC, 0xFF]))
-    self.assertEqual(outval, '__VALUE__-4') 
-
-    # Test to string method
-    stringrep = str(e)
-    self.assertTrue('zero' in stringrep)
-    self.assertTrue('three' in stringrep)
-
-
-  
-  def test_union_no_pad(self):
-
-    u = pycstruct.StructDef(union = True, default_byteorder = 'big')
-    self.assertEqual(u._type_name(),'union')
-    u.add('uint8', 'small')
-    self.assertEqual(u.size(),1)
-    u.add('uint16', 'large')
-    self.assertEqual(u.size(),2)
-    u.add('uint32', 'larger')
-    self.assertEqual(u.size(),4)
-    u.add('uint64', 'largest')
-    self.assertEqual(u.size(),8)
-
-    input = {}
-    input['largest']=0x1122334455667788
-
-    buf = u.serialize(input)
-    self.assertEqual(len(buf),8)
-
-    output = u.deserialize(buf)
-    self.assertEqual(output['small'],0x11)
-    self.assertEqual(output['large'],0x1122)
-    self.assertEqual(output['larger'],0x11223344)
-    self.assertEqual(output['largest'],0x1122334455667788)
-
-    buf2 = u.serialize(output)
-    output2 = u.deserialize(buf2)
-    self.assertEqual(output2['largest'],0x1122334455667788)
-
-    del output2['largest']
-    del output2['larger']
-
-    buf3 = u.serialize(output2)
-    output3 = u.deserialize(buf3)
-    self.assertEqual(output3['largest'],0x1122000000000000)
-    self.assertEqual(output3['larger'],0x11220000)
-
-
-
-
-  def test_enum_invalid_deserialize(self):
-
-    e = pycstruct.EnumDef()
-    e.add('zero')
-
-    buffer = bytearray(e.size() + 1)
-    self.assertRaises(Exception, e.deserialize, buffer)
-
-  def test_get_padding(self):
-    padding = pycstruct.pycstruct._get_padding
-
-    # Alignment 1
-    self.assertEqual(padding(1, 5, 4), 0)
-
-    # Alignment 2
-    self.assertEqual(padding(2, 0, 1), 0)
-    self.assertEqual(padding(2, 0, 2), 0)
-    self.assertEqual(padding(2, 0, 4), 0)
-    self.assertEqual(padding(2, 0, 8), 0)
-    self.assertEqual(padding(2, 1, 1), 0)
-    self.assertEqual(padding(2, 1, 2), 1)
-    self.assertEqual(padding(2, 1, 4), 1)
-    self.assertEqual(padding(2, 1, 8), 1)
-    self.assertEqual(padding(2, 2, 1), 0)
-    self.assertEqual(padding(2, 2, 2), 0)
-    self.assertEqual(padding(2, 2, 4), 0)
-    self.assertEqual(padding(2, 2, 8), 0)
-    self.assertEqual(padding(2, 3, 1), 0)
-    self.assertEqual(padding(2, 3, 2), 1)
-    self.assertEqual(padding(2, 3, 4), 1)
-    self.assertEqual(padding(2, 3, 8), 1)
-
-    # Alignment 4
-    self.assertEqual(padding(4, 0, 1), 0)
-    self.assertEqual(padding(4, 0, 2), 0)
-    self.assertEqual(padding(4, 0, 4), 0)
-    self.assertEqual(padding(4, 0, 8), 0)
-    self.assertEqual(padding(4, 1, 1), 0)
-    self.assertEqual(padding(4, 1, 2), 1)
-    self.assertEqual(padding(4, 1, 4), 3)
-    self.assertEqual(padding(4, 1, 8), 3)
-    self.assertEqual(padding(4, 2, 1), 0)
-    self.assertEqual(padding(4, 2, 2), 0)
-    self.assertEqual(padding(4, 2, 4), 2)
-    self.assertEqual(padding(4, 2, 8), 2)
-    self.assertEqual(padding(4, 3, 1), 0)
-    self.assertEqual(padding(4, 3, 2), 1)
-    self.assertEqual(padding(4, 3, 4), 1)
-    self.assertEqual(padding(4, 3, 8), 1)
-    self.assertEqual(padding(4, 4, 1), 0)
-    self.assertEqual(padding(4, 4, 2), 0)
-    self.assertEqual(padding(4, 4, 4), 0)
-    self.assertEqual(padding(4, 4, 8), 0)
-    self.assertEqual(padding(4, 5, 1), 0)
-    self.assertEqual(padding(4, 5, 2), 1)
-    self.assertEqual(padding(4, 5, 4), 3)
-    self.assertEqual(padding(4, 5, 8), 3)
-
-    # Alignment 8
-    self.assertEqual(padding(8, 0, 1), 0)
-    self.assertEqual(padding(8, 0, 2), 0)
-    self.assertEqual(padding(8, 0, 4), 0)
-    self.assertEqual(padding(8, 0, 8), 0)
-    self.assertEqual(padding(8, 1, 1), 0)
-    self.assertEqual(padding(8, 1, 2), 1)
-    self.assertEqual(padding(8, 1, 4), 3)
-    self.assertEqual(padding(8, 1, 8), 7)
-    self.assertEqual(padding(8, 2, 1), 0)
-    self.assertEqual(padding(8, 2, 2), 0)
-    self.assertEqual(padding(8, 2, 4), 2)
-    self.assertEqual(padding(8, 2, 8), 6)
-    self.assertEqual(padding(8, 3, 1), 0)
-    self.assertEqual(padding(8, 3, 2), 1)
-    self.assertEqual(padding(8, 3, 4), 1)
-    self.assertEqual(padding(8, 3, 8), 5)
-    self.assertEqual(padding(8, 4, 1), 0)
-    self.assertEqual(padding(8, 4, 2), 0)
-    self.assertEqual(padding(8, 4, 4), 0)
-    self.assertEqual(padding(8, 4, 8), 4)
-    self.assertEqual(padding(8, 5, 1), 0)
-    self.assertEqual(padding(8, 5, 2), 1)
-    self.assertEqual(padding(8, 5, 4), 3)
-    self.assertEqual(padding(8, 5, 8), 3)
-    self.assertEqual(padding(8, 7, 8), 1)
-    self.assertEqual(padding(8, 8, 8), 0)
-    self.assertEqual(padding(8, 9, 8), 7)
-
-  def test_round_pow_2(self):
-    round_2 = pycstruct.pycstruct._round_pow_2
-
-    self.assertEqual(round_2(0), 0)
-    self.assertEqual(round_2(1), 1)
-    self.assertEqual(round_2(2), 2)
-    self.assertEqual(round_2(3), 4)
-    self.assertEqual(round_2(4), 4)
-    self.assertEqual(round_2(5), 8)
-    self.assertEqual(round_2(8), 8)
-    self.assertEqual(round_2(9), 16)
-
-  def test_instance(self):
-
-    # First define a complex definition structure
-    car_type = pycstruct.EnumDef(size = 4)
-    car_type.add('Sedan', 0)
-    car_type.add('Station_Wagon', 5)
-    car_type.add('Bus', 7)
-    car_type.add('Pickup', 12)
-
-    sedan_properties = pycstruct.StructDef()
-    sedan_properties.add('uint16', 'sedan_code')
-
-    station_wagon_properties = pycstruct.StructDef()
-    station_wagon_properties.add('int32', 'trunk_volume')
-
-    bus_properties = pycstruct.StructDef()
-    bus_properties.add('int32', 'number_of_passangers')
-    bus_properties.add('uint16', 'number_of_entries')
-    bus_properties.add('bool8', 'is_accordion_bus')
-
-    pickup_properties = pycstruct.StructDef()
-    pickup_properties.add('int32', 'truck_bed_volume')
-
-    type_specific_properties = pycstruct.StructDef(union = True)
-    type_specific_properties.add(sedan_properties, 'sedan')
-    type_specific_properties.add(station_wagon_properties, 'station_wagon')
-    type_specific_properties.add(bus_properties, 'bus')
-    type_specific_properties.add(pickup_properties, 'pickup')
-
-    car_properties = pycstruct.BitfieldDef()
-    car_properties.add('env_class', 3, signed = True)
-    car_properties.add('registered', 1)
-    car_properties.add('over_3500_kg', 1)
-
-    car_properties2 = pycstruct.BitfieldDef()
-    car_properties2.add('prop1', 7)
-    car_properties2.add('prop2', 3)
-    car_properties2.add('prop3', 2)
-
-    car = pycstruct.StructDef()
-    car.add('uint16', 'year')
-    car.add('utf-8', 'model', length=50)
-    car.add('utf-8', 'registration_number', length=10)
-    car.add('int32', 'last_owners', length=10)
-    car.add(car_properties, 'properties')
-    car.add(car_properties2, 'properties2', same_level=True)
-    car.add(car_type, 'type')
-    car.add(type_specific_properties, 'type_properties')
-
-    garage = pycstruct.StructDef()
-    garage.add(car, 'cars', length=20)
-    garage.add('uint8', 'nbr_registered_parkings')
-
-    house = pycstruct.StructDef()
-    house.add('uint8', 'nbr_of_levels')
-    house.add(garage, 'garage')  
-
-    #####################################################################
-    # Create an instance of a Bitfield (car_properties)
-
-    # Buffer is empty
-    instance = car_properties.instance() # Create from BitfieldDef
-    self.assertEqual(instance.env_class, 0)
-    self.assertEqual(instance.registered, 0)
-    self.assertEqual(instance.over_3500_kg, 0)
-
-    instance.env_class = -2
-    instance.registered = 0
-    instance.over_3500_kg = 1
-    self.assertEqual(instance.env_class, -2)
-    self.assertEqual(instance.registered, 0)
-    self.assertEqual(instance.over_3500_kg, 1)
-
-    # Test that buffer is updated correctly
-    bytes_instance = bytes(instance)
-    dict_repr = car_properties.deserialize(bytes_instance)
-    self.assertEqual(dict_repr['env_class'], -2)
-    self.assertEqual(dict_repr['registered'], 0)
-    self.assertEqual(dict_repr['over_3500_kg'], 1)
-
-    # Create instance from buffer
-    dict_repr['env_class'] = 1
-    dict_repr['registered'] = 1
-    dict_repr['over_3500_kg'] = 0
-    bytes_struct = car_properties.serialize(dict_repr)
-    instance = pycstruct.Instance(car_properties, bytes_struct)
-    self.assertEqual(instance.env_class, 1)
-    self.assertEqual(instance.registered, 1)
-    self.assertEqual(instance.over_3500_kg, 0)
-
-    # Value too large
-    self.assertRaises(Exception, instance.env_class, 5)
-    # Value invalid type
-    self.assertRaises(Exception, instance.env_class, 'invalid')
-    # Non existing value
-    try:
-      x = instance.invalid
-      t.assertTrue(False)
-    except:
-      pass
-    try:
-      instance.invalid = 1
-      t.assertTrue(False)
-    except:
-      pass
-
-    #####################################################################
-    # Create an instance of a simple Struct (bus_properties)
-
-    # Create instance of car_properties instance
-    instance = pycstruct.Instance(bus_properties)
-    self.assertEqual(instance.number_of_passangers, 0)
-    self.assertEqual(instance.number_of_entries, 0)
-    self.assertEqual(instance.is_accordion_bus, False)
-
-    instance.number_of_passangers = 55
-    instance.number_of_entries = 3
-    instance.is_accordion_bus = True
-    self.assertEqual(instance.number_of_passangers, 55)
-    self.assertEqual(instance.number_of_entries, 3)
-    self.assertEqual(instance.is_accordion_bus, True)
-
-    #####################################################################
-    # Create an instance of a union (type_specific_properties)
-    instance = pycstruct.Instance(type_specific_properties)
-    self.assertEqual(instance.sedan.sedan_code, 0)
-    self.assertEqual(instance.station_wagon.trunk_volume, 0)
-    self.assertEqual(instance.bus.number_of_passangers, 0)
-    self.assertEqual(instance.bus.number_of_entries, 0)
-    self.assertEqual(instance.bus.is_accordion_bus, 0)
-    self.assertEqual(instance.pickup.truck_bed_volume, 0)
-
-    instance.station_wagon.trunk_volume = 1234
-    # Since this a union the truck_bed_volume should also be updated to
-    # the same value since it has same offset and data type
-    self.assertEqual(instance.station_wagon.trunk_volume, 1234)
-    self.assertEqual(instance.pickup.truck_bed_volume, 1234)
-
-    #####################################################################
-    # Create an instance of a complex Struct (house)
-    instance = house.instance() # Create directly from StructDef
-    instance.nbr_of_levels = 92
-    instance.garage.cars[0].year = 2012
-    instance.garage.cars[0].registration_number = 'ABC123'
-    instance.garage.cars[0].last_owners[0] = 1
-    instance.garage.cars[0].properties.registered = True
-    instance.garage.cars[0].prop2 = 3
-    instance.garage.cars[0].type = 'Station_Wagon'
-    instance.garage.cars[0].type_properties.sedan.sedan_code = 5
-    instance.garage.cars[10].year = 1999
-    instance.garage.cars[10].registration_number = 'CDE456'
-    instance.garage.cars[10].last_owners[5] = 2
-    instance.garage.cars[10].properties.registered = False
-    instance.garage.cars[10].prop2 = 2
-    instance.garage.cars[10].type = 'Bus'
-    instance.garage.cars[10].type_properties.station_wagon.trunk_volume = 500
-    instance.garage.cars[19].year = 2021
-    instance.garage.cars[19].registration_number = 'EFG789'
-    instance.garage.cars[19].last_owners[9] = 3
-    instance.garage.cars[19].properties.registered = True
-    instance.garage.cars[19].prop2 = 1
-    instance.garage.cars[19].type = 'Pickup'
-    instance.garage.cars[19].type_properties.bus.number_of_entries = 3
-    instance.garage.nbr_registered_parkings = 255
-
-    # Test that buffer is updated correctly
-    bytes_instance = bytes(instance)
-    dict_repr = house.deserialize(bytes_instance)
-    self.assertEqual(dict_repr['nbr_of_levels'], 92)
-    self.assertEqual(dict_repr['garage']['cars'][0]['year'], 2012)
-    self.assertEqual(dict_repr['garage']['cars'][0]['registration_number'], 'ABC123')
-    self.assertEqual(dict_repr['garage']['cars'][0]['last_owners'][0], 1)
-    self.assertEqual(dict_repr['garage']['cars'][0]['properties']['registered'], True)
-    self.assertEqual(dict_repr['garage']['cars'][0]['prop2'], 3)
-    self.assertEqual(dict_repr['garage']['cars'][0]['type'], 'Station_Wagon')
-    self.assertEqual(dict_repr['garage']['cars'][0]['type_properties']['sedan']['sedan_code'], 5)
-    self.assertEqual(dict_repr['garage']['cars'][10]['year'], 1999)
-    self.assertEqual(dict_repr['garage']['cars'][10]['registration_number'], 'CDE456')
-    self.assertEqual(dict_repr['garage']['cars'][10]['last_owners'][5], 2)
-    self.assertEqual(dict_repr['garage']['cars'][10]['properties']['registered'], False)
-    self.assertEqual(dict_repr['garage']['cars'][10]['prop2'], 2)
-    self.assertEqual(dict_repr['garage']['cars'][10]['type'], 'Bus')
-    self.assertEqual(dict_repr['garage']['cars'][10]['type_properties']['station_wagon']['trunk_volume'], 500)
-    self.assertEqual(dict_repr['garage']['cars'][19]['year'], 2021)
-    self.assertEqual(dict_repr['garage']['cars'][19]['registration_number'], 'EFG789')
-    self.assertEqual(dict_repr['garage']['cars'][19]['last_owners'][9], 3)
-    self.assertEqual(dict_repr['garage']['cars'][19]['properties']['registered'], True)
-    self.assertEqual(dict_repr['garage']['cars'][19]['prop2'], 1)
-    self.assertEqual(dict_repr['garage']['cars'][19]['type'], 'Pickup')
-    self.assertEqual(dict_repr['garage']['cars'][19]['type_properties']['bus']['number_of_entries'], 3)
-    self.assertEqual(dict_repr['garage']['nbr_registered_parkings'], 255)
-
-    #############################################
-    # Test to string method
-    stringrep = str(instance)
-    self.assertTrue('type_properties.station_wagon.trunk_volume : 5' in stringrep)
-    self.assertTrue('last_owners : [0, 0, 0, 0, 0, 2, 0, 0, 0, 0]' in stringrep)
-    self.assertTrue('garage.nbr_registered_parkings : 255' in stringrep)
-
-    #############################################
-    # Invalid usage
-    self.assertRaises(Exception, house._element_offset, 'invalid')    
-    self.assertRaises(Exception, pycstruct.Instance, car_type) # Enum not possible 
-    try:
-      instance.garage = 5
-      t.assertTrue(False)
-    except:
-      pass
-
-  def test_instance_list_basictype(self):
-    struct = pycstruct.StructDef()
-    struct.add('int16', 'list', length = 3)
-
-    buffer = bytearray(struct.size())
-    instance = pycstruct.pycstruct._InstanceList(struct, 'list', buffer, 0)
-
-    self.assertEqual(instance[0], 0)
-    self.assertEqual(instance[1], 0)
-    self.assertEqual(instance[2], 0)
-
-    instance[0] = 1234
-    instance[1] = 567
-    instance[2] = 8901
-
-    self.assertEqual(instance[0], 1234)
-    self.assertEqual(instance[1], 567)
-    self.assertEqual(instance[2], 8901)
-
-    # Test that buffer is updated correctly
-    bytes_instance = bytes(instance)
-    dict_repr = struct.deserialize(bytes_instance)
-    self.assertEqual(dict_repr['list'][0], 1234)
-    self.assertEqual(dict_repr['list'][1], 567)
-    self.assertEqual(dict_repr['list'][2], 8901)
-
-    # Create instance from buffer
-    dict_repr['list'][0] = 1111
-    dict_repr['list'][1] = -2222
-    dict_repr['list'][2] = 3333
-    bytes_struct = struct.serialize(dict_repr)
-    instance = pycstruct.pycstruct._InstanceList(struct, 'list', bytes_struct, 0)
-    self.assertEqual(instance[0], 1111)
-    self.assertEqual(instance[1], -2222)
-    self.assertEqual(instance[2], 3333)
-
-
-  def test_instance_list_complex(self):
-    enum = pycstruct.EnumDef(size = 4)
-    enum.add('e1', 0)
-    enum.add('e2', 5)
-    enum.add('e3', 7)
-    enum.add('e4', 9)
-    enum.add('e5', 12)
-
-    bitfield = pycstruct.BitfieldDef()
-    bitfield.add('bf1', 7)
-    bitfield.add('bf2', 5)
-
-    substruct = pycstruct.StructDef()
-    substruct.add('uint8', 'ss1')
-    substruct.add('int32', 'ss2')
-
-    struct = pycstruct.StructDef()
-    struct.add(enum, 'enum', length = 2)
-    struct.add(bitfield, 'bitfield', length = 3)
-    struct.add(substruct, 'substruct', length = 13)
-
-    #####################################################################
-    # Enum list
-    buffer = bytearray(struct.size())
-    instance = pycstruct.pycstruct._InstanceList(struct, 'enum', buffer, 0)
-    self.assertEqual(len(instance), 2)
-    self.assertEqual(instance[0], 'e1')
-    self.assertEqual(instance[1], 'e1') 
-    instance[0] = 'e2'
-    instance[1] = 'e3'
-    bytes_instance = bytes(instance)
-    dict_repr = struct.deserialize(bytes_instance)
-    self.assertEqual(dict_repr['enum'][0], 'e2')
-    self.assertEqual(dict_repr['enum'][1], 'e3')
-    dict_repr['enum'][0] = 'e5'
-    dict_repr['enum'][1] = 'e4'
-    bytes_struct = struct.serialize(dict_repr)
-    instance = pycstruct.pycstruct._InstanceList(struct, 'enum', bytes_struct, 0)
-    self.assertEqual(instance[0], 'e5')
-    self.assertEqual(instance[1], 'e4') 
-
-    #####################################################################
-    # Bitfield list
-    buffer = bytearray(struct.size())
-    instance = pycstruct.pycstruct._InstanceList(struct, 'bitfield', buffer, 0)
-    self.assertEqual(len(instance), 3)
-    self.assertEqual(instance[0].bf1, 0)
-    self.assertEqual(instance[0].bf2, 0) 
-    self.assertEqual(instance[1].bf1, 0)
-    self.assertEqual(instance[1].bf2, 0) 
-    self.assertEqual(instance[2].bf1, 0)
-    self.assertEqual(instance[2].bf2, 0)
-    instance[0].bf1 = 1 
-    instance[0].bf2 = 2 
-    instance[1].bf1 = 3 
-    instance[1].bf2 = 4 
-    instance[2].bf1 = 5 
-    instance[2].bf2 = 6 
-    self.assertEqual(instance[0].bf1, 1)
-    self.assertEqual(instance[0].bf2, 2) 
-    self.assertEqual(instance[1].bf1, 3)
-    self.assertEqual(instance[1].bf2, 4) 
-    self.assertEqual(instance[2].bf1, 5)
-    self.assertEqual(instance[2].bf2, 6)
-    bytes_instance = bytes(instance)
-    dict_repr = struct.deserialize(bytes_instance)
-    self.assertEqual(dict_repr['bitfield'][0]['bf1'], 1)
-    self.assertEqual(dict_repr['bitfield'][0]['bf2'], 2)
-    self.assertEqual(dict_repr['bitfield'][1]['bf1'], 3)
-    self.assertEqual(dict_repr['bitfield'][1]['bf2'], 4)
-    self.assertEqual(dict_repr['bitfield'][2]['bf1'], 5)
-    self.assertEqual(dict_repr['bitfield'][2]['bf2'], 6)
-    dict_repr['bitfield'][0]['bf1'] = 7
-    dict_repr['bitfield'][0]['bf2'] = 8
-    dict_repr['bitfield'][1]['bf1'] = 9
-    dict_repr['bitfield'][1]['bf2'] = 10
-    dict_repr['bitfield'][2]['bf1'] = 11
-    dict_repr['bitfield'][2]['bf2'] = 12
-    bytes_struct = struct.serialize(dict_repr)
-    instance = pycstruct.pycstruct._InstanceList(struct, 'bitfield', bytes_struct, 0)
-    self.assertEqual(instance[0].bf1, 7)
-    self.assertEqual(instance[0].bf2, 8) 
-    self.assertEqual(instance[1].bf1, 9)
-    self.assertEqual(instance[1].bf2, 10) 
-    self.assertEqual(instance[2].bf1, 11)
-    self.assertEqual(instance[2].bf2, 12)
-
-    #####################################################################
-    # Struct list
-    buffer = bytearray(struct.size())
-    instance = pycstruct.pycstruct._InstanceList(struct, 'substruct', buffer, 0)
-    self.assertEqual(len(instance), 13)
-    self.assertEqual(instance[0].ss1, 0)
-    self.assertEqual(instance[5].ss2, 0)
-    self.assertEqual(instance[7].ss1, 0)
-    self.assertEqual(instance[12].ss2, 0)
-    instance[0].ss1 = 92
-    instance[12].ss2 = 767
-    bytes_instance = bytes(instance)
-    dict_repr = struct.deserialize(bytes_instance)
-    self.assertEqual(dict_repr['substruct'][0]['ss1'], 92)
-    self.assertEqual(dict_repr['substruct'][12]['ss2'], 767) 
-
-    #####################################################################
-    # Invalid accesses
-    try:
-      instance[2] = 5
-      t.assertTrue(False)
-    except:
-      pass  
-    try:
-      x = instance['not a number']
-      t.assertTrue(False)
-    except:
-      pass
-    try:
-      x = instance[999]
-      t.assertTrue(False)
-    except:
-      pass  
-
-    
-if __name__ == '__main__':
-  unittest.main()
+    def test_struct_empty_data(self):
+        m = self.create_struct("native", 1)
+        data = m.create_empty_data()
+        # Check a few of the fields
+        self.assertTrue("int8_low" in data)
+        self.assertTrue("utf8_nonascii" in data)
+
+    def test_str(self):
+        m = self.create_struct("native", 1)
+        a_string = str(m)
+        # Check a few of the fields that they are listed in the result string
+        self.assertTrue("int8_low" in a_string)
+        self.assertTrue("utf8_nonascii" in a_string)
+
+    def test_deserialize_serialize_little(self):
+        self.deserialize_serialize("little", 1, "struct_little.dat")
+
+    def test_deserialize_serialize_little_nopack(self):
+        self.deserialize_serialize("little", 8, "struct_little_nopack.dat")
+
+    def test_deserialize_serialize_big(self):
+        self.deserialize_serialize("big", 1, "struct_big.dat")
+
+    def test_deserialize_serialize_big_nopack(self):
+        self.deserialize_serialize("big", 8, "struct_big_nopack.dat")
+
+    def create_struct(self, byteorder, alignment):
+        m = pycstruct.StructDef(byteorder, alignment)
+
+        m.add("int8", "int8_low")
+        m.add("int8", "int8_high")
+        m.add("uint8", "uint8_low")
+        m.add("uint8", "uint8_high")
+        m.add("bool8", "bool8_false")
+        m.add("bool8", "bool8_true")
+
+        m.add("int16", "int16_low")
+        m.add("int16", "int16_high")
+        m.add("uint16", "uint16_low")
+        m.add("uint16", "uint16_high")
+        m.add("bool16", "bool16_false")
+        m.add("bool16", "bool16_true")
+
+        m.add("int32", "int32_low")
+        m.add("int32", "int32_high")
+        m.add("uint32", "uint32_low")
+        m.add("uint32", "uint32_high")
+        m.add("bool32", "bool32_false")
+        m.add("bool32", "bool32_true")
+        m.add("float32", "float32_low")
+        m.add("float32", "float32_high")
+
+        m.add("int64", "int64_low")
+        m.add("int64", "int64_high")
+        m.add("uint64", "uint64_low")
+        m.add("uint64", "uint64_high")
+        m.add("bool64", "bool64_false")
+        m.add("bool64", "bool64_true")
+        m.add("float64", "float64_low")
+        m.add("float64", "float64_high")
+
+        m.add("int32", "int32_array", length=5)
+
+        m.add("utf-8", "utf8_ascii", 100)
+        m.add("utf-8", "utf8_nonascii", 80)
+        m.add("utf-8", "utf8_no_term", 4)
+
+        return m
+
+    def deserialize_serialize(self, byteorder, alignment, filename):
+
+        #############################################
+        # Define PyCStruct
+        m = self.create_struct(byteorder, alignment)
+
+        #############################################
+        # Load pre-stored binary data and deserialize and check
+        check_struct(self, m, filename)
+
+    def test_embedded_struct(self):
+        self.embedded_struct("embedded_struct.dat", alignment=1)
+
+    def test_embedded_struct_nopack(self):
+        self.embedded_struct("embedded_struct_nopack.dat", alignment=8)
+
+    def embedded_struct(self, filename, alignment=1):
+        car_type = pycstruct.EnumDef(size=4)
+        car_type.add("Sedan", 0)
+        car_type.add("Station_Wagon", 5)
+        car_type.add("Bus", 7)
+        car_type.add("Pickup", 12)
+
+        sedan_properties = pycstruct.StructDef(alignment=alignment)
+        sedan_properties.add("uint16", "sedan_code")
+
+        station_wagon_properties = pycstruct.StructDef(alignment=alignment)
+        station_wagon_properties.add("int32", "trunk_volume")
+
+        bus_properties = pycstruct.StructDef(alignment=alignment)
+        bus_properties.add("int32", "number_of_passangers")
+        bus_properties.add("uint16", "number_of_entries")
+        bus_properties.add("bool8", "is_accordion_bus")
+
+        pickup_properties = pycstruct.StructDef(alignment=alignment)
+        pickup_properties.add("int32", "truck_bed_volume")
+
+        type_specific_properties = pycstruct.StructDef(alignment=alignment, union=True)
+        type_specific_properties.add(sedan_properties, "sedan")
+        type_specific_properties.add(station_wagon_properties, "station_wagon")
+        type_specific_properties.add(bus_properties, "bus")
+        type_specific_properties.add(pickup_properties, "pickup")
+
+        # gcc is setting the size of car_properties_s to
+        # 4 bytes when no packing is added of some strange
+        # reason.
+        size = 1
+        if alignment > 1:
+            size = 4
+        car_properties = pycstruct.BitfieldDef(size=size)
+        car_properties.add("env_class", 3)
+        car_properties.add("registered", 1)
+        car_properties.add("over_3500_kg", 1)
+
+        car = pycstruct.StructDef(alignment=alignment)
+        car.add("uint16", "year")
+        car.add("utf-8", "model", length=50)
+        car.add("utf-8", "registration_number", length=10)
+        car.add(car_properties, "properties")
+        car.add(car_type, "type")
+        car.add(type_specific_properties, "type_properties")
+
+        garage = pycstruct.StructDef(alignment=alignment)
+        garage.add(car, "cars", length=20)
+        garage.add("uint8", "nbr_registered_parkings")
+
+        house = pycstruct.StructDef(alignment=alignment)
+        house.add("uint8", "nbr_of_levels")
+        house.add(garage, "garage")
+
+        #############################################
+        # Test to string method
+        stringrep = str(car)
+        self.assertTrue("model" in stringrep)
+        stringrep = str(garage)
+        self.assertTrue("nbr_registered_parkings" in stringrep)
+        stringrep = str(house)
+        self.assertTrue("nbr_of_levels" in stringrep)
+
+        #############################################
+        # Load pre-stored binary data and deserialize and check
+        check_embedded_struct(self, house, filename)
+
+    def test_embedded_exception(self):
+        unserializable = UnserializableDef()
+
+        s = pycstruct.StructDef()
+        s.add(unserializable, "unserializable")
+
+        self.assertRaises(Exception, s.deserialize, bytes([0]))
+        self.assertRaises(Exception, s.serialize, {"unserializable": "hello"})
+
+    def test_embedded_same_level(self):
+        bitfield = pycstruct.BitfieldDef()
+        bitfield.add("bf1", 3)
+        bitfield.add("bf2", 1)
+        bitfield.add("bf3", 4)
+
+        parentstruct = pycstruct.StructDef()
+        parentstruct.add("uint16", "ps1")
+        parentstruct.add("uint32", "ps2")
+        parentstruct.add(bitfield, "ps4", same_level=True)
+        parentstruct.add("int8", "ps5")
+
+        mydict = {
+            "bf1": 5,
+            "bf2": 0,
+            "bf3": 11,
+            "ps1": 789,
+            "ps2": 91011,
+            "ps4": 1213,  # Should be ignored
+            "ps5": -100,
+        }
+
+        databin = parentstruct.serialize(mydict)
+        mydict2 = parentstruct.deserialize(databin)
+
+        # Check
+        for key, value in mydict.items():
+            if key != "ps4":
+                self.assertEqual(value, mydict2[key], msg="Key {0}".format(key))
+
+    def test_struct_remove_from(self):
+
+        m = pycstruct.StructDef()
+        m.add("int8", "e1")
+        m.add("int8", "e2")
+        m.add("int16", "e3")
+        m.add("int16", "e4")
+        m.add("int32", "e5")
+        m.add("int32", "e6")
+
+        self.assertEqual(m.size(), 14)
+
+        self.assertRaises(Exception, m.remove_from, "invalid")
+
+        m.remove_from("e4")
+        self.assertEqual(m.size(), 4)
+
+        d = m.create_empty_data()
+        self.assertTrue("e1" in d)
+        self.assertTrue("e3" in d)
+        self.assertFalse("e4" in d)
+        self.assertFalse("e6" in d)
+
+    def test_struct_remove_to(self):
+
+        m = pycstruct.StructDef()
+        m.add("int8", "e1")
+        m.add("int8", "e2")
+        m.add("int16", "e3")
+        m.add("int16", "e4")
+        m.add("int32", "e5")
+        m.add("int32", "e6")
+
+        self.assertEqual(m.size(), 14)
+
+        self.assertRaises(Exception, m.remove_to, "invalid")
+
+        m.remove_to("e4")
+        self.assertEqual(m.size(), 8)
+
+        d = m.create_empty_data()
+        self.assertFalse("e1" in d)
+        self.assertFalse("e4" in d)
+        self.assertTrue("e5" in d)
+        self.assertTrue("e6" in d)
+
+    def test_bitfield_invalid_creation(self):
+        # Invalid byteorder on creation
+        self.assertRaises(Exception, pycstruct.BitfieldDef, "invalid")
+
+    def test_bitfield_add(self):
+        bitfield = pycstruct.BitfieldDef()
+
+        self.assertEqual(bitfield.assigned_bits(), 0)
+        self.assertEqual(bitfield.size(), 0)
+
+        bitfield.add("one_bit")
+        self.assertEqual(bitfield.assigned_bits(), 1)
+        bitfield.add("two_bits", 2)
+        bitfield.add("three_bits", 3)
+        bitfield.add("two_bits_signed", 2, signed=True)
+        self.assertEqual(bitfield.assigned_bits(), 8)
+        self.assertEqual(bitfield.size(), 1)
+
+        bitfield.add("one_more_bit")
+        self.assertEqual(bitfield.assigned_bits(), 9)
+        self.assertEqual(bitfield.size(), 2)
+        bitfield.add("seven_bits", 7)
+        self.assertEqual(bitfield.assigned_bits(), 16)
+        self.assertEqual(bitfield.size(), 2)
+
+        bitfield.add("three_bits_signed", 3, signed=True)
+        self.assertEqual(bitfield.assigned_bits(), 19)
+        self.assertEqual(bitfield.size(), 3)
+
+        bitfield.add("32_bits", 32)
+        self.assertEqual(bitfield.assigned_bits(), 51)
+        self.assertEqual(bitfield.size(), 7)
+
+        bitfield.add("13_signed_bits", 13, signed=True)
+        self.assertEqual(bitfield.assigned_bits(), 64)
+        self.assertEqual(bitfield.size(), 8)
+
+        # Should overflow
+        self.assertRaises(Exception, bitfield.add, "this_wont_fit_in_64_bits")
+
+        # Same bit field name again - forbidden
+        self.assertRaises(Exception, bitfield.add, "three_bits")
+
+    def test_bitfield_empty_data(self):
+        b = self.create_bitfield("native")
+        data = b.create_empty_data()
+        # Check a few of the fields
+        self.assertTrue("threebits" in data)
+        self.assertTrue("onesignedbit" in data)
+
+        # Test to string method
+        stringrep = str(b)
+        self.assertTrue("onebit" in stringrep)
+        self.assertTrue("eightsignedbits" in stringrep)
+        self.assertTrue("fivebits" in stringrep)
+
+    def create_bitfield(self, byteorder):
+        b = pycstruct.BitfieldDef(byteorder)
+
+        b.add("onebit", 1, signed=False)
+        b.add("twobits", 2, signed=False)
+        b.add("threebits", 3, signed=False)
+        b.add("fourbits", 4, signed=False)
+        b.add("fivesignedbits", 5, signed=True)
+        b.add("eightbits", 8, signed=False)
+        b.add("eightsignedbits", 8, signed=True)
+        b.add("onesignedbit", 1, signed=True)
+        b.add("foursignedbits", 4, signed=True)
+        b.add("sixteensignedbits", 16, signed=True)
+        b.add("fivebits", 5, signed=False)
+
+        return b
+
+    def deserialize_serialize_bitfield(self, byteorder):
+
+        #############################################
+        # Define Bitfield
+        b = self.create_bitfield(byteorder)
+
+        #############################################
+        # Load pre-stored binary data and deserialize
+
+        f = open(os.path.join(test_dir, "bitfield_{0}.dat".format(byteorder)), "rb")
+        inbytes = f.read()
+        result = b.deserialize(inbytes)
+        f.close()
+
+        #############################################
+        # Check expected values
+        self.assertEqual(result["onebit"], 1)
+        self.assertEqual(result["twobits"], 3)
+        self.assertEqual(result["threebits"], 1)
+        self.assertEqual(result["fourbits"], 3)
+        self.assertEqual(result["fivesignedbits"], -2)
+        self.assertEqual(result["eightbits"], 255)
+        self.assertEqual(result["eightsignedbits"], -128)
+        self.assertEqual(result["onesignedbit"], -1)
+        self.assertEqual(result["foursignedbits"], 5)
+        self.assertEqual(result["sixteensignedbits"], -12345)
+        self.assertEqual(result["fivebits"], 16)
+
+        #############################################
+        # Serialize result into new byte array
+
+        outbytes = b.serialize(result)
+
+        #############################################
+        # Check that generated bytes match read ones
+
+        self.assertEqual(len(inbytes), len(outbytes))
+        for i in range(0, len(inbytes)):
+            self.assertEqual(
+                int(inbytes[i]), int(outbytes[i]), msg="Index {0}".format(i)
+            )
+
+    def test_bitfield_deserialize_serialize_little(self):
+        self.deserialize_serialize_bitfield("little")
+
+    def test_bitfield_deserialize_serialize_big(self):
+        self.deserialize_serialize_bitfield("big")
+
+    def test_bitfield_invalid_deserialize(self):
+
+        b = pycstruct.BitfieldDef()
+        b.add("afield")
+
+        buffer = bytearray(b.size() - 1)  # Too small buffer
+        self.assertRaises(Exception, b.deserialize, buffer)
+
+    def test_bitfield_getsubvalue(self):
+        bitstruct = pycstruct.BitfieldDef()
+        value = int("0101110001010011", 2)
+
+        # Unsigned tests
+        self.assertEqual(
+            bitstruct._get_subvalue(value, nbr_of_bits=1, start_bit=0, signed=False), 1
+        )
+        self.assertEqual(
+            bitstruct._get_subvalue(value, nbr_of_bits=4, start_bit=0, signed=False), 3
+        )
+        self.assertEqual(
+            bitstruct._get_subvalue(value, nbr_of_bits=16, start_bit=0, signed=False),
+            23635,
+        )
+        self.assertEqual(
+            bitstruct._get_subvalue(value, nbr_of_bits=15, start_bit=0, signed=False),
+            23635,
+        )
+        self.assertEqual(
+            bitstruct._get_subvalue(value, nbr_of_bits=14, start_bit=2, signed=False),
+            5908,
+        )
+        self.assertEqual(
+            bitstruct._get_subvalue(value, nbr_of_bits=3, start_bit=4, signed=False), 5
+        )
+
+        # Signed tests
+        self.assertEqual(
+            bitstruct._get_subvalue(value, nbr_of_bits=1, start_bit=0, signed=True), -1
+        )
+        self.assertEqual(
+            bitstruct._get_subvalue(value, nbr_of_bits=4, start_bit=0, signed=True), 3
+        )
+        self.assertEqual(
+            bitstruct._get_subvalue(value, nbr_of_bits=16, start_bit=0, signed=True),
+            23635,
+        )
+        self.assertEqual(
+            bitstruct._get_subvalue(value, nbr_of_bits=15, start_bit=0, signed=True),
+            -9133,
+        )
+        self.assertEqual(
+            bitstruct._get_subvalue(value, nbr_of_bits=14, start_bit=2, signed=True),
+            5908,
+        )
+        self.assertEqual(
+            bitstruct._get_subvalue(value, nbr_of_bits=3, start_bit=4, signed=True), -3
+        )
+
+    def test_bitfield_setsubvalue(self):
+        bitstruct = pycstruct.BitfieldDef()
+
+        # Unsigned tests
+        self.assertEqual(
+            bin(
+                bitstruct._set_subvalue(0, 1, nbr_of_bits=1, start_bit=0, signed=False)
+            ),
+            "0b1",
+        )
+        self.assertEqual(
+            bin(
+                bitstruct._set_subvalue(0, 1, nbr_of_bits=1, start_bit=2, signed=False)
+            ),
+            "0b100",
+        )
+        self.assertEqual(
+            bin(
+                bitstruct._set_subvalue(0, 5, nbr_of_bits=3, start_bit=5, signed=False)
+            ),
+            "0b10100000",
+        )
+
+        value = int("010100001111", 2)
+        self.assertEqual(
+            bin(
+                bitstruct._set_subvalue(
+                    value, 15, nbr_of_bits=4, start_bit=4, signed=False
+                )
+            ),
+            "0b10111111111",
+        )
+
+        # Signed tests
+        value = 0
+        self.assertEqual(
+            bin(
+                bitstruct._set_subvalue(0, -1, nbr_of_bits=1, start_bit=0, signed=True)
+            ),
+            "0b1",
+        )
+        self.assertEqual(
+            bin(
+                bitstruct._set_subvalue(0, -1, nbr_of_bits=1, start_bit=2, signed=True)
+            ),
+            "0b100",
+        )
+        self.assertEqual(
+            bin(
+                bitstruct._set_subvalue(0, -5, nbr_of_bits=4, start_bit=5, signed=True)
+            ),
+            "0b101100000",
+        )
+        self.assertEqual(
+            bin(bitstruct._set_subvalue(0, 5, nbr_of_bits=4, start_bit=5, signed=True)),
+            "0b10100000",
+        )
+
+        # Invalid values
+        self.assertRaises(Exception, bitstruct._set_subvalue, 0, -1, 1, 0, False)
+        self.assertRaises(Exception, bitstruct._set_subvalue, 0, 2, 1, 0, False)
+        self.assertRaises(Exception, bitstruct._set_subvalue, 0, 8, 3, 0, False)
+        self.assertRaises(Exception, bitstruct._set_subvalue, 0, -2, 1, 0, True)
+        self.assertRaises(Exception, bitstruct._set_subvalue, 0, 2, 1, 0, True)
+        self.assertRaises(Exception, bitstruct._set_subvalue, 0, 7, 3, 0, True)
+
+    def test_enum_invalid_creation(self):
+        # Invalid byteorder on creation
+        self.assertRaises(Exception, pycstruct.EnumDef, "invalid")
+
+    def test_enum_add(self):
+        e = pycstruct.EnumDef()
+
+        self.assertEqual(e.size(), 1)
+
+        e.add("first")
+        self.assertEqual(e.get_value("first"), 0)
+        self.assertEqual(e.get_name(0), "first")
+        self.assertEqual(e.size(), 1)
+
+        e.add("second", 1)
+        self.assertEqual(e.get_value("second"), 1)
+        self.assertEqual(e.get_name(1), "second")
+        self.assertEqual(e.size(), 1)
+
+        e.add("fitbyte", 127)
+        self.assertEqual(e.get_value("fitbyte"), 127)
+        self.assertEqual(e.get_name(127), "fitbyte")
+        self.assertEqual(e.size(), 1)
+
+        e.add("third")
+        self.assertEqual(e.get_value("third"), 2)
+        self.assertEqual(e.get_name(2), "third")
+        self.assertEqual(e.size(), 1)
+
+        # Duplicate
+        self.assertRaises(Exception, e.add, "second")
+
+        # > 64 bits
+        self.assertRaises(Exception, e.add, "too_big", 12345678901234561234567)
+
+        # Get invalid value
+        self.assertRaises(Exception, e.get_value, 33)
+
+        # Get invalid name
+        self.assertRaises(Exception, e.get_name, "invalid")
+
+    def test_enum_fixed_unsigned(self):
+        e = pycstruct.EnumDef(size=4, signed=False)
+
+        self.assertEqual(e.size(), 4)
+
+        e.add("first")
+        self.assertEqual(e.get_value("first"), 0)
+        self.assertEqual(e.get_name(0), "first")
+        self.assertEqual(e.size(), 4)
+
+        e.add("largest", 0xFFFFFFFF)
+        self.assertEqual(e.size(), 4)
+
+        # Add a too large number
+        self.assertRaises(Exception, e.add, "too_large", 0xFFFFFFFF + 1)
+
+        # Add negative number to unsigned
+        self.assertRaises(Exception, e.add, "negative", -1)
+
+    def test_enum_fixed_signed(self):
+        e = pycstruct.EnumDef(size=4, signed=True)
+
+        self.assertEqual(e.size(), 4)
+
+        e.add("first")
+        self.assertEqual(e.get_value("first"), 0)
+        self.assertEqual(e.get_name(0), "first")
+        self.assertEqual(e.size(), 4)
+
+        e.add("negative", -1)
+        self.assertEqual(e.size(), 4)
+
+        e.add("largest_negative", 0x7FFFFFFF * -1 - 1)
+        self.assertEqual(e.size(), 4)
+
+        # Add too small value
+        self.assertRaises(Exception, e.add, "too_small", 0x7FFFFFFF * -1 - 2)
+
+        e.add("largest_positive", 0x7FFFFFFF)
+        self.assertEqual(e.size(), 4)
+
+        # Add too large value
+        self.assertRaises(Exception, e.add, "too_large", 0x7FFFFFFF + 1)
+
+    def test_enum_serialize_deserialize(self):
+        e = pycstruct.EnumDef(size=1)
+        e.add("zero", 0)
+        e.add("one", 1)
+        e.add("two", 2)
+        e.add("three", 2)
+
+        value = "two"
+        buf = e.serialize(value)
+        self.assertEqual(len(buf), 1)
+        self.assertEqual(buf[0], 2)
+
+        big = pycstruct.EnumDef("big", size=2)
+        big.add("twofiftysix", 256)
+        value = "twofiftysix"
+        buf = big.serialize(value)
+        self.assertEqual(len(buf), 2)
+        self.assertEqual(buf[0], 1)
+        self.assertEqual(buf[1], 0)
+        outval = big.deserialize(buf)
+        self.assertEqual(outval, "twofiftysix")
+
+        little = pycstruct.EnumDef("little", size=2)
+        value = "twofiftysix"
+        little.add(value, 256)
+        buf = little.serialize(value)
+        self.assertEqual(len(buf), 2)
+        self.assertEqual(buf[0], 0)
+        self.assertEqual(buf[1], 1)
+        outval = little.deserialize(buf)
+        self.assertEqual(outval, value)
+
+        value = "largest_uint16"
+        little.add(value, 0xFFFF)
+        buf = little.serialize(value)
+        self.assertEqual(len(buf), 2)
+        self.assertEqual(buf[0], 0xFF)
+        self.assertEqual(buf[1], 0xFF)
+        outval = little.deserialize(buf)
+        self.assertEqual(outval, value)
+
+        little_signed = pycstruct.EnumDef("little", size=2, signed=True)
+        value = "largest_int16"
+        little_signed.add(value, 32767)
+        buf = little_signed.serialize(value)
+        self.assertEqual(len(buf), 2)
+        self.assertEqual(buf[0], 0xFF)
+        self.assertEqual(buf[1], 0x7F)
+        outval = little_signed.deserialize(buf)
+        self.assertEqual(outval, value)
+
+        value = "smallest_int16"
+        little_signed.add(value, -32768)
+        buf = little_signed.serialize(value)
+        self.assertEqual(len(buf), 2)
+        self.assertEqual(buf[0], 0x00)
+        self.assertEqual(buf[1], 0x80)
+        outval = little_signed.deserialize(buf)
+        self.assertEqual(outval, value)
+
+        # Unassigned values
+        outval = little_signed.deserialize(bytes([0, 0]))
+        self.assertEqual(outval, "__VALUE__0")
+        outval = little_signed.deserialize(bytes([99, 0]))
+        self.assertEqual(outval, "__VALUE__99")
+        outval = little_signed.deserialize(bytes([0xFC, 0xFF]))
+        self.assertEqual(outval, "__VALUE__-4")
+
+        # Test to string method
+        stringrep = str(e)
+        self.assertTrue("zero" in stringrep)
+        self.assertTrue("three" in stringrep)
+
+    def test_union_no_pad(self):
+
+        u = pycstruct.StructDef(union=True, default_byteorder="big")
+        self.assertEqual(u._type_name(), "union")
+        u.add("uint8", "small")
+        self.assertEqual(u.size(), 1)
+        u.add("uint16", "large")
+        self.assertEqual(u.size(), 2)
+        u.add("uint32", "larger")
+        self.assertEqual(u.size(), 4)
+        u.add("uint64", "largest")
+        self.assertEqual(u.size(), 8)
+
+        input = {}
+        input["largest"] = 0x1122334455667788
+
+        buf = u.serialize(input)
+        self.assertEqual(len(buf), 8)
+
+        output = u.deserialize(buf)
+        self.assertEqual(output["small"], 0x11)
+        self.assertEqual(output["large"], 0x1122)
+        self.assertEqual(output["larger"], 0x11223344)
+        self.assertEqual(output["largest"], 0x1122334455667788)
+
+        buf2 = u.serialize(output)
+        output2 = u.deserialize(buf2)
+        self.assertEqual(output2["largest"], 0x1122334455667788)
+
+        del output2["largest"]
+        del output2["larger"]
+
+        buf3 = u.serialize(output2)
+        output3 = u.deserialize(buf3)
+        self.assertEqual(output3["largest"], 0x1122000000000000)
+        self.assertEqual(output3["larger"], 0x11220000)
+
+    def test_enum_invalid_deserialize(self):
+
+        e = pycstruct.EnumDef()
+        e.add("zero")
+
+        buffer = bytearray(e.size() + 1)
+        self.assertRaises(Exception, e.deserialize, buffer)
+
+    def test_get_padding(self):
+        padding = pycstruct.pycstruct._get_padding
+
+        # Alignment 1
+        self.assertEqual(padding(1, 5, 4), 0)
+
+        # Alignment 2
+        self.assertEqual(padding(2, 0, 1), 0)
+        self.assertEqual(padding(2, 0, 2), 0)
+        self.assertEqual(padding(2, 0, 4), 0)
+        self.assertEqual(padding(2, 0, 8), 0)
+        self.assertEqual(padding(2, 1, 1), 0)
+        self.assertEqual(padding(2, 1, 2), 1)
+        self.assertEqual(padding(2, 1, 4), 1)
+        self.assertEqual(padding(2, 1, 8), 1)
+        self.assertEqual(padding(2, 2, 1), 0)
+        self.assertEqual(padding(2, 2, 2), 0)
+        self.assertEqual(padding(2, 2, 4), 0)
+        self.assertEqual(padding(2, 2, 8), 0)
+        self.assertEqual(padding(2, 3, 1), 0)
+        self.assertEqual(padding(2, 3, 2), 1)
+        self.assertEqual(padding(2, 3, 4), 1)
+        self.assertEqual(padding(2, 3, 8), 1)
+
+        # Alignment 4
+        self.assertEqual(padding(4, 0, 1), 0)
+        self.assertEqual(padding(4, 0, 2), 0)
+        self.assertEqual(padding(4, 0, 4), 0)
+        self.assertEqual(padding(4, 0, 8), 0)
+        self.assertEqual(padding(4, 1, 1), 0)
+        self.assertEqual(padding(4, 1, 2), 1)
+        self.assertEqual(padding(4, 1, 4), 3)
+        self.assertEqual(padding(4, 1, 8), 3)
+        self.assertEqual(padding(4, 2, 1), 0)
+        self.assertEqual(padding(4, 2, 2), 0)
+        self.assertEqual(padding(4, 2, 4), 2)
+        self.assertEqual(padding(4, 2, 8), 2)
+        self.assertEqual(padding(4, 3, 1), 0)
+        self.assertEqual(padding(4, 3, 2), 1)
+        self.assertEqual(padding(4, 3, 4), 1)
+        self.assertEqual(padding(4, 3, 8), 1)
+        self.assertEqual(padding(4, 4, 1), 0)
+        self.assertEqual(padding(4, 4, 2), 0)
+        self.assertEqual(padding(4, 4, 4), 0)
+        self.assertEqual(padding(4, 4, 8), 0)
+        self.assertEqual(padding(4, 5, 1), 0)
+        self.assertEqual(padding(4, 5, 2), 1)
+        self.assertEqual(padding(4, 5, 4), 3)
+        self.assertEqual(padding(4, 5, 8), 3)
+
+        # Alignment 8
+        self.assertEqual(padding(8, 0, 1), 0)
+        self.assertEqual(padding(8, 0, 2), 0)
+        self.assertEqual(padding(8, 0, 4), 0)
+        self.assertEqual(padding(8, 0, 8), 0)
+        self.assertEqual(padding(8, 1, 1), 0)
+        self.assertEqual(padding(8, 1, 2), 1)
+        self.assertEqual(padding(8, 1, 4), 3)
+        self.assertEqual(padding(8, 1, 8), 7)
+        self.assertEqual(padding(8, 2, 1), 0)
+        self.assertEqual(padding(8, 2, 2), 0)
+        self.assertEqual(padding(8, 2, 4), 2)
+        self.assertEqual(padding(8, 2, 8), 6)
+        self.assertEqual(padding(8, 3, 1), 0)
+        self.assertEqual(padding(8, 3, 2), 1)
+        self.assertEqual(padding(8, 3, 4), 1)
+        self.assertEqual(padding(8, 3, 8), 5)
+        self.assertEqual(padding(8, 4, 1), 0)
+        self.assertEqual(padding(8, 4, 2), 0)
+        self.assertEqual(padding(8, 4, 4), 0)
+        self.assertEqual(padding(8, 4, 8), 4)
+        self.assertEqual(padding(8, 5, 1), 0)
+        self.assertEqual(padding(8, 5, 2), 1)
+        self.assertEqual(padding(8, 5, 4), 3)
+        self.assertEqual(padding(8, 5, 8), 3)
+        self.assertEqual(padding(8, 7, 8), 1)
+        self.assertEqual(padding(8, 8, 8), 0)
+        self.assertEqual(padding(8, 9, 8), 7)
+
+    def test_round_pow_2(self):
+        round_2 = pycstruct.pycstruct._round_pow_2
+
+        self.assertEqual(round_2(0), 0)
+        self.assertEqual(round_2(1), 1)
+        self.assertEqual(round_2(2), 2)
+        self.assertEqual(round_2(3), 4)
+        self.assertEqual(round_2(4), 4)
+        self.assertEqual(round_2(5), 8)
+        self.assertEqual(round_2(8), 8)
+        self.assertEqual(round_2(9), 16)
+
+
+if __name__ == "__main__":
+    unittest.main()
