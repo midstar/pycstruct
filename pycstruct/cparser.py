@@ -90,12 +90,14 @@ class _CastXmlParser:
     enum, union etc.). The value represents the metadata about the type,
     such as members etc.
     """
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, xml_filename):
         self._xml_filename = xml_filename
         self._anonymous_count = 0
         self._embedded_bf_count = 0
         self._embedded_bf = []
+        self.root = None
 
     def parse(self):
         """Parse the XML file provided in the constructor"""
@@ -294,25 +296,24 @@ class _CastXmlParser:
                         member["reference"] = member_type["reference"]
                 except Exception as exception:
                     logger.warning(
-                        """{} has a member {} could not be handled:
- - {}
- - Composite type will be ignored.""".format(
-                            dict_output["name"], member["name"], exception.args[0]
+                        """%s has a member %s could not be handled:
+ - %s
+ - Composite type will be ignored.""",
+                            dict_output["name"], member["name"], str(exception.args[0])
                         )
-                    )
                     dict_output["supported"] = False
                     break
             dict_output["members"].append(member)
 
     def _get_attrib(self, elem, attrib, default):
+        # pylint: disable=no-self-use
         if attrib in elem.attrib:
             return elem.attrib[attrib]
-        else:
-            return default
+        return default
 
     def _get_elem_with_id(self, typeid):
         elem = self.root.find("*[@id='{0}']".format(typeid))
-        if elem == None:
+        if elem is None:
             raise Exception(
                 "No XML element with id attribute {} identified".format(typeid)
             )
@@ -320,7 +321,7 @@ class _CastXmlParser:
 
     def _get_elem_with_attrib(self, tag, attrib, value):
         elem = self.root.find("{}[@{}='{}']".format(tag, attrib, value))
-        if elem == None:
+        if elem is None:
             raise Exception(
                 "No {} XML element with {} attribute {} identified".format(
                     tag, attrib, value
@@ -336,20 +337,21 @@ class _CastXmlParser:
             type_id = self._get_elem_with_attrib(
                 "ElaboratedType", "type", type_id
             ).attrib["id"]
-        except:
+        except Exception:
             pass
 
         # Now find the TypeDef element connected to the type or ElaboratedType element
         name = ""
         try:
             name = self._get_elem_with_attrib("Typedef", "type", type_id).attrib["name"]
-        except:
+        except Exception:
             name = "anonymous_{}".format(self._anonymous_count)
             self._anonymous_count += 1
         return name
 
     def _fundamental_type_to_pycstruct_type(self, elem, length):
         """ Map the fundamental type to pycstruct type """
+        # pylint: disable=no-self-use
         typename = elem.attrib["name"]
         typesize = elem.attrib["size"]
         pycstruct_type_name = "int"
@@ -432,19 +434,19 @@ class _TypeMetaParser:
         self._byteorder = byteorder
 
     def parse(self):
-        for name, type in self._type_meta.items():
-            if type["supported"]:
+        """Parse the type_meta file provided in the constructor"""
+        for name, datatype in self._type_meta.items():
+            if datatype["supported"]:
                 try:
                     self._to_instance(name)
-                except Exception as e:
+                except Exception as exception:
                     logger.warning(
-                        """Unable to convert {}, type {}, to pycstruct defintion:
-  - {}
-  - Type will be ignored.""".format(
-                            name, type["type"], e.args[0]
+                        """Unable to convert %s, type %s, to pycstruct defintion:
+  - %s
+  - Type will be ignored.""",
+                            name, datatype["type"], str(exception.args[0])
                         )
-                    )
-                    type["supported"] = False
+                    datatype["supported"] = False
         return self._instances
 
     def _to_instance(self, name):
@@ -458,7 +460,7 @@ class _TypeMetaParser:
 
         meta = self._type_meta[name]
 
-        if meta["supported"] == False:
+        if not meta["supported"]:
             return None  # Not supported
 
         instance = None
@@ -472,14 +474,14 @@ class _TypeMetaParser:
             for member in meta["members"]:
                 if "reference" in member:
                     other_instance = self._to_instance(member["reference"])
-                    if other_instance == None:
+                    if other_instance is None:
                         raise Exception(
                             "Member {} is of type {} {} that is not supported".format(
                                 member["name"], member["type"], member["reference"]
                             )
                         )
                     same_level = False
-                    if ("same_level" in member) and (member["same_level"] == True):
+                    if ("same_level" in member) and member["same_level"]:
                         same_level = True
                     instance.add(
                         other_instance,
@@ -505,20 +507,18 @@ class _TypeMetaParser:
         # Not supported
         else:
             logger.warning(
-                "Unable to create instance for {} (type {}). Not supported.".format(
+                "Unable to create instance for %s (type %s). Not supported.",
                     meta["name"], meta["type"]
                 )
-            )
             meta["supported"] = False
             return None
 
         # Sanity check size:
         if meta["size"] != instance.size():
             logger.warning(
-                "{0} size, {1}, does match indicated size {2}".format(
+                "%s size, %s, does match indicated size %s",
                     meta["name"], instance.size(), meta["size"]
                 )
-            )
 
         self._instances[name] = instance
         return instance
@@ -598,7 +598,7 @@ def parse_file(
     xml_path = os.path.join(cache_path, xml_filename)
 
     # Generate XML
-    if use_cached == False or os.path.isfile(xml_path) == False:
+    if not use_cached or not os.path.isfile(xml_path):
         _run_castxml(input_files, xml_path, castxml_cmd, castxml_extra_args)
 
     # Parse XML
@@ -613,7 +613,7 @@ def parse_file(
 
 
 def parse_str(
-    str,
+    c_str,
     byteorder="native",
     castxml_cmd="castxml",
     castxml_extra_args=None,
@@ -641,8 +641,8 @@ def parse_str(
     - 'signed char []' = int8 array
     - 'char []' = utf-8 data (string)
 
-    :param str: A string of C source code.
-    :type str: str
+    :param c_str: A string of C source code.
+    :type c_str: str
     :param byteorder: Byteorder of all elements Valid values are 'native',
                       'little' and 'big'. If not specified the 'native'
                       byteorder is used.
@@ -676,11 +676,11 @@ def parse_str(
         # Use temporary path to store xml
         cache_path = tempfile.gettempdir()
 
-    c_filename = _get_hash([str]) + ".c"
+    c_filename = _get_hash([c_str]) + ".c"
     c_path = os.path.join(cache_path, c_filename)
 
     with open(c_path, "w") as file:
-        file.write(str)
+        file.write(c_str)
 
     return parse_file(
         c_path, byteorder, castxml_cmd, castxml_extra_args, cache_path, use_cached
