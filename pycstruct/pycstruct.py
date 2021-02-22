@@ -328,9 +328,6 @@ class StructDef(_BaseDef):
         :type same_level: bool, optional
 
         """
-        # Invalidate the dtype cache
-        self.__dtype = None
-
         # pylint: disable=too-many-branches
         # Sanity checks
         if length < 1:
@@ -345,6 +342,9 @@ class StructDef(_BaseDef):
             raise Exception("same_level not allowed in combination with length > 1")
         if same_level and not isinstance(datatype, BitfieldDef):
             raise Exception("same_level only allowed in combination with BitfieldDef")
+
+        # Invalidate the dtype cache
+        self.__dtype = None
 
         # Create objects when necessary
         if datatype == "utf-8":
