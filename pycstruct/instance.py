@@ -7,7 +7,7 @@ released under the "MIT License Agreement". Please see the LICENSE
 file that should have been included as part of this package.
 """
 
-import pycstruct
+import pycstruct.pycstruct
 
 
 class Instance:
@@ -38,57 +38,54 @@ class Instance:
     :type buffer_offset: int, optional
     """
 
-    def __init__(self, type, buffer=None, buffer_offset=0):
-        if not isinstance(type, pycstruct.StructDef) and not isinstance(
-            type, pycstruct.BitfieldDef
-        ):
+    def __init__(self, datatype, buffer=None, buffer_offset=0):
+        if not isinstance(datatype, (pycstruct.StructDef, pycstruct.BitfieldDef)):
             raise Exception("top_class needs to be of type StructDef or BitfieldDef")
 
-        if buffer == None:
-            buffer = bytearray(type.size())
+        if buffer is None:
+            buffer = bytearray(datatype.size())
 
         # All private fields needs to be defined here to avoid
         # recursive calls to __setattr__ and __getattr__
-        super().__setattr__("_Instance__type", type)
+        super().__setattr__("_Instance__type", datatype)
         super().__setattr__("_Instance__buffer", buffer)
         super().__setattr__("_Instance__buffer_offset", buffer_offset)
-        super().__setattr__("_Instance__attributes", type._element_names())
+        super().__setattr__("_Instance__attributes", datatype._element_names())
         super().__setattr__("_Instance__subinstances", {})
 
-        if isinstance(type, pycstruct.StructDef):
+        if isinstance(datatype, pycstruct.StructDef):
             # Create "sub-instances" for nested structs/bitfields and lists
             for attribute in self.__attributes:
-                length = type._element_length(attribute)
+                length = datatype._element_length(attribute)
                 if length > 1:
                     # This is a list
                     self.__subinstances[attribute] = _InstanceList(
-                        type, attribute, self.__buffer, buffer_offset
+                        datatype, attribute, self.__buffer, buffer_offset
                     )
                 else:
-                    subtype = type._element_type(attribute)
-                    if isinstance(subtype, pycstruct.StructDef) or isinstance(
-                        subtype, pycstruct.BitfieldDef
+                    subtype = datatype._element_type(attribute)
+                    if isinstance(
+                        subtype, (pycstruct.StructDef, pycstruct.BitfieldDef)
                     ):
                         self.__subinstances[attribute] = Instance(
                             subtype,
                             self.__buffer,
-                            buffer_offset + type._element_offset(attribute),
+                            buffer_offset + datatype._element_offset(attribute),
                         )
 
     def __getattr__(self, item):
         if item in self.__subinstances:
             return self.__subinstances[item]
-        elif item in self.__attributes:
+        if item in self.__attributes:
             return self.__type._deserialize_element(
                 item, self.__buffer, self.__buffer_offset
             )
-        else:
-            raise AttributeError("Instance has no element {}".format(item))
+        raise AttributeError("Instance has no element {}".format(item))
 
     def __setattr__(self, item, value):
         if item in self.__subinstances:
             raise AttributeError("You are not allowed to modify {}".format(item))
-        elif item in self.__attributes:
+        if item in self.__attributes:
             self.__type._serialize_element(
                 item, value, self.__buffer, self.__buffer_offset
             )
@@ -152,9 +149,7 @@ class _InstanceList:
         self.__buffer_offset = buffer_offset
         self.__subinstances = []
 
-        if isinstance(self.__type, pycstruct.StructDef) or isinstance(
-            self.__type, pycstruct.BitfieldDef
-        ):
+        if isinstance(self.__type, (pycstruct.StructDef, pycstruct.BitfieldDef)):
             element_offset = parenttype._element_offset(name)
             for i in range(0, self.__length):
                 self.__subinstances.append(
@@ -179,8 +174,7 @@ class _InstanceList:
             return self.__parenttype._deserialize_element(
                 self.__name, self.__buffer, self.__buffer_offset, key
             )
-        else:
-            return self.__subinstances[key]
+        return self.__subinstances[key]
 
     def __setitem__(self, key, value):
         self.__check_key(key)
