@@ -368,3 +368,68 @@ or :py:meth:`pycstruct.BitfieldDef` object.
     #.... Add some elements to myBitfield here
     instanceOfMyBitfield = myBitfield.instance()
 
+
+Deserialize with numpy
+----------------------
+
+The structure definitions can be used together with
+`numpy <https://numpy.org/>`_, with some restrictions.
+
+This provides an easy way to describe complex numpy dtype,
+especially compound dtypes.
+
+There is some restructions:
+
+- bitfields and enums are not supported
+- strings are not decoded (that's still bytes)
+
+This can be used for use cases requiring very fast processing,
+or smart indexing.
+
+The structure definitions provides a method `dtype` which
+can be read by numpy.
+
+.. code-block::
+
+    import pycstruct
+    import numpy
+
+    # Define a RGBA color
+    color_t = pycstruct.StructDef()
+    color_t.add("uint8", "r")
+    color_t.add("uint8", "g")
+    color_t.add("uint8", "b")
+    color_t.add("uint8", "a")
+
+    # Define a vector of RGBA
+    colorarray_t = pycstruct.StructDef()
+    colorarray_t.add(color_t, "vector", length=200)
+
+    # Dummy data
+    raw = b"\x20\x30\x40\xFF" * 200
+
+    # Deserialize the raw bytes
+    colorarray = numpy.frombuffer(raw, dtype=colorarray_t.dtype(), count=1)
+    # numpy.frombuffer deserialize arrays. In this case there is
+    # a single element of colorarray_t, which can be unstacked
+    colorarray = colorarray[0]
+
+    # Elements can be accessed by names
+    # Here we can access to the whole red components is a single request
+    red_component = colorarray["vector"]["r"]
+    assert red_component.dtype == numpy.uint8
+    assert red_component.shape == (200, )
+
+Numpy also provides record array which can be used like the
+instance objects.
+
+.. code-block::
+
+    colorarray = numpy.frombuffer(raw, dtype=colorarray_t.dtype())[0]
+
+    # Create a record array
+    colorarray = numpy.rec.array(colorarray)
+
+    # Elements can be accessed by attributes
+    assert colorarray.vector.r.dtype == numpy.uint8
+    assert colorarray.vector.r.shape == (200, )
