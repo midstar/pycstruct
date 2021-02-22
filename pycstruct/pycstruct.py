@@ -746,6 +746,24 @@ class StructDef(_BaseDef):
         return 1
 
     def dtype(self):
+        """Returns the dtype of this structure as defined by numpy.
+
+        This allows to use the pycstruct modelization together with numpy
+        to read C structures from buffers.
+
+        .. code-block::
+
+            color_t = StructDef()
+            color_t.add("uint8", "r")
+            color_t.add("uint8", "g")
+            color_t.add("uint8", "b")
+            color_t.add("uint8", "a")
+            raw = b"\x01\x02\x03\x00"
+            color = numpy.frombuffer(raw, dtype=color_t.dtype())
+
+        :return: a python dict representing a numpy dtype
+        :rtype: dict
+        """
         if self.__dtype is not None:
             return self.__dtype
 
