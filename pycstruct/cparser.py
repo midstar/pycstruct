@@ -8,8 +8,16 @@ file that should have been included as part of this package.
 """
 
 import xml.etree.ElementTree as ET
-import os, logging, pycstruct, subprocess, shutil, hashlib, tempfile, math
 
+import hashlib
+import logging
+import math
+import os
+import shutil
+import subprocess
+import tempfile
+
+import pycstruct
 
 ###############################################################################
 # Global constants
@@ -284,7 +292,9 @@ class _CastXmlParser:
                         member["reference"] = member_type["reference"]
                 except Exception as e:
                     logger.warning(
-                        "{0} has a member {1} could not be handled:\n  - {2}\n  - Composite type will be ignored.".format(
+                        """{0} has a member {1} could not be handled:
+ - {2}
+ - Composite type will be ignored.""".format(
                             dict_output["name"], member["name"], e.args[0]
                         )
                     )
@@ -426,7 +436,9 @@ class _TypeMetaParser:
                     self._to_instance(name)
                 except Exception as e:
                     logger.warning(
-                        "Unable to convert {}, type {}, to pycstruct defintion:\n  - {}\n  - Type will be ignored.".format(
+                        """Unable to convert {}, type {}, to pycstruct defintion:
+  - {}
+  - Type will be ignored.""".format(
                             name, type["type"], e.args[0]
                         )
                     )
