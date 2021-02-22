@@ -29,14 +29,17 @@ logger = logging.getLogger("pycstruct")
 
 
 def _run_castxml(
-    input_files, xml_filename, castxml_cmd="castxml", castxml_extra_args=[]
+    input_files, xml_filename, castxml_cmd="castxml", castxml_extra_args=None
 ):
-    if shutil.which(castxml_cmd) == None:
+    """Run castcml as a 'shell command'"""
+    if shutil.which(castxml_cmd) is None:
         raise Exception(
             'Executable "{}" not found.\n'.format(castxml_cmd)
             + "External software castxml is not installed.\n"
             + "You need to install it and put it in your PATH."
         )
+    if castxml_extra_args is None:
+        castxml_extra_args = []
     args = [castxml_cmd]
     args += castxml_extra_args
     args += input_files
@@ -46,13 +49,13 @@ def _run_castxml(
 
     try:
         output = subprocess.check_output(args, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as exception:
         raise Exception(
             "Unable to run:\n"
             + "{}\n\n".format(" ".join(args))
             + "Output:\n"
-            + e.output.decode()
-        )
+            + exception.output.decode()
+        ) from exception
 
     if not os.path.isfile(xml_filename):
         raise Exception(
@@ -95,7 +98,7 @@ class _CastXmlParser:
         self._embedded_bf = []
 
     def parse(self):
-
+        """Parse the XML file provided in the constructor"""
         self.root = ET.parse(self._xml_filename).getroot()
 
         supported_types = {}
@@ -103,23 +106,23 @@ class _CastXmlParser:
         # Parse enums
         xml_enums = self.root.findall("Enumeration")
         for xml_enum in xml_enums:
-            id = xml_enum.attrib["id"]
-            supported_types[id] = self._parse_enum(xml_enum)
+            typeid = xml_enum.attrib["id"]
+            supported_types[typeid] = self._parse_enum(xml_enum)
 
         # Parse unions
         xml_unions = self.root.findall("Union")
         for xml_union in xml_unions:
-            id = xml_union.attrib["id"]
-            supported_types[id] = self._parse_union(xml_union)
+            typeid = xml_union.attrib["id"]
+            supported_types[typeid] = self._parse_union(xml_union)
 
         # Parse structs and bitfields:
         xml_structs_and_bitfields = self.root.findall("Struct")
         for xml_struct_or_bitfield in xml_structs_and_bitfields:
-            id = xml_struct_or_bitfield.attrib["id"]
+            typeid = xml_struct_or_bitfield.attrib["id"]
             if self._is_bitfield(xml_struct_or_bitfield):
-                supported_types[id] = self._parse_bitfield(xml_struct_or_bitfield)
+                supported_types[typeid] = self._parse_bitfield(xml_struct_or_bitfield)
             else:
-                supported_types[id] = self._parse_struct(xml_struct_or_bitfield)
+                supported_types[typeid] = self._parse_struct(xml_struct_or_bitfield)
 
         # Add all embedded bitfields in supported_types
         for bitfield in self._embedded_bf:
@@ -127,8 +130,8 @@ class _CastXmlParser:
 
         # Change mapping from id to name
         type_meta = {}
-        for id, type in supported_types.items():
-            name = type["name"]
+        for _, datatype in supported_types.items():
+            name = datatype["name"]
             if name in type_meta:
                 # Name is not unique, make it unique
                 for i in range(1, 1000):
@@ -136,15 +139,15 @@ class _CastXmlParser:
                     if new_name not in type_meta:
                         name = new_name
                         break
-            type["name"] = name  # Change old name to new
-            type_meta[name] = type
+            datatype["name"] = name  # Change old name to new
+            type_meta[name] = datatype
 
         # Secure all references points to names instead of id's
-        for _, type in type_meta.items():
-            for member in type["members"]:
+        for _, datatype in type_meta.items():
+            for member in datatype["members"]:
                 if "reference" in member:
-                    id = member["reference"]
-                    name = supported_types[id]["name"]
+                    typeid = member["reference"]
+                    name = supported_types[typeid]["name"]
                     member["reference"] = name
 
         return type_meta
@@ -215,11 +218,10 @@ class _CastXmlParser:
                 if "unsigned" in type_elem.attrib["name"]:
                     member["signed"] = False
             else:
-                logger.warn(
-                    "Unable to parse sign of bitfield {} member {}. Will be signed.".format(
-                        bitfield["name"], member["name"]
+                logger.warning(
+                    "Unable to parse sign of bitfield member %s. Will be signed.",
+                        member["name"]
                     )
-                )
 
             result.append(member)
         return result
@@ -236,11 +238,11 @@ class _CastXmlParser:
 
     def _set_common_meta(self, xml_input, dict_output):
         """ Set common metadata available for all types """
-        id = xml_input.attrib["id"]
+        typeid = xml_input.attrib["id"]
         name = self._get_attrib(xml_input, "name", "")
         if name == "":
             # Does not have a name - check for TypeDef
-            name = self._get_typedef_name(id)
+            name = self._get_typedef_name(typeid)
         dict_output["name"] = name
         dict_output["size"] = int(int(self._get_attrib(xml_input, "size", "0")) / 8)
         dict_output["align"] = int(int(self._get_attrib(xml_input, "align", "8")) / 8)
@@ -290,12 +292,12 @@ class _CastXmlParser:
                     member["length"] = member_type["length"]
                     if "reference" in member_type:
                         member["reference"] = member_type["reference"]
-                except Exception as e:
+                except Exception as exception:
                     logger.warning(
-                        """{0} has a member {1} could not be handled:
- - {2}
+                        """{} has a member {} could not be handled:
+ - {}
  - Composite type will be ignored.""".format(
-                            dict_output["name"], member["name"], e.args[0]
+                            dict_output["name"], member["name"], exception.args[0]
                         )
                     )
                     dict_output["supported"] = False
@@ -308,19 +310,19 @@ class _CastXmlParser:
         else:
             return default
 
-    def _get_elem_with_id(self, id):
-        elem = self.root.find("*[@id='{0}']".format(id))
+    def _get_elem_with_id(self, typeid):
+        elem = self.root.find("*[@id='{0}']".format(typeid))
         if elem == None:
             raise Exception(
-                "No XML element with id attribute {2} identified".format(id)
+                "No XML element with id attribute {} identified".format(typeid)
             )
         return elem
 
     def _get_elem_with_attrib(self, tag, attrib, value):
-        elem = self.root.find("{0}[@{1}='{2}']".format(tag, attrib, value))
+        elem = self.root.find("{}[@{}='{}']".format(tag, attrib, value))
         if elem == None:
             raise Exception(
-                "No {0} XML element with {1} attribute {2} identified".format(
+                "No {} XML element with {} attribute {} identified".format(
                     tag, attrib, value
                 )
             )
@@ -530,7 +532,7 @@ def parse_file(
     input_files,
     byteorder="native",
     castxml_cmd="castxml",
-    castxml_extra_args=[],
+    castxml_extra_args=None,
     cache_path="",
     use_cached=False,
 ):
@@ -586,6 +588,9 @@ def parse_file(
     input_files = _listify(input_files)
     xml_filename = _get_hash(input_files) + ".xml"
 
+    if castxml_extra_args is None:
+        castxml_extra_args = []
+
     if cache_path == "":
         # Use temporary path to store xml
         cache_path = tempfile.gettempdir()
@@ -611,7 +616,7 @@ def parse_str(
     str,
     byteorder="native",
     castxml_cmd="castxml",
-    castxml_extra_args=[],
+    castxml_extra_args=None,
     cache_path="",
     use_cached=False,
 ):
@@ -663,6 +668,10 @@ def parse_str(
              etc. The values are the actual pycstruct instances.
     :rtype: dict
     """
+
+    if castxml_extra_args is None:
+        castxml_extra_args = []
+
     if cache_path == "":
         # Use temporary path to store xml
         cache_path = tempfile.gettempdir()
