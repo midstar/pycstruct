@@ -14,8 +14,6 @@ import math
 import struct
 import sys
 
-import pycstruct
-
 ###############################################################################
 # Global constants
 
@@ -585,7 +583,13 @@ class StructDef(_BaseDef):
         :return: A new Instance object
         :rtype: :meth:`Instance`
         """
-        return pycstruct.Instance(self, buffer, buffer_offset)
+        # I know. This is cyclic import of Instance, since instance depends
+        # on classes within this file. However, it should not be any problem
+        # since this file will be full imported once this method is called.
+        # pylint: disable=cyclic-import, import-outside-toplevel
+        from pycstruct.instance import Instance
+
+        return Instance(self, buffer, buffer_offset)
 
     def create_empty_data(self):
         """Create an empty dictionary with all keys
@@ -884,7 +888,13 @@ class BitfieldDef(_BaseDef):
         :return: A new Instance object
         :rtype: :meth:`Instance`
         """
-        return pycstruct.Instance(self, buffer, buffer_offset)
+        # I know. This is cyclic import of Instance, since instance depends
+        # on classes within this file. However, it should not be any problem
+        # since this file will be full imported once this method is called.
+        # pylint: disable=cyclic-import, import-outside-toplevel
+        from pycstruct.instance import Instance
+
+        return Instance(self, buffer, buffer_offset)
 
     def assigned_bits(self):
         """Get size of bitfield in bits excluding padding bits

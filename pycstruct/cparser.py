@@ -17,7 +17,7 @@ import shutil
 import subprocess
 import tempfile
 
-import pycstruct
+from pycstruct.pycstruct import StructDef, BitfieldDef, EnumDef
 
 ###############################################################################
 # Global constants
@@ -90,7 +90,8 @@ class _CastXmlParser:
     enum, union etc.). The value represents the metadata about the type,
     such as members etc.
     """
-    # pylint: disable=too-few-public-methods
+
+    # pylint: disable=too-few-public-methods, broad-except
 
     def __init__(self, xml_filename):
         self._xml_filename = xml_filename
@@ -101,6 +102,7 @@ class _CastXmlParser:
 
     def parse(self):
         """Parse the XML file provided in the constructor"""
+        # pylint: disable=too-many-branches, too-many-locals
         self.root = ET.parse(self._xml_filename).getroot()
 
         supported_types = {}
@@ -222,8 +224,8 @@ class _CastXmlParser:
             else:
                 logger.warning(
                     "Unable to parse sign of bitfield member %s. Will be signed.",
-                        member["name"]
-                    )
+                    member["name"],
+                )
 
             result.append(member)
         return result
@@ -299,8 +301,10 @@ class _CastXmlParser:
                         """%s has a member %s could not be handled:
  - %s
  - Composite type will be ignored.""",
-                            dict_output["name"], member["name"], str(exception.args[0])
-                        )
+                        dict_output["name"],
+                        member["name"],
+                        str(exception.args[0]),
+                    )
                     dict_output["supported"] = False
                     break
             dict_output["members"].append(member)
@@ -428,6 +432,8 @@ class _TypeMetaParser:
     generate pycstruct instances.
     """
 
+    # pylint: disable=too-few-public-methods, broad-except
+
     def __init__(self, type_meta, byteorder):
         self._type_meta = type_meta
         self._instances = {}
@@ -444,8 +450,10 @@ class _TypeMetaParser:
                         """Unable to convert %s, type %s, to pycstruct defintion:
   - %s
   - Type will be ignored.""",
-                            name, datatype["type"], str(exception.args[0])
-                        )
+                        name,
+                        datatype["type"],
+                        str(exception.args[0]),
+                    )
                     datatype["supported"] = False
         return self._instances
 
@@ -455,6 +463,7 @@ class _TypeMetaParser:
 
         Returns the instance.
         """
+        # pylint: disable=too-many-branches
         if name in self._instances:
             return self._instances[name]  # Parsed before
 
@@ -468,9 +477,7 @@ class _TypeMetaParser:
         # Structs or union
         if meta["type"] == "struct" or meta["type"] == "union":
             is_union = meta["type"] == "union"
-            instance = pycstruct.StructDef(
-                self._byteorder, meta["align"], union=is_union
-            )
+            instance = StructDef(self._byteorder, meta["align"], union=is_union)
             for member in meta["members"]:
                 if "reference" in member:
                     other_instance = self._to_instance(member["reference"])
@@ -494,13 +501,13 @@ class _TypeMetaParser:
 
         # Enum
         elif meta["type"] == "enum":
-            instance = pycstruct.EnumDef(self._byteorder, meta["size"], meta["signed"])
+            instance = EnumDef(self._byteorder, meta["size"], meta["signed"])
             for member in meta["members"]:
                 instance.add(member["name"], member["value"])
 
         # Bitfield
         elif meta["type"] == "bitfield":
-            instance = pycstruct.BitfieldDef(self._byteorder, meta["size"])
+            instance = BitfieldDef(self._byteorder, meta["size"])
             for member in meta["members"]:
                 instance.add(member["name"], member["bits"], member["signed"])
 
@@ -508,8 +515,9 @@ class _TypeMetaParser:
         else:
             logger.warning(
                 "Unable to create instance for %s (type %s). Not supported.",
-                    meta["name"], meta["type"]
-                )
+                meta["name"],
+                meta["type"],
+            )
             meta["supported"] = False
             return None
 
@@ -517,8 +525,10 @@ class _TypeMetaParser:
         if meta["size"] != instance.size():
             logger.warning(
                 "%s size, %s, does match indicated size %s",
-                    meta["name"], instance.size(), meta["size"]
-                )
+                meta["name"],
+                instance.size(),
+                meta["size"],
+            )
 
         self._instances[name] = instance
         return instance
@@ -584,6 +594,7 @@ def parse_file(
              etc. The values are the actual pycstruct instances.
     :rtype: dict
     """
+    # pylint: disable=too-many-arguments
 
     input_files = _listify(input_files)
     xml_filename = _get_hash(input_files) + ".xml"
@@ -668,6 +679,7 @@ def parse_str(
              etc. The values are the actual pycstruct instances.
     :rtype: dict
     """
+    # pylint: disable=too-many-arguments
 
     if castxml_extra_args is None:
         castxml_extra_args = []
