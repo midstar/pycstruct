@@ -121,3 +121,21 @@ class TestDtype(unittest.TestCase):
         assert r1["uint32"] == r2["uint32"]
         numpy.testing.assert_array_equal(r1["ubyte"], r2["ubyte"])
         assert r1["rgba"]["b"] == r2["rgba"]["b"]
+
+    def test_unsupported_bitfields(self):
+        bitfield_t = pycstruct.BitfieldDef()
+        bitfield_t.add("one_bit")
+        foo_t = pycstruct.StructDef()
+        foo_t.add(bitfield_t, "thing")
+
+        with self.assertRaisesRegex(Exception, "BitfieldDef"):
+            foo_t.dtype()
+
+    def test_unsupported_enum(self):
+        enum_t = pycstruct.EnumDef()
+        enum_t.add("first")
+        foo_t = pycstruct.StructDef()
+        foo_t.add(enum_t, "thing")
+
+        with self.assertRaisesRegex(Exception, "EnumDef"):
+            foo_t.dtype()

@@ -100,7 +100,7 @@ class _BaseDef:
 
     def dtype(self):
         """Returns the numpy dtype of this definition"""
-        raise NotImplementedError("dtype not implemented for %s" % type(self))
+        raise Exception("dtype not implemented for %s" % type(self))
 
 
 ###############################################################################
