@@ -208,6 +208,38 @@ class StringDef(_BaseDef):
 
 
 ###############################################################################
+# ArrayDef Class
+
+
+class ArrayDef(_BaseDef):
+    """This class represents a fixed size array of a type"""
+
+    def __init__(self, element_type, length):
+        self.type = element_type
+        self.length = length
+
+    def serialize(self, data):
+        """ Data needs to be an integer, floating point or boolean value """
+        raise NotImplementedError
+
+    def deserialize(self, buffer):
+        """ Result is an integer, floating point or boolean value """
+        raise NotImplementedError
+
+    def size(self):
+        return self.length * self.type.size()
+
+    def _largest_member(self):
+        return self.type._largest_member()
+
+    def _type_name(self):
+        return "{}[{}]".format(self.type._type_name(), self.length)
+
+    def dtype(self):
+        return (self.type.dtype(), self.length)
+
+
+###############################################################################
 # StructDef Class
 
 
@@ -245,12 +277,7 @@ class StructDef(_BaseDef):
 
         # Add end padding of 0 size
         self.__pad_byte = BasicTypeDef("uint8", default_byteorder)
-        self.__pad_end = {
-            "type": self.__pad_byte,
-            "length": 0,
-            "same_level": False,
-            "offset": 0,
-        }
+        self.__pad_end = ArrayDef(self.__pad_byte, 0)
 
     def add(self, datatype, name, length=1, byteorder="", same_level=False):
         """Add a new element in the struct/union definition. The element will be added
@@ -355,6 +382,11 @@ class StructDef(_BaseDef):
             datatype = BasicTypeDef(datatype, byteorder)
         elif not isinstance(datatype, _BaseDef):
             raise Exception("Invalid datatype: {0}.".format(datatype))
+        if length > 1:
+            datatype = ArrayDef(datatype, length)
+            length = 1
+
+        assert length == 1
 
         # Remove end padding if it exists
         self.__fields.pop("__pad_end", "")
@@ -369,9 +401,10 @@ class StructDef(_BaseDef):
                 self.__alignment, self.size(), datatype._largest_member()
             )
             if padding > 0:
+                padtype = ArrayDef(self.__pad_byte, padding)
                 self.__fields["__pad_{0}".format(self.__pad_count)] = {
-                    "type": self.__pad_byte,
-                    "length": padding,
+                    "type": padtype,
+                    "length": 1,
                     "same_level": False,
                     "offset": offset,
                 }
@@ -389,10 +422,13 @@ class StructDef(_BaseDef):
         # Check if end padding is required
         padding = _get_padding(self.__alignment, self.size(), self._largest_member())
         if padding > 0:
-            offset += length * datatype.size()
-            self.__pad_end["length"] = padding
-            self.__fields["__pad_end"] = self.__pad_end
-            self.__fields["__pad_end"]["offset"] = offset
+            offset += datatype.size()
+            self.__pad_end.length = padding
+            self.__fields["__pad_end"] = {
+                "type": self.__pad_end,
+                "offset": offset,
+                "same_level": False,
+            }
 
         # If same_level, store the bitfield elements
         if same_level:
@@ -409,12 +445,13 @@ class StructDef(_BaseDef):
         all_elem_size = 0
         largest_size = 0
         for name, field in self.__fields.items():
-            elem_size = field["length"] * field["type"].size()
+            fieldtype = field["type"]
+            elem_size = fieldtype.size()
             if not name.startswith("__pad") and elem_size > largest_size:
                 largest_size = elem_size
             all_elem_size += elem_size
         if self.__union:
-            return largest_size + self.__pad_end["length"]  # Union
+            return largest_size + self.__pad_end.length  # Union
         return all_elem_size  # Struct
 
     def _largest_member(self):
@@ -452,7 +489,9 @@ class StructDef(_BaseDef):
             if not name.startswith("__pad"):
                 length = 1
                 if name in self.__fields:
-                    length = self.__fields[name]["length"]
+                    filedtype = self.__fields[name]["type"]
+                    if isinstance(filedtype, ArrayDef):
+                        length = filedtype.length
                 if length > 1:
                     # This is a list (array)
                     result[name] = []
@@ -490,11 +529,12 @@ class StructDef(_BaseDef):
         field = self.__fields[name]
         datatype = field["type"]
         offset = field["offset"]
+        if isinstance(datatype, ArrayDef):
+            datatype = datatype.type
         datatype_size = datatype.size()
 
         next_offset = buffer_offset + offset + index * datatype_size
         buffer_subset = buffer[next_offset : next_offset + datatype_size]
-
         try:
             value = datatype.deserialize(buffer_subset)
         except Exception as exception:
@@ -527,7 +567,9 @@ class StructDef(_BaseDef):
             if name in data and not name.startswith("__pad"):
                 length = 1
                 if name in self.__fields:
-                    length = self.__fields[name]["length"]
+                    fieldtype = self.__fields[name]["type"]
+                    if isinstance(fieldtype, ArrayDef):
+                        length = fieldtype.length
                 if length > 1:
                     # This is a list (array)
                     if not isinstance(data[name], collections.abc.Iterable):
@@ -573,6 +615,8 @@ class StructDef(_BaseDef):
         field = self.__fields[name]
         datatype = field["type"]
         offset = field["offset"]
+        if isinstance(datatype, ArrayDef):
+            datatype = datatype.type
         datatype_size = datatype.size()
 
         next_offset = buffer_offset + offset + index * datatype_size
@@ -634,12 +678,16 @@ class StructDef(_BaseDef):
         )
         for name, field in self.__fields.items():
             datatype = field["type"]
+            length = 1
+            if isinstance(datatype, ArrayDef):
+                length = datatype.length
+                datatype = datatype.type
             result.append(
                 "{:<30}{:<15}{:<10}{:<10}{:<10}{:<10}".format(
                     name,
                     datatype._type_name(),
                     datatype.size(),
-                    field["length"],
+                    length,
                     field["offset"],
                     datatype._largest_member(),
                 )
@@ -776,13 +824,9 @@ class StructDef(_BaseDef):
                 continue
             if name not in self.__fields:
                 continue
-            length = self.__fields[name]["length"]
-            offset = self.__fields[name]["offset"]
             datatype = self.__fields[name]["type"]
-            if length > 1:
-                dtype = (datatype.dtype(), length)
-            else:
-                dtype = datatype.dtype()
+            offset = self.__fields[name]["offset"]
+            dtype = datatype.dtype()
             names.append(name)
             formats.append(dtype)
             offsets.append(offset)

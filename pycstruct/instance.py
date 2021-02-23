@@ -56,14 +56,16 @@ class Instance:
         if isinstance(datatype, pycstruct.StructDef):
             # Create "sub-instances" for nested structs/bitfields and lists
             for attribute in self.__attributes:
+                subtype = datatype._element_type(attribute)
                 length = datatype._element_length(attribute)
+                if isinstance(subtype, pycstruct.ArrayDef):
+                    length = subtype.length
                 if length > 1:
                     # This is a list
                     self.__subinstances[attribute] = _InstanceList(
                         datatype, attribute, self.__buffer, buffer_offset
                     )
                 else:
-                    subtype = datatype._element_type(attribute)
                     if isinstance(
                         subtype, (pycstruct.StructDef, pycstruct.BitfieldDef)
                     ):
@@ -143,29 +145,31 @@ class _InstanceList:
 
         self.__parenttype = parenttype
         self.__name = name
-        self.__type = parenttype._element_type(name)
-        self.__length = parenttype._element_length(name)
+        self.__arraytype = parenttype._element_type(name)
         self.__buffer = buffer
         self.__buffer_offset = buffer_offset
         self.__subinstances = []
 
-        if isinstance(self.__type, (pycstruct.StructDef, pycstruct.BitfieldDef)):
+        element_type = self.__arraytype.type
+        if isinstance(element_type, (pycstruct.StructDef, pycstruct.BitfieldDef)):
             element_offset = parenttype._element_offset(name)
-            for i in range(0, self.__length):
+            for i in range(0, self.__arraytype.length):
                 self.__subinstances.append(
                     Instance(
-                        self.__type,
+                        element_type,
                         buffer,
-                        buffer_offset + element_offset + i * self.__type.size(),
+                        buffer_offset + element_offset + i * element_type.size(),
                     )
                 )
 
     def __check_key(self, key):
         if not isinstance(key, int):
             raise KeyError("Invalid index: {} - needs to be an integer".format(key))
-        if key < 0 or key >= self.__length:
+        if key < 0 or key >= self.__arraytype.length:
             raise KeyError(
-                "Invalid index: {} - supported 0 - {}".format(key, self.__length)
+                "Invalid index: {} - supported 0 - {}".format(
+                    key, self.__arraytype.length
+                )
             )
 
     def __getitem__(self, key):
@@ -188,7 +192,7 @@ class _InstanceList:
             )
 
     def __len__(self):
-        return self.__length
+        return self.__arraytype.length
 
     def __bytes__(self):
         return bytes(self.__buffer)
@@ -197,12 +201,12 @@ class _InstanceList:
         elements = []
 
         if len(self.__subinstances) == 0:
-            for i in range(0, self.__length):
+            for i in range(0, self.__arraytype.length):
                 elements.append(str(self.__getitem__(i)))
             elements_str = ", ".join(elements)
         else:
             indent = " " * len(prefix)
-            for i in range(0, self.__length):
+            for i in range(0, self.__arraytype.length):
                 elements.append(self.__getitem__(i).__str__(indent))
             elements_str = "\n" + ("\n" + indent + ",\n").join(elements) + "\n" + indent
 
