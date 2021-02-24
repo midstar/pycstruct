@@ -19,21 +19,21 @@ import sys
 
 # Basic Types
 _TYPE = {
-    "int8": {"format": "b", "bytes": 1},
-    "uint8": {"format": "B", "bytes": 1},
+    "int8": {"format": "b", "bytes": 1, "dtype": "i1"},
+    "uint8": {"format": "B", "bytes": 1, "dtype": "u1"},
     "bool8": {"format": "B", "bytes": 1},
-    "int16": {"format": "h", "bytes": 2},
-    "uint16": {"format": "H", "bytes": 2},
+    "int16": {"format": "h", "bytes": 2, "dtype": "i2"},
+    "uint16": {"format": "H", "bytes": 2, "dtype": "u2"},
     "bool16": {"format": "H", "bytes": 2},
-    "float16": {"format": "e", "bytes": 2},
-    "int32": {"format": "i", "bytes": 4},
-    "uint32": {"format": "I", "bytes": 4},
+    "float16": {"format": "e", "bytes": 2, "dtype": "f2"},
+    "int32": {"format": "i", "bytes": 4, "dtype": "i4"},
+    "uint32": {"format": "I", "bytes": 4, "dtype": "u4"},
     "bool32": {"format": "I", "bytes": 4},
-    "float32": {"format": "f", "bytes": 4},
-    "int64": {"format": "q", "bytes": 8},
-    "uint64": {"format": "Q", "bytes": 8},
+    "float32": {"format": "f", "bytes": 4, "dtype": "f4"},
+    "int64": {"format": "q", "bytes": 8, "dtype": "i8"},
+    "uint64": {"format": "Q", "bytes": 8, "dtype": "u8"},
     "bool64": {"format": "Q", "bytes": 8},
-    "float64": {"format": "d", "bytes": 8},
+    "float64": {"format": "d", "bytes": 8, "dtype": "f8"},
 }
 
 _BYTEORDER = {
@@ -98,6 +98,10 @@ class _BaseDef:
     def _type_name(self):
         raise NotImplementedError
 
+    def dtype(self):
+        """Returns the numpy dtype of this definition"""
+        raise Exception("dtype not implemented for %s" % type(self))
+
 
 ###############################################################################
 # BasicTypeDef Class
@@ -141,6 +145,15 @@ class BasicTypeDef(_BaseDef):
 
     def _type_name(self):
         return self.type
+
+    def dtype(self):
+        dtype = _TYPE[self.type].get("dtype")
+        if dtype is None:
+            raise NotImplementedError(
+                'Basic type "%s" is not implemented as dtype' % self.type
+            )
+        byteorder = _BYTEORDER[self.byteorder]["format"]
+        return byteorder + dtype
 
 
 ###############################################################################
@@ -190,6 +203,9 @@ class StringDef(_BaseDef):
     def _type_name(self):
         return "utf-8"
 
+    def dtype(self):
+        return ("S", self.length)
+
 
 ###############################################################################
 # StructDef Class
@@ -225,6 +241,7 @@ class StructDef(_BaseDef):
         self.__pad_count = 0
         self.__fields = collections.OrderedDict()
         self.__fields_same_level = collections.OrderedDict()
+        self.__dtype = None
 
         # Add end padding of 0 size
         self.__pad_byte = BasicTypeDef("uint8", default_byteorder)
@@ -325,6 +342,9 @@ class StructDef(_BaseDef):
             raise Exception("same_level not allowed in combination with length > 1")
         if same_level and not isinstance(datatype, BitfieldDef):
             raise Exception("same_level only allowed in combination with BitfieldDef")
+
+        # Invalidate the dtype cache
+        self.__dtype = None
 
         # Create objects when necessary
         if datatype == "utf-8":
@@ -657,6 +677,9 @@ class StructDef(_BaseDef):
         if name not in self.__fields:
             raise Exception("Element {} does not exist".format(name))
 
+        # Invalidate the dtype cache
+        self.__dtype = None
+
         keys = list(self.__fields)
         if not to_criteria:
             keys.reverse()
@@ -721,6 +744,57 @@ class StructDef(_BaseDef):
         if name in self.__fields:
             return self.__fields[name]["length"]
         return 1
+
+    def dtype(self):
+        """Returns the dtype of this structure as defined by numpy.
+
+        This allows to use the pycstruct modelization together with numpy
+        to read C structures from buffers.
+
+        .. code-block::
+
+            color_t = StructDef()
+            color_t.add("uint8", "r")
+            color_t.add("uint8", "g")
+            color_t.add("uint8", "b")
+            color_t.add("uint8", "a")
+            raw = b"\x01\x02\x03\x00"
+            color = numpy.frombuffer(raw, dtype=color_t.dtype())
+
+        :return: a python dict representing a numpy dtype
+        :rtype: dict
+        """
+        if self.__dtype is not None:
+            return self.__dtype
+
+        names = []
+        formats = []
+        offsets = []
+
+        for name in self._element_names():
+            if name.startswith("__pad"):
+                continue
+            if name not in self.__fields:
+                continue
+            length = self.__fields[name]["length"]
+            offset = self.__fields[name]["offset"]
+            datatype = self.__fields[name]["type"]
+            if length > 1:
+                dtype = (datatype.dtype(), length)
+            else:
+                dtype = datatype.dtype()
+            names.append(name)
+            formats.append(dtype)
+            offsets.append(offset)
+
+        dtype_def = {
+            "names": names,
+            "formats": formats,
+            "offsets": offsets,
+            "itemsize": self.size(),
+        }
+        self.__dtype = dtype_def
+        return dtype_def
 
 
 ###############################################################################
