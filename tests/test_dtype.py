@@ -122,6 +122,23 @@ class TestDtype(unittest.TestCase):
         numpy.testing.assert_array_equal(r1["ubyte"], r2["ubyte"])
         assert r1["rgba"]["b"] == r2["rgba"]["b"]
 
+    def test_pad_and_same_level(self):
+        bitfield_t = pycstruct.BitfieldDef()
+        bitfield_t.add("one_bit")
+        type_t = pycstruct.StructDef(alignment=4)
+        type_t.add("int8", "a")
+        # Pad will be inserted here
+        type_t.add("int32", "b")
+        type_t.add(bitfield_t, "bf", same_level=True)
+        assert len(type_t.dtype()) != 0
+
+    def test_unsupported_basictype(self):
+        type_t = pycstruct.StructDef()
+        type_t.add("bool8", "a")
+
+        with self.assertRaisesRegex(Exception, "Basic type"):
+            type_t.dtype()
+
     def test_unsupported_bitfields(self):
         bitfield_t = pycstruct.BitfieldDef()
         bitfield_t.add("one_bit")

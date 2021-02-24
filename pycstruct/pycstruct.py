@@ -751,7 +751,7 @@ class StructDef(_BaseDef):
         This allows to use the pycstruct modelization together with numpy
         to read C structures from buffers.
 
-        .. code-block::
+        .. code-block:: python
 
             color_t = StructDef()
             color_t.add("uint8", "r")

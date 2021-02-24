@@ -389,7 +389,7 @@ or smart indexing.
 The structure definitions provides a method `dtype` which
 can be read by numpy.
 
-.. code-block::
+.. code-block:: python
 
     import pycstruct
     import numpy
@@ -423,7 +423,7 @@ can be read by numpy.
 Numpy also provides record array which can be used like the
 instance objects.
 
-.. code-block::
+.. code-block:: python
 
     colorarray = numpy.frombuffer(raw, dtype=colorarray_t.dtype())[0]
 
