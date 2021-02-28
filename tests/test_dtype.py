@@ -132,9 +132,19 @@ class TestDtype(unittest.TestCase):
         type_t.add(bitfield_t, "bf", same_level=True)
         assert len(type_t.dtype()) != 0
 
+    def test_basictype(self):
+        testdefs = [("bool8", "=b1"), ("int8", "=i1")]
+        for testdef in testdefs:
+            typedef, expected = testdef
+            with self.subTest(typedef=typedef, expected=expected):
+                type_t = pycstruct.StructDef()
+                type_t.add(typedef, "a")
+                d = type_t.dtype()
+                self.assertEqual(d["formats"][0], expected)
+
     def test_unsupported_basictype(self):
         type_t = pycstruct.StructDef()
-        type_t.add("bool8", "a")
+        type_t.add("bool16", "a")
 
         with self.assertRaisesRegex(Exception, "Basic type"):
             type_t.dtype()
