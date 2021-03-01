@@ -21,7 +21,7 @@ import sys
 _TYPE = {
     "int8": {"format": "b", "bytes": 1, "dtype": "i1"},
     "uint8": {"format": "B", "bytes": 1, "dtype": "u1"},
-    "bool8": {"format": "B", "bytes": 1},
+    "bool8": {"format": "B", "bytes": 1, "dtype": "b1"},
     "int16": {"format": "h", "bytes": 2, "dtype": "i2"},
     "uint16": {"format": "H", "bytes": 2, "dtype": "u2"},
     "bool16": {"format": "H", "bytes": 2},
