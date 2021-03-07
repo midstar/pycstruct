@@ -241,10 +241,12 @@ class TestPyCStruct(unittest.TestCase):
 
     def test_str(self):
         m = self.create_struct("native", 1)
+        m.add("int32", "int32_ndim", shape=(5, 4, 3))
         a_string = str(m)
         # Check a few of the fields that they are listed in the result string
-        self.assertTrue("int8_low" in a_string)
-        self.assertTrue("utf8_nonascii" in a_string)
+        self.assertIn("int8_low", a_string)
+        self.assertIn("utf8_nonascii", a_string)
+        self.assertIn("5,4,3", a_string)
 
     def test_deserialize_serialize_little(self):
         self.deserialize_serialize("little", 1, "struct_little.dat")

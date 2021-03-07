@@ -415,7 +415,40 @@ class StructDef(_BaseDef):
         self.__pad_byte = BasicTypeDef("uint8", default_byteorder)
         self.__pad_end = ArrayDef(self.__pad_byte, 0)
 
-    def add(self, datatype, name, length=1, byteorder="", same_level=False):
+    @staticmethod
+    def _normalize_shape(length, shape):
+        """Sanity check and normalization for length and shape.
+
+        The `length` is used to define a string size, and `shape` is used to
+        define an array shape. Both can be used at the same time.
+
+        Returns the final size of the array, as a tuple of int.
+        """
+        if shape is None:
+            shape = tuple()
+        elif isinstance(shape, int):
+            shape = (shape,)
+        elif isinstance(shape, collections.abc.Iterable):
+            shape = tuple(shape)
+            for dim in shape:
+                if not isinstance(dim, int) or dim < 1:
+                    raise ValueError(
+                        "Strict positive dimensions are expected: {0}.".format(shape)
+                    )
+
+        if length == 1:
+            # It's just the type without array
+            pass
+        elif isinstance(length, int):
+            if length < 1:
+                raise ValueError(
+                    "Strict positive dimension is expected: {0}.".format(length)
+                )
+            shape = shape + (length,)
+
+        return shape
+
+    def add(self, datatype, name, length=1, byteorder="", same_level=False, shape=None):
         """Add a new element in the struct/union definition. The element will be added
         directly after the previous element if a struct or in parallel with the
         previous element if union. Padding might be added depending on the alignment
@@ -479,8 +512,13 @@ class StructDef(_BaseDef):
         :param name: Name of element. Needs to be unique.
         :type name: str
         :param length: Number of elements. If > 1 this is an array/list of
-                       elements with equal size. Default is 1.
+                       elements with equal size. Default is 1. This should only
+                       be specified for string size. Use `shape` for arrays.
         :type length: int, optional
+        :param shape: If specified an array of this shape is defined. It
+                      supported, int, and tuple of int for multi-dimentional
+                      arrays (the last is the fast axis)
+        :type shape: int, tuple, optional
         :param byteorder: Byteorder of this element. Valid values are 'native',
                           'little' and 'big'. If not specified the default
                           byteorder is used.
@@ -493,16 +531,15 @@ class StructDef(_BaseDef):
         """
         # pylint: disable=too-many-branches
         # Sanity checks
-        if length < 1:
-            raise Exception("Invalid length: {0}.".format(length))
+        shape = self._normalize_shape(length, shape)
         if name in self.__fields:
             raise Exception("Field name already exist: {0}.".format(name))
         if byteorder == "":
             byteorder = self.__default_byteorder
         elif byteorder not in _BYTEORDER:
             raise Exception("Invalid byteorder: {0}.".format(byteorder))
-        if same_level and length > 1:
-            raise Exception("same_level not allowed in combination with length > 1")
+        if same_level and len(shape) != 0:
+            raise Exception("same_level not allowed in combination with arrays")
         if same_level and not isinstance(datatype, BitfieldDef):
             raise Exception("same_level only allowed in combination with BitfieldDef")
 
@@ -511,18 +548,19 @@ class StructDef(_BaseDef):
 
         # Create objects when necessary
         if datatype == "utf-8":
-            datatype = StringDef(length)
-            # String length is handled inside the definition
-            length = 1
+            if shape == tuple():
+                shape = (1,)
+            datatype = StringDef(shape[-1])
+            # Remaining dimensions for arrays of string
+            shape = shape[0:-1]
         elif datatype in _TYPE:
             datatype = BasicTypeDef(datatype, byteorder)
         elif not isinstance(datatype, _BaseDef):
             raise Exception("Invalid datatype: {0}.".format(datatype))
-        if length > 1:
-            datatype = ArrayDef(datatype, length)
-            length = 1
 
-        assert length == 1
+        if len(shape) > 0:
+            for dim in reversed(shape):
+                datatype = ArrayDef(datatype, dim)
 
         # Remove end padding if it exists
         self.__fields.pop("__pad_end", "")
@@ -769,10 +807,14 @@ class StructDef(_BaseDef):
         )
         for name, field in self.__fields.items():
             datatype = field["type"]
-            length = 1
             if isinstance(datatype, ArrayDef):
-                length = datatype.length
-                datatype = datatype.type
+                length = []
+                while isinstance(datatype, ArrayDef):
+                    length.append(datatype.length)
+                    datatype = datatype.type
+                length = ",".join([str(l) for l in length])
+            else:
+                length = ""
             result.append(
                 "{:<30}{:<15}{:<10}{:<10}{:<10}{:<10}".format(
                     name,
