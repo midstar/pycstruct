@@ -428,7 +428,6 @@ class StructDef(_BaseDef):
                 padtype = ArrayDef(self.__pad_byte, padding)
                 self.__fields["__pad_{0}".format(self.__pad_count)] = {
                     "type": padtype,
-                    "length": 1,
                     "same_level": False,
                     "offset": offset,
                 }
@@ -438,7 +437,6 @@ class StructDef(_BaseDef):
         # Add the element
         self.__fields[name] = {
             "type": datatype,
-            "length": length,
             "same_level": same_level,
             "offset": offset,
         }
@@ -806,16 +804,6 @@ class StructDef(_BaseDef):
         if name in self.__fields:
             return self.__fields[name]["offset"]
         raise Exception("Invalid element {}".format(name))
-
-    def _element_length(self, name):
-        """Returns the length of the element.
-
-        :return: Length of element
-        :rtype: int
-        """
-        if name in self.__fields:
-            return self.__fields[name]["length"]
-        return 1
 
     def get_field_type(self, name):
         """Returns the type of a field of this struct.
