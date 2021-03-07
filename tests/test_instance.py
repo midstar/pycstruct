@@ -385,23 +385,18 @@ class TestInstance(unittest.TestCase):
         self.assertEqual(dict_repr["substruct"][0]["ss1"], 92)
         self.assertEqual(dict_repr["substruct"][12]["ss2"], 767)
 
-        #####################################################################
-        # Invalid accesses
-        try:
+    def test_invalid_accesses(self):
+        struct = pycstruct.StructDef()
+        struct.add("int8", "list", length=4)
+        buffer = b"1234"
+        instance = struct.instance(buffer).list
+
+        with self.assertRaises(Exception):
             instance[2] = 5
-            t.assertTrue(False)
-        except:
-            pass
-        try:
+        with self.assertRaises(Exception):
             x = instance["not a number"]
-            t.assertTrue(False)
-        except:
-            pass
-        try:
+        with self.assertRaises(Exception):
             x = instance[999]
-            t.assertTrue(False)
-        except:
-            pass
 
 
 if __name__ == "__main__":
