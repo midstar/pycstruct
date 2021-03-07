@@ -219,12 +219,34 @@ class ArrayDef(_BaseDef):
         self.length = length
 
     def serialize(self, data):
-        """ Data needs to be an integer, floating point or boolean value """
-        raise NotImplementedError
+        """Serialize a python type into a binary type following this array type"""
+        if not isinstance(data, collections.abc.Iterable):
+            raise Exception("Data shall be a list")
+        if len(data) > self.length:
+            raise Exception("List is larger than {1}".format(self.length))
+        buffer = bytearray(self.size())
+        offset = 0
+        size = self.type.size()
+        for item in data:
+            buffer[offset : offset + size] = self.type.serialize(item)
+            offset += size
+        return buffer
 
     def deserialize(self, buffer):
-        """ Result is an integer, floating point or boolean value """
-        raise NotImplementedError
+        """Deserialize a binary buffer into a python list following this array
+        type"""
+        offset = 0
+        size = self.type.size()
+        if len(buffer) < size * self.length:
+            raise ValueError(
+                "A buffer size of at least {} is expected".format(size * self.length)
+            )
+        result = []
+        for _ in range(self.length):
+            item = buffer[offset : offset + size]
+            result.append(self.type.deserialize(item))
+            offset += size
+        return result
 
     def instance(self, buffer=None, buffer_offset=0):
         """Create an instance of this array.
@@ -509,24 +531,11 @@ class StructDef(_BaseDef):
 
         for name in self._element_names():
             if not name.startswith("__pad"):
-                length = 1
-                if name in self.__fields:
-                    filedtype = self.__fields[name]["type"]
-                    if isinstance(filedtype, ArrayDef):
-                        length = filedtype.length
-                if length > 1:
-                    # This is a list (array)
-                    result[name] = []
-                    for index in range(0, length):
-                        result[name].append(
-                            self._deserialize_element(name, buffer, index=index)
-                        )
-                else:
-                    result[name] = self._deserialize_element(name, buffer)
+                result[name] = self._deserialize_element(name, buffer)
 
         return result
 
-    def _deserialize_element(self, name, buffer, buffer_offset=0, index=0):
+    def _deserialize_element(self, name, buffer, buffer_offset=0):
         """Deserialize one element from buffer
 
         :param name: Name of element
@@ -551,11 +560,9 @@ class StructDef(_BaseDef):
         field = self.__fields[name]
         datatype = field["type"]
         offset = field["offset"]
-        if isinstance(datatype, ArrayDef):
-            datatype = datatype.type
         datatype_size = datatype.size()
 
-        next_offset = buffer_offset + offset + index * datatype_size
+        next_offset = buffer_offset + offset
         buffer_subset = buffer[next_offset : next_offset + datatype_size]
         try:
             value = datatype.deserialize(buffer_subset)
@@ -587,31 +594,11 @@ class StructDef(_BaseDef):
         buffer = bytearray(self.size())
         for name in self._element_names():
             if name in data and not name.startswith("__pad"):
-                length = 1
-                if name in self.__fields:
-                    fieldtype = self.__fields[name]["type"]
-                    if isinstance(fieldtype, ArrayDef):
-                        length = fieldtype.length
-                if length > 1:
-                    # This is a list (array)
-                    if not isinstance(data[name], collections.abc.Iterable):
-                        raise Exception("Element: {0} shall be a list".format(name))
-                    if len(data[name]) > length:
-                        raise Exception(
-                            "List in element: {0} is larger than {1}".format(
-                                name, length
-                            )
-                        )
-                    index = 0
-                    for item in data[name]:
-                        self._serialize_element(name, item, buffer, index=index)
-                        index += 1
-                else:
-                    self._serialize_element(name, data[name], buffer)
+                self._serialize_element(name, data[name], buffer)
 
         return buffer
 
-    def _serialize_element(self, name, value, buffer, buffer_offset=0, index=0):
+    def _serialize_element(self, name, value, buffer, buffer_offset=0):
         """Serialize one element into the buffer
 
         :param name: Name of element
@@ -637,11 +624,8 @@ class StructDef(_BaseDef):
         field = self.__fields[name]
         datatype = field["type"]
         offset = field["offset"]
-        if isinstance(datatype, ArrayDef):
-            datatype = datatype.type
         datatype_size = datatype.size()
-
-        next_offset = buffer_offset + offset + index * datatype_size
+        next_offset = buffer_offset + offset
         try:
             buffer[next_offset : next_offset + datatype_size] = datatype.serialize(
                 value
