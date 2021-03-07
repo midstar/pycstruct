@@ -241,7 +241,8 @@ class TestInstance(unittest.TestCase):
         struct.add("int16", "list", length=3)
 
         buffer = bytearray(struct.size())
-        instance = pycstruct.instance._InstanceList(struct, "list", buffer, 0)
+        struct_instance = struct.instance(buffer)
+        instance = struct_instance.list
 
         self.assertEqual(instance[0], 0)
         self.assertEqual(instance[1], 0)
@@ -255,8 +256,12 @@ class TestInstance(unittest.TestCase):
         self.assertEqual(instance[1], 567)
         self.assertEqual(instance[2], 8901)
 
+        # Test bytes on array
+        bytes_array = bytes(instance)
+        bytes_instance = bytes(struct_instance)
+        self.assertEqual(bytes_array, bytes_instance)
+
         # Test that buffer is updated correctly
-        bytes_instance = bytes(instance)
         dict_repr = struct.deserialize(bytes_instance)
         self.assertEqual(dict_repr["list"][0], 1234)
         self.assertEqual(dict_repr["list"][1], 567)
@@ -267,7 +272,8 @@ class TestInstance(unittest.TestCase):
         dict_repr["list"][1] = -2222
         dict_repr["list"][2] = 3333
         bytes_struct = struct.serialize(dict_repr)
-        instance = pycstruct.instance._InstanceList(struct, "list", bytes_struct, 0)
+        struct_instance = struct.instance(bytes_struct)
+        instance = struct_instance.list
         self.assertEqual(instance[0], 1111)
         self.assertEqual(instance[1], -2222)
         self.assertEqual(instance[2], 3333)
@@ -296,27 +302,29 @@ class TestInstance(unittest.TestCase):
         #####################################################################
         # Enum list
         buffer = bytearray(struct.size())
-        instance = pycstruct.instance._InstanceList(struct, "enum", buffer, 0)
+        struct_instance = struct.instance(buffer)
+        instance = struct_instance.enum
         self.assertEqual(len(instance), 2)
         self.assertEqual(instance[0], "e1")
         self.assertEqual(instance[1], "e1")
         instance[0] = "e2"
         instance[1] = "e3"
-        bytes_instance = bytes(instance)
+        bytes_instance = bytes(struct_instance)
         dict_repr = struct.deserialize(bytes_instance)
         self.assertEqual(dict_repr["enum"][0], "e2")
         self.assertEqual(dict_repr["enum"][1], "e3")
         dict_repr["enum"][0] = "e5"
         dict_repr["enum"][1] = "e4"
         bytes_struct = struct.serialize(dict_repr)
-        instance = pycstruct.instance._InstanceList(struct, "enum", bytes_struct, 0)
+        instance = struct.instance(bytes_struct).enum
         self.assertEqual(instance[0], "e5")
         self.assertEqual(instance[1], "e4")
 
         #####################################################################
         # Bitfield list
         buffer = bytearray(struct.size())
-        instance = pycstruct.instance._InstanceList(struct, "bitfield", buffer, 0)
+        struct_instance = struct.instance(buffer)
+        instance = struct_instance.bitfield
         self.assertEqual(len(instance), 3)
         self.assertEqual(instance[0].bf1, 0)
         self.assertEqual(instance[0].bf2, 0)
@@ -336,7 +344,7 @@ class TestInstance(unittest.TestCase):
         self.assertEqual(instance[1].bf2, 4)
         self.assertEqual(instance[2].bf1, 5)
         self.assertEqual(instance[2].bf2, 6)
-        bytes_instance = bytes(instance)
+        bytes_instance = bytes(struct_instance)
         dict_repr = struct.deserialize(bytes_instance)
         self.assertEqual(dict_repr["bitfield"][0]["bf1"], 1)
         self.assertEqual(dict_repr["bitfield"][0]["bf2"], 2)
@@ -351,7 +359,7 @@ class TestInstance(unittest.TestCase):
         dict_repr["bitfield"][2]["bf1"] = 11
         dict_repr["bitfield"][2]["bf2"] = 12
         bytes_struct = struct.serialize(dict_repr)
-        instance = pycstruct.instance._InstanceList(struct, "bitfield", bytes_struct, 0)
+        instance = struct.instance(bytes_struct).bitfield
         self.assertEqual(instance[0].bf1, 7)
         self.assertEqual(instance[0].bf2, 8)
         self.assertEqual(instance[1].bf1, 9)
@@ -362,7 +370,9 @@ class TestInstance(unittest.TestCase):
         #####################################################################
         # Struct list
         buffer = bytearray(struct.size())
-        instance = pycstruct.instance._InstanceList(struct, "substruct", buffer, 0)
+        array_type = struct.get_field_type("substruct")
+        struct_instance = struct.instance(buffer)
+        instance = struct_instance.substruct
         self.assertEqual(len(instance), 13)
         self.assertEqual(instance[0].ss1, 0)
         self.assertEqual(instance[5].ss2, 0)
@@ -370,7 +380,7 @@ class TestInstance(unittest.TestCase):
         self.assertEqual(instance[12].ss2, 0)
         instance[0].ss1 = 92
         instance[12].ss2 = 767
-        bytes_instance = bytes(instance)
+        bytes_instance = bytes(struct_instance)
         dict_repr = struct.deserialize(bytes_instance)
         self.assertEqual(dict_repr["substruct"][0]["ss1"], 92)
         self.assertEqual(dict_repr["substruct"][12]["ss2"], 767)

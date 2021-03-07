@@ -226,6 +226,30 @@ class ArrayDef(_BaseDef):
         """ Result is an integer, floating point or boolean value """
         raise NotImplementedError
 
+    def instance(self, buffer=None, buffer_offset=0):
+        """Create an instance of this array.
+
+        This is an alternative of using dictionaries and the :meth:`ArrayDef.serialize`/
+        :meth:`ArrayDef.deserialize` methods for representing the data.
+
+        :param buffer: Byte buffer where data is stored. If no buffer is provided a new byte
+                       buffer will be created and the instance will be 'empty'.
+        :type buffer: bytearray, optional
+        :param buffer_offset: Start offset in the buffer. This means that you
+                              can have multiple Instances (or other data) that
+                              shares the same buffer.
+        :type buffer_offset: int, optional
+        :return: A new Instance object
+        :rtype: :meth:`Instance`
+        """
+        # I know. This is cyclic import of _InstanceList, since instance depends
+        # on classes within this file. However, it should not be any problem
+        # since this file will be full imported once this method is called.
+        # pylint: disable=cyclic-import, import-outside-toplevel
+        from pycstruct.instance import _InstanceList
+
+        return _InstanceList(self, buffer, buffer_offset)
+
     def size(self):
         return self.length * self.type.size()
 
@@ -792,6 +816,14 @@ class StructDef(_BaseDef):
         if name in self.__fields:
             return self.__fields[name]["length"]
         return 1
+
+    def get_field_type(self, name):
+        """Returns the type of a field of this struct.
+
+        :return: Type if the field
+        :rtype: _BaseDef
+        """
+        return self._element_type(name)
 
     def dtype(self):
         """Returns the dtype of this structure as defined by numpy.
