@@ -398,6 +398,16 @@ class TestInstance(unittest.TestCase):
         with self.assertRaises(Exception):
             x = instance[999]
 
+    def test_multidim_array(self):
+        basetype = pycstruct.pycstruct.BasicTypeDef("uint8", "little")
+        arraytype = basetype[4][3][2]
+        buffer = b"abcd----------------uvwx"
+        instance = arraytype.instance(buffer)
+        self.assertEqual(chr(instance[0][0][0]), "a")
+        self.assertEqual(chr(instance[0][0][3]), "d")
+        self.assertEqual(chr(instance[1][2][0]), "u")
+        self.assertEqual(chr(instance[1][2][3]), "x")
+
 
 if __name__ == "__main__":
     unittest.main()

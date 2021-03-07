@@ -1008,6 +1008,27 @@ class TestPyCStruct(unittest.TestCase):
         self.assertEqual(round_2(8), 8)
         self.assertEqual(round_2(9), 16)
 
+    def test_array_multidim_deserialize(self):
+        basetype = pycstruct.pycstruct.BasicTypeDef("uint8", "little")
+        arraytype = basetype[4][3][2]
+        buffer = b"abcd----------------uvwx"
+        object = arraytype.deserialize(buffer)
+        self.assertEqual(chr(object[0][0][0]), "a")
+        self.assertEqual(chr(object[0][0][3]), "d")
+        self.assertEqual(chr(object[1][2][0]), "u")
+        self.assertEqual(chr(object[1][2][3]), "x")
+
+    def test_array_multidim_serialize(self):
+        basetype = pycstruct.pycstruct.BasicTypeDef("uint8", "little")
+        arraytype = basetype[4][3][2]
+        l1 = [ord("a"), ord("b"), ord("c"), ord("d")]
+        l2 = [ord("u"), ord("v"), ord("w"), ord("x")]
+        l3 = [ord("-"), ord("-"), ord("-"), ord("-")]
+        object = [[l1, l3, l3], [l3, l3, l2]]
+        expected = b"abcd----------------uvwx"
+        buffer = arraytype.serialize(object)
+        self.assertEqual(buffer, expected)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -98,6 +98,29 @@ class _BaseDef:
     def _type_name(self):
         raise NotImplementedError
 
+    def __getitem__(self, length):
+        """Create an array type from this base type.
+
+        This make array type easy to create:
+
+        .. code-block:: python
+
+            basetype = pycstruct.pycstruct.BaseTypeDef("uint16")
+            arraytype = basetype[10]
+
+        Be careful that multi dimentional arrays will be defined in the revert
+        from a C declaration:
+
+        .. code-block:: python
+
+            basetype = pycstruct.pycstruct.BaseTypeDef("uint16")
+            arraytype = basetype[10][5][2]
+            # The fast axis is the first one (of size 10)
+        """
+        if not isinstance(length, int):
+            raise TypeError("An integer is expected for a length of array")
+        return ArrayDef(self, length)
+
     def dtype(self):
         """Returns the numpy dtype of this definition"""
         raise Exception("dtype not implemented for %s" % type(self))
