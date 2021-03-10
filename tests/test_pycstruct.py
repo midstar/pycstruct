@@ -209,7 +209,7 @@ class TestPyCStruct(unittest.TestCase):
         m = pycstruct.StructDef()
         m.add("int8", "name1")
 
-        buffer = bytearray(m.size() + 1)
+        buffer = bytearray(m.size() - 1)
         self.assertRaises(Exception, m.deserialize, buffer)
 
     def test_invalid_serialize(self):
