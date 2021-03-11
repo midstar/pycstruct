@@ -390,6 +390,8 @@ class TestInstance(unittest.TestCase):
         struct.add("int8", "list", length=4)
         buffer = b"1234"
         instance = struct.instance(buffer).list
+        array_of_struct = struct[1]
+        aos_instance = array_of_struct.instance(buffer)
 
         with self.assertRaises(Exception):
             instance[2] = 5
@@ -397,6 +399,8 @@ class TestInstance(unittest.TestCase):
             x = instance["not a number"]
         with self.assertRaises(Exception):
             x = instance[999]
+        with self.assertRaises(Exception):
+            aos_instance[0] = 10
 
     def test_multidim_array(self):
         basetype = pycstruct.pycstruct.BasicTypeDef("uint8", "little")
