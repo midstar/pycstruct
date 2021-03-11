@@ -284,6 +284,24 @@ class ArrayDef(_BaseDef):
             offset += size
         return buffer
 
+    def _serialize_element(self, index, value, buffer, buffer_offset=0):
+        """Serialize one element into the buffer
+
+        :param index: Index of the element
+        :type data: int
+        :param value: Value of element
+        :type data: varies
+        :param buffer: Buffer that contains the data to serialize data into. This is an output.
+        :type buffer: bytearray
+        :param buffer_offset: Start address in buffer
+        :type buffer: int
+        :param index: If this is a list (array) which index to deserialize?
+        :type buffer: int
+        """
+        size = self.type.size()
+        offset = buffer_offset + size * index
+        self.type.serialize(value, buffer=buffer, offset=offset)
+
     def deserialize(self, buffer, offset=0):
         """Deserialize a binary buffer into a python list following this array
         type"""
@@ -298,6 +316,25 @@ class ArrayDef(_BaseDef):
             result.append(self.type.deserialize(item))
             offset += size
         return result
+
+    def _deserialize_element(self, index, buffer, buffer_offset=0):
+        """Deserialize one element from buffer
+
+        :param index: Index of element
+        :type data: int
+        :param buffer: Buffer that contains the data to deserialize data from.
+        :type buffer: bytearray
+        :param buffer_offset: Start address in buffer
+        :type buffer: int
+        :param index: If this is a list (array) which index to deserialize?
+        :type buffer: int
+        :return: The value of the element
+        :rtype: varies
+        """
+        size = self.type.size()
+        offset = buffer_offset + size * index
+        value = self.type.deserialize(buffer=buffer, offset=offset)
+        return value
 
     def instance(self, buffer=None, buffer_offset=0):
         """Create an instance of this array.

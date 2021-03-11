@@ -167,11 +167,9 @@ class _InstanceList:
         self.__check_key(key)
         if self.__has_subinstances:
             return self.__get_subinstance(key)
-        element_type = self.__arraytype.type
-        size = element_type.size()
-        offset = self.__buffer_offset + key * size
-        buffer = self.__buffer[offset : offset + size]
-        return element_type.deserialize(buffer)
+        return self.__arraytype._deserialize_element(
+            key, self.__buffer, self.__buffer_offset
+        )
 
     def __setitem__(self, key, value):
         self.__check_key(key)
@@ -179,11 +177,9 @@ class _InstanceList:
             raise AttributeError(
                 "You are not allowed to replace object. Use object properties."
             )
-        element_type = self.__arraytype.type
-        size = element_type.size()
-        offset = self.__buffer_offset + key * size
-        data = element_type.serialize(value)
-        self.__buffer[offset : offset + size] = data
+        self.__arraytype._serialize_element(
+            key, value, self.__buffer, self.__buffer_offset
+        )
 
     def __len__(self):
         return self.__arraytype.length
