@@ -233,11 +233,13 @@ class StringDef(_BaseDef):
 
     def deserialize(self, buffer, offset=0):
         """ Result is a string """
-        buffer = buffer[offset : offset + self.size()]
+        size = self.size()
         # Find null termination
-        index = buffer.find(0)
+        index = buffer.find(0, offset, offset + size)
         if index >= 0:
-            buffer = buffer[:index]
+            buffer = buffer[offset:index]
+        else:
+            buffer = buffer[offset : offset + size]
 
         return buffer.decode("utf-8")
 
@@ -280,7 +282,7 @@ class ArrayDef(_BaseDef):
 
         size = self.type.size()
         for item in data:
-            buffer[offset : offset + size] = self.type.serialize(item)
+            self.type.serialize(item, buffer=buffer, offset=offset)
             offset += size
         return buffer
 
@@ -312,8 +314,8 @@ class ArrayDef(_BaseDef):
             )
         result = []
         for _ in range(self.length):
-            item = buffer[offset : offset + size]
-            result.append(self.type.deserialize(item))
+            item = self.type.deserialize(buffer=buffer, offset=offset)
+            result.append(item)
             offset += size
         return result
 
@@ -611,11 +613,12 @@ class StructDef(_BaseDef):
                 )
             )
 
+        # for name, field in self.__fields.items():
         for name in self._element_names():
-            if not name.startswith("__pad"):
-                result[name] = self._deserialize_element(
-                    name, buffer, buffer_offset=offset
-                )
+            if name.startswith("__pad"):
+                continue
+            data = self._deserialize_element(name, buffer, buffer_offset=offset)
+            result[name] = data
 
         return result
 
@@ -644,12 +647,8 @@ class StructDef(_BaseDef):
         field = self.__fields[name]
         datatype = field["type"]
         offset = field["offset"]
-        datatype_size = datatype.size()
-
-        next_offset = buffer_offset + offset
-        buffer_subset = buffer[next_offset : next_offset + datatype_size]
         try:
-            value = datatype.deserialize(buffer_subset)
+            value = datatype.deserialize(buffer, buffer_offset + offset)
         except Exception as exception:
             raise Exception(
                 "Unable to deserialize {} {}. Reason:\n{}".format(
@@ -713,12 +712,9 @@ class StructDef(_BaseDef):
         field = self.__fields[name]
         datatype = field["type"]
         offset = field["offset"]
-        datatype_size = datatype.size()
         next_offset = buffer_offset + offset
         try:
-            buffer[next_offset : next_offset + datatype_size] = datatype.serialize(
-                value
-            )
+            datatype.serialize(value, buffer, next_offset)
         except Exception as exception:
             raise Exception(
                 "Unable to serialize {} {}. Reason:\n{}".format(
@@ -1031,11 +1027,8 @@ class BitfieldDef(_BaseDef):
         :return: The value of the element
         :rtype: int
         """
-        full_value = int.from_bytes(
-            buffer[buffer_offset : buffer_offset + self.size()],
-            self.__byteorder,
-            signed=False,
-        )
+        buffer = buffer[buffer_offset : buffer_offset + self.size()]
+        full_value = int.from_bytes(buffer, self.__byteorder, signed=False)
         field = self.__fields[name]
         return self._get_subvalue(
             full_value, field["nbr_of_bits"], field["offset"], field["signed"]

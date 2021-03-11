@@ -914,7 +914,7 @@ class TestPyCStruct(unittest.TestCase):
         e = pycstruct.EnumDef()
         e.add("zero")
 
-        buffer = bytearray(e.size() + 1)
+        buffer = bytearray(e.size() - 1)
         self.assertRaises(Exception, e.deserialize, buffer)
 
     def test_get_padding(self):
