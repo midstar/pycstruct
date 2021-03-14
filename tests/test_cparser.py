@@ -200,6 +200,31 @@ class TestCParser(unittest.TestCase):
         self.assertEqual(result["bf3b"], 8)
         self.assertEqual(result["m3"], 99)
 
+    def test_xml_parse_ndim_array_struct(self):
+        _CastXmlParser = pycstruct.cparser._CastXmlParser
+        parser = _CastXmlParser(os.path.join(test_dir, "ndim_array_struct.xml"))
+        meta = parser.parse()
+        type_meta_parser = pycstruct.cparser._TypeMetaParser(meta, "little")
+        instance = type_meta_parser.parse()
+
+        with open(os.path.join(test_dir, "ndim_array_struct.dat"), "rb") as f:
+            inbytes = f.read()
+        result = instance["Data"].deserialize(inbytes)
+
+        self.assertIn("array_of_int", result)
+        self.assertEqual(result["array_of_int"], [[1, 2], [3, 4], [5, 6], [7, 8]])
+
+        self.assertIn("array_of_strings", result)
+        self.assertEqual(result["array_of_strings"][0][0], "0 x 0 = 0")
+        self.assertEqual(result["array_of_strings"][3][1], "3 x 1 = 3")
+
+        self.assertIn("array_of_struct", result)
+        self.assertEqual(result["array_of_struct"][0][0]["a"], 255)
+        self.assertEqual(result["array_of_struct"][0][0]["b"], 0)
+        self.assertEqual(result["array_of_struct"][1][0]["b"], 2)
+        self.assertEqual(result["array_of_struct"][3][0]["b"], 6)
+        self.assertEqual(result["array_of_struct"][3][1]["b"], 7)
+
     @unittest.skipIf(shutil.which("castxml") == None, "castxml is not installed")
     def test_run_castxml_real(self):
         _run_castxml = pycstruct.cparser._run_castxml
