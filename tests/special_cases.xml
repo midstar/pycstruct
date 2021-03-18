@@ -1,76 +1,72 @@
 <?xml version="1.0"?>
 <GCC_XML version="0.9.0" cvs_revision="1.145">
-  <Namespace id="_1" name="::" members="_2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 _15"/>
-  <Typedef id="_2" name="__int128_t" type="_16" context="_1" location="f0:0" file="f0" line="0"/>
-  <Typedef id="_3" name="__uint128_t" type="_17" context="_1" location="f0:0" file="f0" line="0"/>
-  <Typedef id="_4" name="__NSConstantString" type="_18" context="_1" location="f0:0" file="f0" line="0"/>
-  <Typedef id="_5" name="__builtin_ms_va_list" type="_19" context="_1" location="f0:0" file="f0" line="0"/>
-  <Typedef id="_6" name="__builtin_va_list" type="_20" context="_1" location="f0:0" file="f0" line="0"/>
-  <Struct id="_7" name="name_conflict" context="_1" location="f1:1" file="f1" line="1" members="_21" size="32" align="32"/>
-  <Union id="_8" name="" context="_1" location="f1:5" file="f1" line="5" members="_22 _23" size="32" align="32"/>
+  <Namespace id="_1" name="::" members="_2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14"/>
+  <Typedef id="_2" name="__int128_t" type="_15" context="_1" location="f0:0" file="f0" line="0"/>
+  <Typedef id="_3" name="__uint128_t" type="_16" context="_1" location="f0:0" file="f0" line="0"/>
+  <Typedef id="_4" name="__NSConstantString" type="_17" context="_1" location="f0:0" file="f0" line="0"/>
+  <Typedef id="_5" name="__builtin_ms_va_list" type="_18" context="_1" location="f0:0" file="f0" line="0"/>
+  <Typedef id="_6" name="__builtin_va_list" type="_19" context="_1" location="f0:0" file="f0" line="0"/>
+  <Struct id="_7" name="name_conflict" context="_1" location="f1:1" file="f1" line="1" members="_20" size="32" align="32"/>
+  <Union id="_8" name="" context="_1" location="f1:5" file="f1" line="5" members="_21 _22" size="32" align="32"/>
   <Typedef id="_9" name="name_conflict" type="_8" context="_1" location="f1:8" file="f1" line="8"/>
-  <Struct id="_10" name="non_supported_member" context="_1" location="f1:10" file="f1" line="10" members="_24" size="3200" align="32"/>
-  <Struct id="_11" name="with_volatile" context="_1" location="f1:14" file="f1" line="14" members="_25 _26" size="96" align="32"/>
-  <Enumeration id="_12" name="filled_enum" context="_1" location="f1:19" file="f1" line="19" size="32" align="32">
+  <Struct id="_10" name="with_volatile" context="_1" location="f1:10" file="f1" line="10" members="_23 _24" size="96" align="32"/>
+  <Enumeration id="_11" name="filled_enum" context="_1" location="f1:15" file="f1" line="15" size="32" align="32">
     <EnumValue name="emem1" init="0"/>
     <EnumValue name="emem2" init="1"/>
     <EnumValue name="emem3" init="2"/>
     <EnumValue name="emem_fill" init="4294967295"/>
   </Enumeration>
-  <Enumeration id="_13" name="signed_enum" context="_1" location="f1:26" file="f1" line="26" size="64" align="64">
+  <Enumeration id="_12" name="signed_enum" context="_1" location="f1:22" file="f1" line="22" size="64" align="64">
     <EnumValue name="semem1" init="-1"/>
     <EnumValue name="semem2" init="1"/>
     <EnumValue name="semem3" init="2"/>
     <EnumValue name="semem_fill" init="4294967295"/>
   </Enumeration>
-  <Struct id="_14" name="different_char_arrays" context="_1" location="f1:33" file="f1" line="33" members="_27 _28 _29" size="240" align="8"/>
-  <Struct id="_15" name="struct_with_struct_inside" context="_1" location="f1:39" file="f1" line="39" members="_30" size="64" align="32"/>
-  <FundamentalType id="_16" name="__int128" size="128" align="128"/>
-  <FundamentalType id="_17" name="unsigned __int128" size="128" align="128"/>
-  <Struct id="_18" name="__NSConstantString_tag" context="_1" location="f0:0" file="f0" line="0" members="_31 _32 _33 _34" size="256" align="64"/>
-  <PointerType id="_19" type="_35" size="64" align="64"/>
-  <ArrayType id="_20" min="0" max="0" type="_36"/>
-  <Field id="_21" name="member" type="_37" context="_7" access="public" location="f1:2" file="f1" line="2" offset="0"/>
-  <Field id="_22" name="member1" type="_37" context="_8" access="public" location="f1:6" file="f1" line="6" offset="0"/>
-  <Field id="_23" name="member2" type="_37" context="_8" access="public" location="f1:7" file="f1" line="7" offset="0"/>
-  <Field id="_24" name="matrix" type="_38" context="_10" access="public" location="f1:11" file="f1" line="11" offset="0"/>
-  <Field id="_25" name="volatile_member" type="_37v" context="_11" access="public" location="f1:15" file="f1" line="15" offset="0"/>
-  <Field id="_26" name="volatile_array" type="_39" context="_11" access="public" location="f1:16" file="f1" line="16" offset="32"/>
-  <Field id="_27" name="char_array" type="_40" context="_14" access="public" location="f1:34" file="f1" line="34" offset="0"/>
-  <Field id="_28" name="unsigned_char_array" type="_41" context="_14" access="public" location="f1:35" file="f1" line="35" offset="80"/>
-  <Field id="_29" name="signed_char_array" type="_42" context="_14" access="public" location="f1:36" file="f1" line="36" offset="160"/>
-  <Field id="_30" name="inside" type="_43" context="_15" access="public" location="f1:43" file="f1" line="43" offset="0"/>
-  <Field id="_31" name="isa" type="_44" context="_18" access="public" offset="0"/>
-  <Field id="_32" name="flags" type="_37" context="_18" access="public" offset="64"/>
-  <Field id="_33" name="str" type="_45" context="_18" access="public" offset="128"/>
-  <Field id="_34" name="length" type="_46" context="_18" access="public" offset="192"/>
-  <Struct id="_36" name="__va_list_tag" context="_1" location="f0:0" file="f0" line="0" members="_47 _48 _49 _50" size="192" align="64"/>
-  <FundamentalType id="_37" name="int" size="32" align="32"/>
-  <CvQualifiedType id="_37v" type="_37" volatile="1"/>
-  <ArrayType id="_38" min="0" max="9" type="_51"/>
-  <ArrayType id="_39" min="0" max="1" type="_37v"/>
-  <ArrayType id="_40" min="0" max="9" type="_35"/>
-  <FundamentalType id="_35" name="char" size="8" align="8"/>
-  <ArrayType id="_41" min="0" max="9" type="_52"/>
-  <ArrayType id="_42" min="0" max="9" type="_53"/>
-  <Struct id="_43" name="struct_inside" context="_1" location="f1:40" file="f1" line="40" members="_54 _55" size="64" align="32"/>
-  <PointerType id="_44" type="_37c" size="64" align="64"/>
-  <CvQualifiedType id="_37c" type="_37" const="1"/>
-  <PointerType id="_45" type="_35c" size="64" align="64"/>
+  <Struct id="_13" name="different_char_arrays" context="_1" location="f1:29" file="f1" line="29" members="_25 _26 _27" size="240" align="8"/>
+  <Struct id="_14" name="struct_with_struct_inside" context="_1" location="f1:35" file="f1" line="35" members="_28" size="64" align="32"/>
+  <FundamentalType id="_15" name="__int128" size="128" align="128"/>
+  <FundamentalType id="_16" name="unsigned __int128" size="128" align="128"/>
+  <Struct id="_17" name="__NSConstantString_tag" context="_1" location="f0:0" file="f0" line="0" members="_29 _30 _31 _32" size="256" align="64"/>
+  <PointerType id="_18" type="_33" size="64" align="64"/>
+  <ArrayType id="_19" min="0" max="0" type="_34"/>
+  <Field id="_20" name="member" type="_35" context="_7" access="public" location="f1:2" file="f1" line="2" offset="0"/>
+  <Field id="_21" name="member1" type="_35" context="_8" access="public" location="f1:6" file="f1" line="6" offset="0"/>
+  <Field id="_22" name="member2" type="_35" context="_8" access="public" location="f1:7" file="f1" line="7" offset="0"/>
+  <Field id="_23" name="volatile_member" type="_35v" context="_10" access="public" location="f1:11" file="f1" line="11" offset="0"/>
+  <Field id="_24" name="volatile_array" type="_36" context="_10" access="public" location="f1:12" file="f1" line="12" offset="32"/>
+  <Field id="_25" name="char_array" type="_37" context="_13" access="public" location="f1:30" file="f1" line="30" offset="0"/>
+  <Field id="_26" name="unsigned_char_array" type="_38" context="_13" access="public" location="f1:31" file="f1" line="31" offset="80"/>
+  <Field id="_27" name="signed_char_array" type="_39" context="_13" access="public" location="f1:32" file="f1" line="32" offset="160"/>
+  <Field id="_28" name="inside" type="_40" context="_14" access="public" location="f1:39" file="f1" line="39" offset="0"/>
+  <Field id="_29" name="isa" type="_41" context="_17" access="public" offset="0"/>
+  <Field id="_30" name="flags" type="_35" context="_17" access="public" offset="64"/>
+  <Field id="_31" name="str" type="_42" context="_17" access="public" offset="128"/>
+  <Field id="_32" name="length" type="_43" context="_17" access="public" offset="192"/>
+  <Struct id="_34" name="__va_list_tag" context="_1" location="f0:0" file="f0" line="0" members="_44 _45 _46 _47" size="192" align="64"/>
+  <FundamentalType id="_35" name="int" size="32" align="32"/>
+  <CvQualifiedType id="_35v" type="_35" volatile="1"/>
+  <ArrayType id="_36" min="0" max="1" type="_35v"/>
+  <ArrayType id="_37" min="0" max="9" type="_33"/>
+  <FundamentalType id="_33" name="char" size="8" align="8"/>
+  <ArrayType id="_38" min="0" max="9" type="_48"/>
+  <ArrayType id="_39" min="0" max="9" type="_49"/>
+  <Struct id="_40" name="struct_inside" context="_1" location="f1:36" file="f1" line="36" members="_50 _51" size="64" align="32"/>
+  <PointerType id="_41" type="_35c" size="64" align="64"/>
   <CvQualifiedType id="_35c" type="_35" const="1"/>
-  <FundamentalType id="_46" name="long int" size="64" align="64"/>
-  <Field id="_47" name="gp_offset" type="_56" context="_36" access="public" offset="0"/>
-  <Field id="_48" name="fp_offset" type="_56" context="_36" access="public" offset="32"/>
-  <Field id="_49" name="overflow_arg_area" type="_57" context="_36" access="public" offset="64"/>
-  <Field id="_50" name="reg_save_area" type="_57" context="_36" access="public" offset="128"/>
-  <ArrayType id="_51" min="0" max="9" type="_37"/>
-  <FundamentalType id="_52" name="unsigned char" size="8" align="8"/>
-  <FundamentalType id="_53" name="signed char" size="8" align="8"/>
-  <Field id="_54" name="inside_a" type="_37" context="_43" access="public" location="f1:41" file="f1" line="41" offset="0"/>
-  <Field id="_55" name="inside_b" type="_37" context="_43" access="public" location="f1:42" file="f1" line="42" offset="32"/>
-  <FundamentalType id="_56" name="unsigned int" size="32" align="32"/>
-  <PointerType id="_57" type="_58" size="64" align="64"/>
-  <FundamentalType id="_58" name="void" size="0" align="8"/>
+  <PointerType id="_42" type="_33c" size="64" align="64"/>
+  <CvQualifiedType id="_33c" type="_33" const="1"/>
+  <FundamentalType id="_43" name="long int" size="64" align="64"/>
+  <Field id="_44" name="gp_offset" type="_52" context="_34" access="public" offset="0"/>
+  <Field id="_45" name="fp_offset" type="_52" context="_34" access="public" offset="32"/>
+  <Field id="_46" name="overflow_arg_area" type="_53" context="_34" access="public" offset="64"/>
+  <Field id="_47" name="reg_save_area" type="_53" context="_34" access="public" offset="128"/>
+  <FundamentalType id="_48" name="unsigned char" size="8" align="8"/>
+  <FundamentalType id="_49" name="signed char" size="8" align="8"/>
+  <Field id="_50" name="inside_a" type="_35" context="_40" access="public" location="f1:37" file="f1" line="37" offset="0"/>
+  <Field id="_51" name="inside_b" type="_35" context="_40" access="public" location="f1:38" file="f1" line="38" offset="32"/>
+  <FundamentalType id="_52" name="unsigned int" size="32" align="32"/>
+  <PointerType id="_53" type="_54" size="64" align="64"/>
+  <FundamentalType id="_54" name="void" size="0" align="8"/>
   <File id="f0" name="&lt;builtin&gt;"/>
-  <File id="f1" name="special_cases.h"/>
+  <File id="f1" name="tests/special_cases.h"/>
 </GCC_XML>
