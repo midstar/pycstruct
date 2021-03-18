@@ -1,4 +1,5 @@
 import unittest, os, sys, shutil, tempfile, test_pycstruct
+from unittest import mock
 
 test_dir = os.path.dirname(os.path.realpath(__file__))
 proj_dir = os.path.dirname(test_dir)
@@ -69,6 +70,15 @@ class TestCParser(unittest.TestCase):
         self.assertTrue(isinstance(instance["Data"], pycstruct.StructDef))
 
         test_pycstruct.check_struct(self, instance["Data"], "struct_little.dat")
+
+    @mock.patch("pycstruct.cparser.logger")
+    def test_xml_parse_exception_in_instance(self, logger):
+        meta = {"foo": {"type": "bar", "supported": True}}
+        type_meta_parser = pycstruct.cparser._TypeMetaParser(meta, "little")
+        type_meta_parser._to_instance = unittest.mock.Mock()
+        type_meta_parser._to_instance.side_effect = Exception("Oups")
+        instance = type_meta_parser.parse()
+        logger.warning.assert_called_once()
 
     def test_xml_parse_nopack(self):
         _CastXmlParser = pycstruct.cparser._CastXmlParser
