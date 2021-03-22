@@ -285,28 +285,16 @@ class _CastXmlParser:
 
                 member["name"] = "__{0}".format(bitfield["name"])
                 member["type"] = "bitfield"
-                member["length"] = 1
                 member["reference"] = bitfield["name"]
                 member["same_level"] = True
             else:
                 member["name"] = field.attrib["name"]
-                try:
-                    member_type = self._get_type(field.attrib["type"])
-                    member["type"] = member_type["type_name"]
-                    member["length"] = member_type["length"]
-                    if "reference" in member_type:
-                        member["reference"] = member_type["reference"]
-                except Exception as exception:
-                    logger.warning(
-                        """%s has a member %s could not be handled:
- - %s
- - Composite type will be ignored.""",
-                        dict_output["name"],
-                        member["name"],
-                        str(exception.args[0]),
-                    )
-                    dict_output["supported"] = False
-                    break
+                member_type = self._get_type(field.attrib["type"])
+                member["type"] = member_type["type_name"]
+                if "shape" in member_type:
+                    member["shape"] = member_type["shape"]
+                if "reference" in member_type:
+                    member["reference"] = member_type["reference"]
             dict_output["members"].append(member)
 
     def _get_attrib(self, elem, attrib, default):
@@ -353,7 +341,7 @@ class _CastXmlParser:
             self._anonymous_count += 1
         return name
 
-    def _fundamental_type_to_pycstruct_type(self, elem, length):
+    def _fundamental_type_to_pycstruct_type(self, elem, is_array):
         """ Map the fundamental type to pycstruct type """
         # pylint: disable=no-self-use
         typename = elem.attrib["name"]
@@ -361,15 +349,15 @@ class _CastXmlParser:
         pycstruct_type_name = "int"
         if "float" in typename or "double" in typename:
             pycstruct_type_name = "float"
-        elif length > 1 and "char" in typename:
+        elif is_array and "char" in typename:
             if "unsigned" in typename:
-                # unsigned char of length > 1 are considered uint8 array
+                # "unsigned char[]" are considered uint8 array
                 pycstruct_type_name = "uint"
             elif "signed" in typename:
-                # signed char of length > 1 are considered int8 array
+                # "signed char[]" are considered int8 array
                 pycstruct_type_name = "int"
             else:
-                # char of length > 1 are considered UTF-8 data (string)
+                # "char[]" are considered UTF-8 data (string)
                 pycstruct_type_name = "utf-"
         elif "unsigned" in typename:
             pycstruct_type_name = "uint"
@@ -385,26 +373,29 @@ class _CastXmlParser:
             elem = self._get_elem_with_id(elem.attrib["type"])
         return elem
 
-    def _get_type(self, type_id):
+    def _get_type(self, type_id, is_array=False):
         elem = self._get_basic_type_element(type_id)
 
         member_type = {}
-        member_type["length"] = 1
 
         if elem.tag == "ArrayType":
-            member_type["length"] = (
-                int(elem.attrib["max"]) - int(elem.attrib["min"]) + 1
-            )
-            elem = self._get_basic_type_element(elem.attrib["type"])
-            if elem.tag == "ArrayType":
-                raise Exception("Nested arrays (matrixes) are not supported.")
+            size = int(elem.attrib["max"]) - int(elem.attrib["min"]) + 1
+            subtype = self._get_type(elem.attrib["type"], is_array=True)
+            shape = (size,)
+            if "shape" in subtype:
+                shape = shape + subtype["shape"]
+            member_type["shape"] = shape
+            member_type["type_name"] = subtype["type_name"]
+            if "reference" in subtype:
+                member_type["reference"] = subtype["reference"]
+            return member_type
 
         if elem.tag == "CvQualifiedType":  # volatile
             elem = self._get_basic_type_element(elem.attrib["type"])
 
         if elem.tag == "FundamentalType":
             member_type["type_name"] = self._fundamental_type_to_pycstruct_type(
-                elem, member_type["length"]
+                elem, is_array
             )
         elif elem.tag == "PointerType":
             member_type["type_name"] = "uint{0}".format(elem.attrib["size"])
@@ -479,6 +470,7 @@ class _TypeMetaParser:
             is_union = meta["type"] == "union"
             instance = StructDef(self._byteorder, meta["align"], union=is_union)
             for member in meta["members"]:
+                shape = member.get("shape", None)
                 if "reference" in member:
                     other_instance = self._to_instance(member["reference"])
                     if other_instance is None:
@@ -493,11 +485,12 @@ class _TypeMetaParser:
                     instance.add(
                         other_instance,
                         member["name"],
-                        member["length"],
+                        shape=shape,
                         same_level=same_level,
                     )
                 else:
-                    instance.add(member["type"], member["name"], member["length"])
+
+                    instance.add(member["type"], member["name"], shape=shape)
 
         # Enum
         elif meta["type"] == "enum":

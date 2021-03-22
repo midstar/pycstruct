@@ -174,6 +174,11 @@ class TestPyCStruct(unittest.TestCase):
         # Invalid byteorder on creation
         self.assertRaises(Exception, pycstruct.StructDef, "invalid")
 
+    def test_invalid_arraytype_size(self):
+        struct = pycstruct.pycstruct.BasicTypeDef("int8", "native")
+        with self.assertRaises(Exception):
+            struct["a"]
+
     def test_invalid_add(self):
 
         m = pycstruct.StructDef()
@@ -209,7 +214,7 @@ class TestPyCStruct(unittest.TestCase):
         m = pycstruct.StructDef()
         m.add("int8", "name1")
 
-        buffer = bytearray(m.size() + 1)
+        buffer = bytearray(m.size() - 1)
         self.assertRaises(Exception, m.deserialize, buffer)
 
     def test_invalid_serialize(self):
@@ -241,10 +246,24 @@ class TestPyCStruct(unittest.TestCase):
 
     def test_str(self):
         m = self.create_struct("native", 1)
+        m.add("int32", "int32_ndim", shape=(5, 4, 3))
         a_string = str(m)
         # Check a few of the fields that they are listed in the result string
-        self.assertTrue("int8_low" in a_string)
-        self.assertTrue("utf8_nonascii" in a_string)
+        self.assertIn("int8_low", a_string)
+        self.assertIn("utf8_nonascii", a_string)
+        self.assertIn("5,4,3", a_string)
+
+    def test_serialize_basetype(self):
+        basetype = pycstruct.pycstruct.BasicTypeDef("int8", "native")
+        buffer = basetype.serialize(10)
+        self.assertIsInstance(buffer, bytearray)
+        self.assertEqual(buffer[0], 10)
+
+    def test_serialize_string(self):
+        stringtype = pycstruct.pycstruct.StringDef(1)
+        buffer = stringtype.serialize("a")
+        self.assertIsInstance(buffer, bytearray)
+        self.assertEqual(buffer[0], 97)
 
     def test_deserialize_serialize_little(self):
         self.deserialize_serialize("little", 1, "struct_little.dat")
@@ -468,6 +487,25 @@ class TestPyCStruct(unittest.TestCase):
         self.assertFalse("e4" in d)
         self.assertTrue("e5" in d)
         self.assertTrue("e6" in d)
+
+    def test_struct_add_invalid_shape(self):
+        m = pycstruct.StructDef()
+        with self.assertRaises(Exception):
+            m.add("int32", "e6", shape=(1, "a"))
+
+    def test_struct_add_int_shape(self):
+        m = pycstruct.StructDef()
+        m.add("int32", "field", shape=10)
+        arraytype = m._element_type("field")
+        self.assertIsInstance(arraytype, pycstruct.pycstruct.ArrayDef)
+        self.assertEqual(arraytype.length, 10)
+
+    def test_struct_add_string_size_1(self):
+        m = pycstruct.StructDef()
+        m.add("utf-8", "utf8_1", 1)
+        utf8_type = m._element_type("utf8_1")
+        self.assertIsInstance(utf8_type, pycstruct.pycstruct.StringDef)
+        self.assertEqual(utf8_type.length, 1)
 
     def test_bitfield_invalid_creation(self):
         # Invalid byteorder on creation
@@ -914,7 +952,7 @@ class TestPyCStruct(unittest.TestCase):
         e = pycstruct.EnumDef()
         e.add("zero")
 
-        buffer = bytearray(e.size() + 1)
+        buffer = bytearray(e.size() - 1)
         self.assertRaises(Exception, e.deserialize, buffer)
 
     def test_get_padding(self):
@@ -1007,6 +1045,34 @@ class TestPyCStruct(unittest.TestCase):
         self.assertEqual(round_2(5), 8)
         self.assertEqual(round_2(8), 8)
         self.assertEqual(round_2(9), 16)
+
+    def test_array_invalid_deserialize(self):
+        basetype = pycstruct.pycstruct.BasicTypeDef("uint8", "little")
+        arraytype = basetype[4][3][2]
+        buffer = b""
+        with self.assertRaises(Exception):
+            arraytype.deserialize(buffer)
+
+    def test_array_multidim_deserialize(self):
+        basetype = pycstruct.pycstruct.BasicTypeDef("uint8", "little")
+        arraytype = basetype[4][3][2]
+        buffer = b"abcd----------------uvwx"
+        object = arraytype.deserialize(buffer)
+        self.assertEqual(chr(object[0][0][0]), "a")
+        self.assertEqual(chr(object[0][0][3]), "d")
+        self.assertEqual(chr(object[1][2][0]), "u")
+        self.assertEqual(chr(object[1][2][3]), "x")
+
+    def test_array_multidim_serialize(self):
+        basetype = pycstruct.pycstruct.BasicTypeDef("uint8", "little")
+        arraytype = basetype[4][3][2]
+        l1 = [ord("a"), ord("b"), ord("c"), ord("d")]
+        l2 = [ord("u"), ord("v"), ord("w"), ord("x")]
+        l3 = [ord("-"), ord("-"), ord("-"), ord("-")]
+        object = [[l1, l3, l3], [l3, l3, l2]]
+        expected = b"abcd----------------uvwx"
+        buffer = arraytype.serialize(object)
+        self.assertEqual(buffer, expected)
 
 
 if __name__ == "__main__":

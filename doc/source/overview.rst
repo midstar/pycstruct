@@ -82,7 +82,7 @@ Arrays are added like this:
 .. code-block:: python
 
     myStruct = pycstruct.StructDef()
-    myStruct.add('int32', 'myArray', length=100)
+    myStruct.add('int32', 'myArray', shape=100)
 
 Now myArray will be an array with 100 elements. 
 
@@ -95,6 +95,17 @@ Now myArray will be an array with 100 elements.
 
 Note that you don't have to provide all elements of the array in the 
 dictionary. Elements not defined will be set to 0 during serialization.
+
+Ndim arrays
+-----------
+
+The shape can be a tuple for multi dimensional arrays.
+The last element of the tuple is the fastest dimension.
+
+.. code-block:: python
+
+    myStruct = pycstruct.StructDef()
+    myStruct.add('int32', 'myNdimArray', shape=(100, 50, 2))
 
 Strings
 -------
@@ -403,7 +414,7 @@ can be read by numpy.
 
     # Define a vector of RGBA
     colorarray_t = pycstruct.StructDef()
-    colorarray_t.add(color_t, "vector", length=200)
+    colorarray_t.add(color_t, "vector", shape=200)
 
     # Dummy data
     raw = b"\x20\x30\x40\xFF" * 200

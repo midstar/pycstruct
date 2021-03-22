@@ -3,31 +3,6 @@
 Limitations
 ===========
 
-Matrixes not supported
-----------------------
-
-pycstruct supports arrays but not matrixes
-
-.. code-block:: c
-
-    struct a_struct {
-      int this_is_supported[4];
-      int this_is_not_supported[4][5];
-    };
-
-It is possible to emulate a matrix by defining sub-structs.
-
-.. code-block:: c
-
-    struct substruct {
-        int array[5]
-    };
-
-    struct a_struct {
-      struct substruct workaround[4];
-    };
-
-
 Padding of bitfields
 --------------------
 

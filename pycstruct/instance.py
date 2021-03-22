@@ -56,22 +56,14 @@ class Instance:
         if isinstance(datatype, pycstruct.StructDef):
             # Create "sub-instances" for nested structs/bitfields and lists
             for attribute in self.__attributes:
-                length = datatype._element_length(attribute)
-                if length > 1:
-                    # This is a list
-                    self.__subinstances[attribute] = _InstanceList(
-                        datatype, attribute, self.__buffer, buffer_offset
-                    )
-                else:
-                    subtype = datatype._element_type(attribute)
-                    if isinstance(
-                        subtype, (pycstruct.StructDef, pycstruct.BitfieldDef)
-                    ):
-                        self.__subinstances[attribute] = Instance(
-                            subtype,
-                            self.__buffer,
-                            buffer_offset + datatype._element_offset(attribute),
-                        )
+                subtype = datatype._element_type(attribute)
+                if subtype is None:
+                    # Filter attribute from fields_same_level
+                    continue
+                offset = datatype._element_offset(attribute)
+                if hasattr(subtype, "instance"):
+                    instance = subtype.instance(self.__buffer, buffer_offset + offset)
+                    self.__subinstances[attribute] = instance
 
     def __getattr__(self, item):
         if item in self.__subinstances:
@@ -93,7 +85,9 @@ class Instance:
             raise AttributeError("Instance has no element {}".format(item))
 
     def __bytes__(self):
-        return bytes(self.__buffer)
+        offset = self.__buffer_offset
+        size = self.__type.size()
+        return bytes(self.__buffer[offset : offset + size])
 
     def __str__(self, prefix=""):
         result = []
@@ -139,71 +133,73 @@ class _InstanceList:
     :type buffer_offset: int
     """
 
-    def __init__(self, parenttype, name, buffer, buffer_offset):
-
-        self.__parenttype = parenttype
-        self.__name = name
-        self.__type = parenttype._element_type(name)
-        self.__length = parenttype._element_length(name)
+    def __init__(self, arraytype, buffer, buffer_offset):
+        assert isinstance(arraytype, pycstruct.ArrayDef)
+        self.__arraytype = arraytype
         self.__buffer = buffer
+        assert isinstance(buffer, (bytearray, bytes))
         self.__buffer_offset = buffer_offset
-        self.__subinstances = []
+        element_type = arraytype.type
+        self.__has_subinstances = hasattr(element_type, "instance")
+        self.__subinstances = {}
 
-        if isinstance(self.__type, (pycstruct.StructDef, pycstruct.BitfieldDef)):
-            element_offset = parenttype._element_offset(name)
-            for i in range(0, self.__length):
-                self.__subinstances.append(
-                    Instance(
-                        self.__type,
-                        buffer,
-                        buffer_offset + element_offset + i * self.__type.size(),
-                    )
-                )
+    def __get_subinstance(self, key):
+        subinstance = self.__subinstances.get(key)
+        if subinstance is None:
+            buffer = self.__buffer
+            element_type = self.__arraytype.type
+            offset = self.__buffer_offset + key * element_type.size()
+            subinstance = element_type.instance(buffer, offset)
+            self.__subinstances[key] = subinstance
+        return subinstance
 
     def __check_key(self, key):
         if not isinstance(key, int):
             raise KeyError("Invalid index: {} - needs to be an integer".format(key))
-        if key < 0 or key >= self.__length:
+        if key < 0 or key >= self.__arraytype.length:
             raise KeyError(
-                "Invalid index: {} - supported 0 - {}".format(key, self.__length)
+                "Invalid index: {} - supported 0 - {}".format(
+                    key, self.__arraytype.length
+                )
             )
 
     def __getitem__(self, key):
         self.__check_key(key)
-        if len(self.__subinstances) == 0:
-            return self.__parenttype._deserialize_element(
-                self.__name, self.__buffer, self.__buffer_offset, key
-            )
-        return self.__subinstances[key]
+        if self.__has_subinstances:
+            return self.__get_subinstance(key)
+        return self.__arraytype._deserialize_element(
+            key, self.__buffer, self.__buffer_offset
+        )
 
     def __setitem__(self, key, value):
         self.__check_key(key)
-        if len(self.__subinstances) == 0:
-            self.__parenttype._serialize_element(
-                self.__name, value, self.__buffer, self.__buffer_offset, key
-            )
-        else:
+        if self.__has_subinstances:
             raise AttributeError(
                 "You are not allowed to replace object. Use object properties."
             )
+        self.__arraytype._serialize_element(
+            key, value, self.__buffer, self.__buffer_offset
+        )
 
     def __len__(self):
-        return self.__length
+        return self.__arraytype.length
 
     def __bytes__(self):
-        return bytes(self.__buffer)
+        offset = self.__buffer_offset
+        element_type = self.__arraytype.type
+        size = self.__arraytype.length * element_type.size()
+        return bytes(self.__buffer[offset : offset + size])
 
     def __str__(self, prefix=""):
         elements = []
-
-        if len(self.__subinstances) == 0:
-            for i in range(0, self.__length):
-                elements.append(str(self.__getitem__(i)))
-            elements_str = ", ".join(elements)
-        else:
+        if self.__has_subinstances:
             indent = " " * len(prefix)
-            for i in range(0, self.__length):
+            for i in range(0, self.__arraytype.length):
                 elements.append(self.__getitem__(i).__str__(indent))
             elements_str = "\n" + ("\n" + indent + ",\n").join(elements) + "\n" + indent
+        else:
+            for i in range(0, self.__arraytype.length):
+                elements.append(str(self.__getitem__(i)))
+            elements_str = ", ".join(elements)
 
         return "{}[{}]".format(prefix, elements_str)

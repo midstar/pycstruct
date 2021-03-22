@@ -84,12 +84,27 @@ class _BaseDef:
         """Returns size in bytes"""
         raise NotImplementedError
 
-    def serialize(self, data):
-        """Serialize dictionary. Returns bytearray"""
+    def serialize(self, data, buffer=None, offset=0):
+        """Serialize a python object into a binary buffer.
+
+        If a `buffer` is specified, it will be updated using an optional
+        `offset` instead of creating and returning a new `bytearray`.
+
+        :param buffer: If not None, the serialization will feed this
+            buffer instead of creating and returning a new `bytearray`.
+        :param offset: If a `buffer` is specified the offset can be set
+            to specify the location of the serialization inside the buffer.
+        :returns: A new bytearray if `buffer` is None, else returns `buffer`
+        """
         raise NotImplementedError
 
-    def deserialize(self, buffer):
-        """Deserialize buffer. Returns dictionary"""
+    def deserialize(self, buffer, offset=0):
+        """Deserialize a `buffer` at an optional `offset` into a python object
+
+        :param buffer: buffer containing the data to deserialize.
+        :param offset: Specify the place of the buffer to deserialize.
+        :returns: A python object
+        """
         raise NotImplementedError
 
     def _largest_member(self):
@@ -97,6 +112,29 @@ class _BaseDef:
 
     def _type_name(self):
         raise NotImplementedError
+
+    def __getitem__(self, length):
+        """Create an array type from this base type.
+
+        This make array type easy to create:
+
+        .. code-block:: python
+
+            basetype = pycstruct.pycstruct.BaseTypeDef("uint16")
+            arraytype = basetype[10]
+
+        Be careful that multi dimentional arrays will be defined in the revert
+        from a C declaration:
+
+        .. code-block:: python
+
+            basetype = pycstruct.pycstruct.BaseTypeDef("uint16")
+            arraytype = basetype[10][5][2]
+            # The fast axis is the first one (of size 10)
+        """
+        if not isinstance(length, int):
+            raise TypeError("An integer is expected for a length of array")
+        return ArrayDef(self, length)
 
     def dtype(self):
         """Returns the numpy dtype of this definition"""
@@ -116,18 +154,22 @@ class BasicTypeDef(_BaseDef):
         self.size_bytes = _TYPE[datatype]["bytes"]
         self.format = _TYPE[datatype]["format"]
 
-    def serialize(self, data):
+    def serialize(self, data, buffer=None, offset=0):
         """ Data needs to be an integer, floating point or boolean value """
-        buffer = bytearray(self.size())
+        if buffer is None:
+            assert offset == 0, "When buffer is None, offset have to be unset"
+            buffer = bytearray(self.size())
+        else:
+            assert len(buffer) >= offset + self.size(), "Specified buffer too small"
         dataformat = _BYTEORDER[self.byteorder]["format"] + self.format
-        struct.pack_into(dataformat, buffer, 0, data)
+        struct.pack_into(dataformat, buffer, offset, data)
 
         return buffer
 
-    def deserialize(self, buffer):
+    def deserialize(self, buffer, offset=0):
         """ Result is an integer, floating point or boolean value """
         dataformat = _BYTEORDER[self.byteorder]["format"] + self.format
-        value = struct.unpack_from(dataformat, buffer, 0)[0]
+        value = struct.unpack_from(dataformat, buffer, offset)[0]
 
         if self.type.startswith("bool"):
             if value == 0:
@@ -166,9 +208,13 @@ class StringDef(_BaseDef):
     def __init__(self, length):
         self.length = length
 
-    def serialize(self, data):
+    def serialize(self, data, buffer=None, offset=0):
         """ Data needs to be a string """
-        buffer = bytearray(self.size())
+        if buffer is None:
+            assert offset == 0, "When buffer is None, offset have to be unset"
+            buffer = bytearray(self.size())
+        else:
+            assert len(buffer) >= offset + self.size(), "Specified buffer too small"
 
         if not isinstance(data, str):
             raise Exception("Not a valid string: {0}".format(data))
@@ -182,15 +228,18 @@ class StringDef(_BaseDef):
             )
 
         for i, value in enumerate(utf8_bytes):
-            buffer[i] = value
+            buffer[offset + i] = value
         return buffer
 
-    def deserialize(self, buffer):
+    def deserialize(self, buffer, offset=0):
         """ Result is a string """
+        size = self.size()
         # Find null termination
-        index = buffer.find(0)
+        index = buffer.find(0, offset, offset + size)
         if index >= 0:
-            buffer = buffer[:index]
+            buffer = buffer[offset:index]
+        else:
+            buffer = buffer[offset : offset + size]
 
         return buffer.decode("utf-8")
 
@@ -205,6 +254,125 @@ class StringDef(_BaseDef):
 
     def dtype(self):
         return ("S", self.length)
+
+
+###############################################################################
+# ArrayDef Class
+
+
+class ArrayDef(_BaseDef):
+    """This class represents a fixed size array of a type"""
+
+    def __init__(self, element_type, length):
+        self.type = element_type
+        self.length = length
+
+    def serialize(self, data, buffer=None, offset=0):
+        """Serialize a python type into a binary type following this array type"""
+        if not isinstance(data, collections.abc.Iterable):
+            raise Exception("Data shall be a list")
+        if len(data) > self.length:
+            raise Exception("List is larger than {1}".format(self.length))
+
+        if buffer is None:
+            assert offset == 0, "When buffer is None, offset have to be unset"
+            buffer = bytearray(self.size())
+        else:
+            assert len(buffer) >= offset + self.size(), "Specified buffer too small"
+
+        size = self.type.size()
+        for item in data:
+            self.type.serialize(item, buffer=buffer, offset=offset)
+            offset += size
+        return buffer
+
+    def _serialize_element(self, index, value, buffer, buffer_offset=0):
+        """Serialize one element into the buffer
+
+        :param index: Index of the element
+        :type data: int
+        :param value: Value of element
+        :type data: varies
+        :param buffer: Buffer that contains the data to serialize data into. This is an output.
+        :type buffer: bytearray
+        :param buffer_offset: Start address in buffer
+        :type buffer: int
+        :param index: If this is a list (array) which index to deserialize?
+        :type buffer: int
+        """
+        size = self.type.size()
+        offset = buffer_offset + size * index
+        self.type.serialize(value, buffer=buffer, offset=offset)
+
+    def deserialize(self, buffer, offset=0):
+        """Deserialize a binary buffer into a python list following this array
+        type"""
+        size = self.type.size()
+        if len(buffer) < offset + size * self.length:
+            raise ValueError(
+                "A buffer size of at least {} is expected".format(size * self.length)
+            )
+        result = []
+        for _ in range(self.length):
+            item = self.type.deserialize(buffer=buffer, offset=offset)
+            result.append(item)
+            offset += size
+        return result
+
+    def _deserialize_element(self, index, buffer, buffer_offset=0):
+        """Deserialize one element from buffer
+
+        :param index: Index of element
+        :type data: int
+        :param buffer: Buffer that contains the data to deserialize data from.
+        :type buffer: bytearray
+        :param buffer_offset: Start address in buffer
+        :type buffer: int
+        :param index: If this is a list (array) which index to deserialize?
+        :type buffer: int
+        :return: The value of the element
+        :rtype: varies
+        """
+        size = self.type.size()
+        offset = buffer_offset + size * index
+        value = self.type.deserialize(buffer=buffer, offset=offset)
+        return value
+
+    def instance(self, buffer=None, buffer_offset=0):
+        """Create an instance of this array.
+
+        This is an alternative of using dictionaries and the :meth:`ArrayDef.serialize`/
+        :meth:`ArrayDef.deserialize` methods for representing the data.
+
+        :param buffer: Byte buffer where data is stored. If no buffer is provided a new byte
+                       buffer will be created and the instance will be 'empty'.
+        :type buffer: bytearray, optional
+        :param buffer_offset: Start offset in the buffer. This means that you
+                              can have multiple Instances (or other data) that
+                              shares the same buffer.
+        :type buffer_offset: int, optional
+        :return: A new Instance object
+        :rtype: :meth:`Instance`
+        """
+        # I know. This is cyclic import of _InstanceList, since instance depends
+        # on classes within this file. However, it should not be any problem
+        # since this file will be full imported once this method is called.
+        # pylint: disable=cyclic-import, import-outside-toplevel
+        from pycstruct.instance import _InstanceList
+
+        return _InstanceList(self, buffer, buffer_offset)
+
+    def size(self):
+        return self.length * self.type.size()
+
+    def _largest_member(self):
+        return self.type._largest_member()
+
+    def _type_name(self):
+        return "{}[{}]".format(self.type._type_name(), self.length)
+
+    def dtype(self):
+        return (self.type.dtype(), self.length)
 
 
 ###############################################################################
@@ -245,14 +413,42 @@ class StructDef(_BaseDef):
 
         # Add end padding of 0 size
         self.__pad_byte = BasicTypeDef("uint8", default_byteorder)
-        self.__pad_end = {
-            "type": self.__pad_byte,
-            "length": 0,
-            "same_level": False,
-            "offset": 0,
-        }
+        self.__pad_end = ArrayDef(self.__pad_byte, 0)
 
-    def add(self, datatype, name, length=1, byteorder="", same_level=False):
+    @staticmethod
+    def _normalize_shape(length, shape):
+        """Sanity check and normalization for length and shape.
+
+        The `length` is used to define a string size, and `shape` is used to
+        define an array shape. Both can be used at the same time.
+
+        Returns the final size of the array, as a tuple of int.
+        """
+        if shape is None:
+            shape = tuple()
+        elif isinstance(shape, int):
+            shape = (shape,)
+        elif isinstance(shape, collections.abc.Iterable):
+            shape = tuple(shape)
+            for dim in shape:
+                if not isinstance(dim, int) or dim < 1:
+                    raise ValueError(
+                        "Strict positive dimensions are expected: {0}.".format(shape)
+                    )
+
+        if length == 1:
+            # It's just the type without array
+            pass
+        elif isinstance(length, int):
+            if length < 1:
+                raise ValueError(
+                    "Strict positive dimension is expected: {0}.".format(length)
+                )
+            shape = shape + (length,)
+
+        return shape
+
+    def add(self, datatype, name, length=1, byteorder="", same_level=False, shape=None):
         """Add a new element in the struct/union definition. The element will be added
         directly after the previous element if a struct or in parallel with the
         previous element if union. Padding might be added depending on the alignment
@@ -316,8 +512,13 @@ class StructDef(_BaseDef):
         :param name: Name of element. Needs to be unique.
         :type name: str
         :param length: Number of elements. If > 1 this is an array/list of
-                       elements with equal size. Default is 1.
+                       elements with equal size. Default is 1. This should only
+                       be specified for string size. Use `shape` for arrays.
         :type length: int, optional
+        :param shape: If specified an array of this shape is defined. It
+                      supported, int, and tuple of int for multi-dimentional
+                      arrays (the last is the fast axis)
+        :type shape: int, tuple, optional
         :param byteorder: Byteorder of this element. Valid values are 'native',
                           'little' and 'big'. If not specified the default
                           byteorder is used.
@@ -330,16 +531,15 @@ class StructDef(_BaseDef):
         """
         # pylint: disable=too-many-branches
         # Sanity checks
-        if length < 1:
-            raise Exception("Invalid length: {0}.".format(length))
+        shape = self._normalize_shape(length, shape)
         if name in self.__fields:
             raise Exception("Field name already exist: {0}.".format(name))
         if byteorder == "":
             byteorder = self.__default_byteorder
         elif byteorder not in _BYTEORDER:
             raise Exception("Invalid byteorder: {0}.".format(byteorder))
-        if same_level and length > 1:
-            raise Exception("same_level not allowed in combination with length > 1")
+        if same_level and len(shape) != 0:
+            raise Exception("same_level not allowed in combination with arrays")
         if same_level and not isinstance(datatype, BitfieldDef):
             raise Exception("same_level only allowed in combination with BitfieldDef")
 
@@ -348,13 +548,19 @@ class StructDef(_BaseDef):
 
         # Create objects when necessary
         if datatype == "utf-8":
-            datatype = StringDef(length)
-            # String length is handled inside the definition
-            length = 1
+            if shape == tuple():
+                shape = (1,)
+            datatype = StringDef(shape[-1])
+            # Remaining dimensions for arrays of string
+            shape = shape[0:-1]
         elif datatype in _TYPE:
             datatype = BasicTypeDef(datatype, byteorder)
         elif not isinstance(datatype, _BaseDef):
             raise Exception("Invalid datatype: {0}.".format(datatype))
+
+        if len(shape) > 0:
+            for dim in reversed(shape):
+                datatype = ArrayDef(datatype, dim)
 
         # Remove end padding if it exists
         self.__fields.pop("__pad_end", "")
@@ -369,9 +575,9 @@ class StructDef(_BaseDef):
                 self.__alignment, self.size(), datatype._largest_member()
             )
             if padding > 0:
+                padtype = ArrayDef(self.__pad_byte, padding)
                 self.__fields["__pad_{0}".format(self.__pad_count)] = {
-                    "type": self.__pad_byte,
-                    "length": padding,
+                    "type": padtype,
                     "same_level": False,
                     "offset": offset,
                 }
@@ -381,7 +587,6 @@ class StructDef(_BaseDef):
         # Add the element
         self.__fields[name] = {
             "type": datatype,
-            "length": length,
             "same_level": same_level,
             "offset": offset,
         }
@@ -389,10 +594,13 @@ class StructDef(_BaseDef):
         # Check if end padding is required
         padding = _get_padding(self.__alignment, self.size(), self._largest_member())
         if padding > 0:
-            offset += length * datatype.size()
-            self.__pad_end["length"] = padding
-            self.__fields["__pad_end"] = self.__pad_end
-            self.__fields["__pad_end"]["offset"] = offset
+            offset += datatype.size()
+            self.__pad_end.length = padding
+            self.__fields["__pad_end"] = {
+                "type": self.__pad_end,
+                "offset": offset,
+                "same_level": False,
+            }
 
         # If same_level, store the bitfield elements
         if same_level:
@@ -409,12 +617,13 @@ class StructDef(_BaseDef):
         all_elem_size = 0
         largest_size = 0
         for name, field in self.__fields.items():
-            elem_size = field["length"] * field["type"].size()
+            fieldtype = field["type"]
+            elem_size = fieldtype.size()
             if not name.startswith("__pad") and elem_size > largest_size:
                 largest_size = elem_size
             all_elem_size += elem_size
         if self.__union:
-            return largest_size + self.__pad_end["length"]  # Union
+            return largest_size + self.__pad_end.length  # Union
         return all_elem_size  # Struct
 
     def _largest_member(self):
@@ -431,41 +640,27 @@ class StructDef(_BaseDef):
 
         return largest
 
-    def deserialize(self, buffer):
-        """Deserialize buffer into dictionary
-
-        :param buffer: Buffer that contains the data to deserialize
-        :type buffer: bytearray
-        :return: A dictionary keyed with the element names
-        :rtype: dict
-        """
+    def deserialize(self, buffer, offset=0):
+        """Deserialize buffer into dictionary"""
         result = {}
 
-        if len(buffer) != self.size():
+        if len(buffer) < self.size() + offset:
             raise Exception(
                 "Invalid buffer size: {0}. Expected: {1}".format(
                     len(buffer), self.size()
                 )
             )
 
+        # for name, field in self.__fields.items():
         for name in self._element_names():
-            if not name.startswith("__pad"):
-                length = 1
-                if name in self.__fields:
-                    length = self.__fields[name]["length"]
-                if length > 1:
-                    # This is a list (array)
-                    result[name] = []
-                    for index in range(0, length):
-                        result[name].append(
-                            self._deserialize_element(name, buffer, index=index)
-                        )
-                else:
-                    result[name] = self._deserialize_element(name, buffer)
+            if name.startswith("__pad"):
+                continue
+            data = self._deserialize_element(name, buffer, buffer_offset=offset)
+            result[name] = data
 
         return result
 
-    def _deserialize_element(self, name, buffer, buffer_offset=0, index=0):
+    def _deserialize_element(self, name, buffer, buffer_offset=0):
         """Deserialize one element from buffer
 
         :param name: Name of element
@@ -490,13 +685,8 @@ class StructDef(_BaseDef):
         field = self.__fields[name]
         datatype = field["type"]
         offset = field["offset"]
-        datatype_size = datatype.size()
-
-        next_offset = buffer_offset + offset + index * datatype_size
-        buffer_subset = buffer[next_offset : next_offset + datatype_size]
-
         try:
-            value = datatype.deserialize(buffer_subset)
+            value = datatype.deserialize(buffer, buffer_offset + offset)
         except Exception as exception:
             raise Exception(
                 "Unable to deserialize {} {}. Reason:\n{}".format(
@@ -506,7 +696,7 @@ class StructDef(_BaseDef):
 
         return value
 
-    def serialize(self, data):
+    def serialize(self, data, buffer=None, offset=0):
         """Serialize dictionary into buffer
 
         NOTE! If this is a union the method will try to serialize all the
@@ -522,32 +712,19 @@ class StructDef(_BaseDef):
         :return: A buffer that contains data
         :rtype: bytearray
         """
-        buffer = bytearray(self.size())
+        if buffer is None:
+            assert offset == 0, "When buffer is None, offset have to be unset"
+            buffer = bytearray(self.size())
+        else:
+            assert len(buffer) >= offset + self.size(), "Specified buffer too small"
+
         for name in self._element_names():
             if name in data and not name.startswith("__pad"):
-                length = 1
-                if name in self.__fields:
-                    length = self.__fields[name]["length"]
-                if length > 1:
-                    # This is a list (array)
-                    if not isinstance(data[name], collections.abc.Iterable):
-                        raise Exception("Element: {0} shall be a list".format(name))
-                    if len(data[name]) > length:
-                        raise Exception(
-                            "List in element: {0} is larger than {1}".format(
-                                name, length
-                            )
-                        )
-                    index = 0
-                    for item in data[name]:
-                        self._serialize_element(name, item, buffer, index=index)
-                        index += 1
-                else:
-                    self._serialize_element(name, data[name], buffer)
+                self._serialize_element(name, data[name], buffer, buffer_offset=offset)
 
         return buffer
 
-    def _serialize_element(self, name, value, buffer, buffer_offset=0, index=0):
+    def _serialize_element(self, name, value, buffer, buffer_offset=0):
         """Serialize one element into the buffer
 
         :param name: Name of element
@@ -573,13 +750,9 @@ class StructDef(_BaseDef):
         field = self.__fields[name]
         datatype = field["type"]
         offset = field["offset"]
-        datatype_size = datatype.size()
-
-        next_offset = buffer_offset + offset + index * datatype_size
+        next_offset = buffer_offset + offset
         try:
-            buffer[next_offset : next_offset + datatype_size] = datatype.serialize(
-                value
-            )
+            datatype.serialize(value, buffer, next_offset)
         except Exception as exception:
             raise Exception(
                 "Unable to serialize {} {}. Reason:\n{}".format(
@@ -634,12 +807,20 @@ class StructDef(_BaseDef):
         )
         for name, field in self.__fields.items():
             datatype = field["type"]
+            if isinstance(datatype, ArrayDef):
+                length = []
+                while isinstance(datatype, ArrayDef):
+                    length.append(datatype.length)
+                    datatype = datatype.type
+                length = ",".join([str(l) for l in length])
+            else:
+                length = ""
             result.append(
                 "{:<30}{:<15}{:<10}{:<10}{:<10}{:<10}".format(
                     name,
                     datatype._type_name(),
                     datatype.size(),
-                    field["length"],
+                    length,
                     field["offset"],
                     datatype._largest_member(),
                 )
@@ -735,15 +916,13 @@ class StructDef(_BaseDef):
             return self.__fields[name]["offset"]
         raise Exception("Invalid element {}".format(name))
 
-    def _element_length(self, name):
-        """Returns the length of the element.
+    def get_field_type(self, name):
+        """Returns the type of a field of this struct.
 
-        :return: Length of element
-        :rtype: int
+        :return: Type if the field
+        :rtype: _BaseDef
         """
-        if name in self.__fields:
-            return self.__fields[name]["length"]
-        return 1
+        return self._element_type(name)
 
     def dtype(self):
         """Returns the dtype of this structure as defined by numpy.
@@ -776,13 +955,9 @@ class StructDef(_BaseDef):
                 continue
             if name not in self.__fields:
                 continue
-            length = self.__fields[name]["length"]
-            offset = self.__fields[name]["offset"]
             datatype = self.__fields[name]["type"]
-            if length > 1:
-                dtype = (datatype.dtype(), length)
-            else:
-                dtype = datatype.dtype()
+            offset = self.__fields[name]["offset"]
+            dtype = datatype.dtype()
             names.append(name)
             formats.append(dtype)
             offsets.append(offset)
@@ -859,7 +1034,7 @@ class BitfieldDef(_BaseDef):
             "offset": assigned_bits,
         }
 
-    def deserialize(self, buffer):
+    def deserialize(self, buffer, offset=0):
         """Deserialize buffer into dictionary
 
         :param buffer: Buffer that contains the data to deserialize (1 - 8 bytes)
@@ -870,7 +1045,7 @@ class BitfieldDef(_BaseDef):
         :rtype: dict
         """
         result = {}
-        if len(buffer) < self.size():
+        if len(buffer) < self.size() + offset:
             raise Exception(
                 "Invalid buffer size: {0}. Expected at least: {1}".format(
                     len(buffer), self.size()
@@ -878,7 +1053,7 @@ class BitfieldDef(_BaseDef):
             )
 
         for name in self._element_names():
-            result[name] = self._deserialize_element(name, buffer)
+            result[name] = self._deserialize_element(name, buffer, buffer_offset=offset)
 
         return result
 
@@ -894,17 +1069,14 @@ class BitfieldDef(_BaseDef):
         :return: The value of the element
         :rtype: int
         """
-        full_value = int.from_bytes(
-            buffer[buffer_offset : buffer_offset + self.size()],
-            self.__byteorder,
-            signed=False,
-        )
+        buffer = buffer[buffer_offset : buffer_offset + self.size()]
+        full_value = int.from_bytes(buffer, self.__byteorder, signed=False)
         field = self.__fields[name]
         return self._get_subvalue(
             full_value, field["nbr_of_bits"], field["offset"], field["signed"]
         )
 
-    def serialize(self, data):
+    def serialize(self, data, buffer=None, offset=0):
         """Serialize dictionary into buffer
 
         :param data: A dictionary keyed with element names. Elements can be
@@ -913,10 +1085,15 @@ class BitfieldDef(_BaseDef):
         :return: A buffer that contains data
         :rtype: bytearray
         """
-        buffer = bytearray(self.size())
+        if buffer is None:
+            assert offset == 0, "When buffer is None, offset have to be unset"
+            buffer = bytearray(self.size())
+        else:
+            assert len(buffer) >= offset + self.size(), "Specified buffer too small"
+
         for name in self._element_names():
             if name in data:
-                self._serialize_element(name, data[name], buffer)
+                self._serialize_element(name, data[name], buffer, buffer_offset=offset)
 
         return buffer
 
@@ -1184,7 +1361,7 @@ class EnumDef(_BaseDef):
 
         self.__constants[name] = value
 
-    def deserialize(self, buffer):
+    def deserialize(self, buffer, offset=0):
         """Deserialize buffer into a string (constant name)
 
         If no constant name is defined for the value following name will be returned::
@@ -1199,14 +1376,18 @@ class EnumDef(_BaseDef):
         :rtype: str
         """
         # pylint: disable=bare-except
-        if len(buffer) != self.size():
+        if len(buffer) < self.size() + offset:
             raise Exception(
                 "Invalid buffer size: {0}. Expected: {1}".format(
                     len(buffer), self.size()
                 )
             )
 
-        value = int.from_bytes(buffer, self.__byteorder, signed=self.__signed)
+        value = int.from_bytes(
+            buffer[offset : offset + self.size()],
+            self.__byteorder,
+            signed=self.__signed,
+        )
 
         name = ""
         try:
@@ -1216,7 +1397,7 @@ class EnumDef(_BaseDef):
             name = "__VALUE__{}".format(value)
         return name
 
-    def serialize(self, data):
+    def serialize(self, data, buffer=None, offset=0):
         """Serialize string (constant name) into buffer
 
         :param data: A string representing the constant name.
@@ -1224,9 +1405,16 @@ class EnumDef(_BaseDef):
         :return: A buffer that contains data
         :rtype: bytearray
         """
+        if buffer is None:
+            assert offset == 0, "When buffer is None, offset have to be unset"
+
         value = self.get_value(data)
 
-        return value.to_bytes(self.size(), self.__byteorder, signed=self.__signed)
+        result = value.to_bytes(self.size(), self.__byteorder, signed=self.__signed)
+        if buffer is not None:
+            buffer[offset : offset + len(result)] = result
+            return buffer
+        return result
 
     def size(self):
         """Get size of enum in bytes

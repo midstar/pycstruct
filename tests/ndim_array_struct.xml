@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<GCC_XML version="0.9.0" cvs_revision="1.145">
+  <Namespace id="_1" name="::" members="_2 _3 _4 _5 _6 _7 _8 _9 _10"/>
+  <Typedef id="_2" name="__int128_t" type="_11" context="_1" location="f0:0" file="f0" line="0"/>
+  <Typedef id="_3" name="__uint128_t" type="_12" context="_1" location="f0:0" file="f0" line="0"/>
+  <Typedef id="_4" name="__NSConstantString" type="_13" context="_1" location="f0:0" file="f0" line="0"/>
+  <Typedef id="_5" name="__builtin_ms_va_list" type="_14" context="_1" location="f0:0" file="f0" line="0"/>
+  <Typedef id="_6" name="__builtin_va_list" type="_15" context="_1" location="f0:0" file="f0" line="0"/>
+  <Struct id="_7" name="" context="_1" location="f1:6" file="f1" line="6" members="_16 _17 _18 _19" size="32" align="8"/>
+  <Typedef id="_8" name="Color" type="_7" context="_1" location="f1:11" file="f1" line="11"/>
+  <Struct id="_9" name="" context="_1" location="f1:13" file="f1" line="13" members="_20 _21 _22" size="1536" align="8"/>
+  <Typedef id="_10" name="Data" type="_9" context="_1" location="f1:17" file="f1" line="17"/>
+  <FundamentalType id="_11" name="__int128" size="128" align="128"/>
+  <FundamentalType id="_12" name="unsigned __int128" size="128" align="128"/>
+  <Struct id="_13" name="__NSConstantString_tag" context="_1" location="f0:0" file="f0" line="0" members="_23 _24 _25 _26" size="256" align="64"/>
+  <PointerType id="_14" type="_27" size="64" align="64"/>
+  <ArrayType id="_15" min="0" max="0" type="_28"/>
+  <Field id="_16" name="r" type="_29" context="_7" access="public" location="f1:7" file="f1" line="7" offset="0"/>
+  <Field id="_17" name="g" type="_29" context="_7" access="public" location="f1:8" file="f1" line="8" offset="8"/>
+  <Field id="_18" name="b" type="_29" context="_7" access="public" location="f1:9" file="f1" line="9" offset="16"/>
+  <Field id="_19" name="a" type="_29" context="_7" access="public" location="f1:10" file="f1" line="10" offset="24"/>
+  <Field id="_20" name="array_of_strings" type="_30" context="_9" access="public" location="f1:14" file="f1" line="14" offset="0"/>
+  <Field id="_21" name="array_of_int" type="_31" context="_9" access="public" location="f1:15" file="f1" line="15" offset="1024"/>
+  <Field id="_22" name="array_of_struct" type="_32" context="_9" access="public" location="f1:16" file="f1" line="16" offset="1280"/>
+  <Field id="_23" name="isa" type="_33" context="_13" access="public" offset="0"/>
+  <Field id="_24" name="flags" type="_34" context="_13" access="public" offset="64"/>
+  <Field id="_25" name="str" type="_35" context="_13" access="public" offset="128"/>
+  <Field id="_26" name="length" type="_36" context="_13" access="public" offset="192"/>
+  <Struct id="_28" name="__va_list_tag" context="_1" location="f0:0" file="f0" line="0" members="_37 _38 _39 _40" size="192" align="64"/>
+  <FundamentalType id="_29" name="unsigned char" size="8" align="8"/>
+  <ArrayType id="_30" min="0" max="3" type="_41"/>
+  <ArrayType id="_31" min="0" max="3" type="_42"/>
+  <ArrayType id="_32" min="0" max="3" type="_43"/>
+  <PointerType id="_33" type="_34c" size="64" align="64"/>
+  <FundamentalType id="_34" name="int" size="32" align="32"/>
+  <CvQualifiedType id="_34c" type="_34" const="1"/>
+  <PointerType id="_35" type="_27c" size="64" align="64"/>
+  <CvQualifiedType id="_27c" type="_27" const="1"/>
+  <FundamentalType id="_36" name="long int" size="64" align="64"/>
+  <Field id="_37" name="gp_offset" type="_44" context="_28" access="public" offset="0"/>
+  <Field id="_38" name="fp_offset" type="_44" context="_28" access="public" offset="32"/>
+  <Field id="_39" name="overflow_arg_area" type="_45" context="_28" access="public" offset="64"/>
+  <Field id="_40" name="reg_save_area" type="_45" context="_28" access="public" offset="128"/>
+  <ArrayType id="_41" min="0" max="1" type="_46"/>
+  <ArrayType id="_42" min="0" max="1" type="_44"/>
+  <ArrayType id="_43" min="0" max="1" type="_8"/>
+  <FundamentalType id="_44" name="unsigned int" size="32" align="32"/>
+  <PointerType id="_45" type="_47" size="64" align="64"/>
+  <ArrayType id="_46" min="0" max="15" type="_27"/>
+  <FundamentalType id="_27" name="char" size="8" align="8"/>
+  <FundamentalType id="_47" name="void" size="0" align="8"/>
+  <File id="f0" name="&lt;builtin&gt;"/>
+  <File id="f1" name="tests/ndim_array_struct.h"/>
+</GCC_XML>

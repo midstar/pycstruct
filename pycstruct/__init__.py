@@ -17,6 +17,7 @@ https://github.com/midstar/pycstruct
 from pycstruct.pycstruct import StructDef
 from pycstruct.pycstruct import BitfieldDef
 from pycstruct.pycstruct import EnumDef
+from pycstruct.pycstruct import ArrayDef
 
 from pycstruct.instance import Instance
 

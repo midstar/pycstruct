@@ -17,7 +17,7 @@ with open("setup.py", "r") as f:
     lines = f.readlines()
     for line in lines:
         if line.strip().startswith("version="):
-            setup_version = line.split("'")[1]
+            setup_version = line.split('"')[1]
 
 ###############################################################################
 # Compare
