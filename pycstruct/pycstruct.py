@@ -508,7 +508,7 @@ class StructDef(_BaseDef):
            +------------+---------------+--------------------------------------+
 
         :param datatype: Element data type. See above.
-        :type datatype: str
+        :type datatype: str | _BaseDef
         :param name: Name of element. Needs to be unique.
         :type name: str
         :param length: Number of elements. If > 1 this is an array/list of
