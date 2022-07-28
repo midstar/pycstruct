@@ -66,7 +66,7 @@ def _run_castxml(
 
 
 def _get_hash(list_of_strings):
-    """ Get a reproducible short name of a list of strings """
+    """Get a reproducible short name of a list of strings"""
     long_string = "".join(list_of_strings)
     sha256 = hashlib.sha256(long_string.encode())
     hexdigest = sha256.hexdigest()
@@ -74,7 +74,7 @@ def _get_hash(list_of_strings):
 
 
 def _listify(list_or_str):
-    """ If list_or_str is a string it will be put in a list """
+    """If list_or_str is a string it will be put in a list"""
     if isinstance(list_or_str, str):
         list_or_str = [list_or_str]
     return list_or_str
@@ -241,7 +241,7 @@ class _CastXmlParser:
         return bitfield
 
     def _set_common_meta(self, xml_input, dict_output):
-        """ Set common metadata available for all types """
+        """Set common metadata available for all types"""
         typeid = xml_input.attrib["id"]
         name = self._get_attrib(xml_input, "name", "")
         if name == "":
@@ -253,7 +253,7 @@ class _CastXmlParser:
         dict_output["supported"] = True
 
     def _set_struct_union_members(self, xml_input, dict_output):
-        """ Set members - common for struct and unions """
+        """Set members - common for struct and unions"""
         dict_output["members"] = []
         fields = self._get_fields(xml_input)
         while len(fields) > 0:
@@ -322,7 +322,7 @@ class _CastXmlParser:
         return elem
 
     def _get_typedef_name(self, type_id):
-        """ Find out the typedef name of a type which do not have a name """
+        """Find out the typedef name of a type which do not have a name"""
 
         # First check if there is a connected ElaboratedType element
         try:
@@ -342,7 +342,7 @@ class _CastXmlParser:
         return name
 
     def _fundamental_type_to_pycstruct_type(self, elem, is_array):
-        """ Map the fundamental type to pycstruct type """
+        """Map the fundamental type to pycstruct type"""
         # pylint: disable=no-self-use
         typename = elem.attrib["name"]
         typesize = elem.attrib["size"]
@@ -367,7 +367,7 @@ class _CastXmlParser:
         return "{0}{1}".format(pycstruct_type_name, typesize)
 
     def _get_basic_type_element(self, type_id):
-        """ Finds the basic type element possible hidden behind TypeDef's or ElaboratedType's """
+        """Finds the basic type element possible hidden behind TypeDef's or ElaboratedType's"""
         elem = self._get_elem_with_id(type_id)
         while elem.tag == "Typedef" or elem.tag == "ElaboratedType":
             elem = self._get_elem_with_id(elem.attrib["type"])

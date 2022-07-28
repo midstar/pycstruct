@@ -155,7 +155,7 @@ class BasicTypeDef(_BaseDef):
         self.format = _TYPE[datatype]["format"]
 
     def serialize(self, data, buffer=None, offset=0):
-        """ Data needs to be an integer, floating point or boolean value """
+        """Data needs to be an integer, floating point or boolean value"""
         if buffer is None:
             assert offset == 0, "When buffer is None, offset have to be unset"
             buffer = bytearray(self.size())
@@ -167,7 +167,7 @@ class BasicTypeDef(_BaseDef):
         return buffer
 
     def deserialize(self, buffer, offset=0):
-        """ Result is an integer, floating point or boolean value """
+        """Result is an integer, floating point or boolean value"""
         dataformat = _BYTEORDER[self.byteorder]["format"] + self.format
         value = struct.unpack_from(dataformat, buffer, offset)[0]
 
@@ -209,7 +209,7 @@ class StringDef(_BaseDef):
         self.length = length
 
     def serialize(self, data, buffer=None, offset=0):
-        """ Data needs to be a string """
+        """Data needs to be a string"""
         if buffer is None:
             assert offset == 0, "When buffer is None, offset have to be unset"
             buffer = bytearray(self.size())
@@ -232,7 +232,7 @@ class StringDef(_BaseDef):
         return buffer
 
     def deserialize(self, buffer, offset=0):
-        """ Result is a string """
+        """Result is a string"""
         size = self.size()
         # Find null termination
         index = buffer.find(0, offset, offset + size)
@@ -508,7 +508,7 @@ class StructDef(_BaseDef):
            +------------+---------------+--------------------------------------+
 
         :param datatype: Element data type. See above.
-        :type datatype: str
+        :type datatype: str | _BaseDef
         :param name: Name of element. Needs to be unique.
         :type name: str
         :param length: Number of elements. If > 1 this is an array/list of
@@ -1209,7 +1209,7 @@ class BitfieldDef(_BaseDef):
         """
         # pylint: disable=too-many-arguments,no-self-use
         # Validate size according to nbr_of_bits
-        max_value = 2 ** nbr_of_bits - 1
+        max_value = 2**nbr_of_bits - 1
         min_value = 0
         if signed:
             max_value = 2 ** (nbr_of_bits - 1) - 1
