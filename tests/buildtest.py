@@ -7,7 +7,7 @@ with open("appveyor.yml", "r") as f:
         if line.startswith("version:"):
             v_long = line.split()[1]
             v_parts = v_long.split(".")
-            appveyor_version = "{}.{}.{}".format(v_parts[0], v_parts[1], v_parts[2])
+            appveyor_version = f"{v_parts[0]}.{v_parts[1]}.{v_parts[2]}"
             break
 
 ###############################################################################
@@ -25,8 +25,7 @@ if appveyor_version == setup_version:
     print("SUCCESS! Versions match")
 else:
     print(
-        "ERROR! Appveyor version {} dont match setup.py version {}".format(
-            appveyor_version, setup_version
-        )
+        f"ERROR! Appveyor version {appveyor_version} don't "
+        f"match setup.py version {setup_version}"
     )
     exit(1)
