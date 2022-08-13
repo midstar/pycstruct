@@ -439,7 +439,7 @@ class StructDef(_BaseDef):
             pass
         elif isinstance(length, int):
             if length < 1:
-                raise ValueError("Strict positive dimension is expected: {length}.")
+                raise ValueError(f"Strict positive dimension is expected: {length}.")
             shape = shape + (length,)
 
         return shape
