@@ -34,7 +34,7 @@ def _run_castxml(
     """Run castcml as a 'shell command'"""
     if shutil.which(castxml_cmd) is None:
         raise Exception(
-            'Executable "{}" not found.\n'.format(castxml_cmd)
+            f'Executable "{castxml_cmd}" not found.\n'
             + "External software castxml is not installed.\n"
             + "You need to install it and put it in your PATH."
         )
@@ -52,7 +52,7 @@ def _run_castxml(
     except subprocess.CalledProcessError as exception:
         raise Exception(
             "Unable to run:\n"
-            + "{}\n\n".format(" ".join(args))
+            + f"{' '.join(args)}\n\n"
             + "Output:\n"
             + exception.output.decode()
         ) from exception
@@ -60,8 +60,8 @@ def _run_castxml(
     if not os.path.isfile(xml_filename):
         raise Exception(
             "castxml did not report any error but "
-            + "{} was never produced.\n\n".format(xml_filename)
-            + "castxml output was:\n{}".format(output.decode())
+            + f"{xml_filename} was never produced.\n\n"
+            + f"castxml output was:\n{output.decode()}"
         )
 
 
@@ -273,7 +273,7 @@ class _CastXmlParser:
                     bf_fields.append(bf_field)
                 bitfield = {}
                 bitfield["type"] = "bitfield"
-                bitfield["name"] = "auto_bitfield_{0}".format(self._embedded_bf_count)
+                bitfield["name"] = f"auto_bitfield_{self._embedded_bf_count}"
                 self._embedded_bf_count += 1
                 # WARNING! The size is compiler specific and not covered
                 # by the C standard. We guess:
@@ -283,7 +283,7 @@ class _CastXmlParser:
                 bitfield["members"] = self._parse_bitfield_members(bf_fields)
                 self._embedded_bf.append(bitfield)
 
-                member["name"] = "__{0}".format(bitfield["name"])
+                member["name"] = f"__{bitfield['name']}"
                 member["type"] = "bitfield"
                 member["reference"] = bitfield["name"]
                 member["same_level"] = True
@@ -304,20 +304,16 @@ class _CastXmlParser:
         return default
 
     def _get_elem_with_id(self, typeid):
-        elem = self.root.find("*[@id='{0}']".format(typeid))
+        elem = self.root.find(f"*[@id='{typeid}']")
         if elem is None:
-            raise Exception(
-                "No XML element with id attribute {} identified".format(typeid)
-            )
+            raise Exception(f"No XML element with id attribute {typeid} identified")
         return elem
 
     def _get_elem_with_attrib(self, tag, attrib, value):
-        elem = self.root.find("{}[@{}='{}']".format(tag, attrib, value))
+        elem = self.root.find(f"{tag}[@{attrib}='{value}']")
         if elem is None:
             raise Exception(
-                "No {} XML element with {} attribute {} identified".format(
-                    tag, attrib, value
-                )
+                f"No {tag} XML element with {attrib} attribute {value} identified"
             )
         return elem
 
@@ -337,7 +333,7 @@ class _CastXmlParser:
         try:
             name = self._get_elem_with_attrib("Typedef", "type", type_id).attrib["name"]
         except Exception:
-            name = "anonymous_{}".format(self._anonymous_count)
+            name = f"anonymous_{self._anonymous_count}"
             self._anonymous_count += 1
         return name
 
@@ -364,7 +360,7 @@ class _CastXmlParser:
         else:
             pycstruct_type_name = "int"
 
-        return "{0}{1}".format(pycstruct_type_name, typesize)
+        return f"{pycstruct_type_name}{typesize}"
 
     def _get_basic_type_element(self, type_id):
         """Finds the basic type element possible hidden behind TypeDef's or ElaboratedType's"""
@@ -398,7 +394,7 @@ class _CastXmlParser:
                 elem, is_array
             )
         elif elem.tag == "PointerType":
-            member_type["type_name"] = "uint{0}".format(elem.attrib["size"])
+            member_type["type_name"] = f"uint{elem.attrib['size']}"
         elif elem.tag == "Struct":
             member_type["type_name"] = "struct"
             member_type["reference"] = elem.attrib["id"]
@@ -409,7 +405,7 @@ class _CastXmlParser:
             member_type["type_name"] = "enum"
             member_type["reference"] = elem.attrib["id"]
         else:
-            raise Exception("Member type {0} is not supported.".format(elem.tag))
+            raise Exception(f"Member type {elem.tag} is not supported.")
 
         return member_type
 
@@ -475,9 +471,8 @@ class _TypeMetaParser:
                     other_instance = self._to_instance(member["reference"])
                     if other_instance is None:
                         raise Exception(
-                            "Member {} is of type {} {} that is not supported".format(
-                                member["name"], member["type"], member["reference"]
-                            )
+                            f"Member {member['name']} is of type {member['type']} "
+                            f"{member['reference']} that is not supported"
                         )
                     same_level = False
                     if ("same_level" in member) and member["same_level"]:

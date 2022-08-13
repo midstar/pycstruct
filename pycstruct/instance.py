@@ -72,17 +72,17 @@ class Instance:
             return self.__type._deserialize_element(
                 item, self.__buffer, self.__buffer_offset
             )
-        raise AttributeError("Instance has no element {}".format(item))
+        raise AttributeError(f"Instance has no element {item}")
 
     def __setattr__(self, item, value):
         if item in self.__subinstances:
-            raise AttributeError("You are not allowed to modify {}".format(item))
+            raise AttributeError(f"You are not allowed to modify {item}")
         if item in self.__attributes:
             self.__type._serialize_element(
                 item, value, self.__buffer, self.__buffer_offset
             )
         else:
-            raise AttributeError("Instance has no element {}".format(item))
+            raise AttributeError(f"Instance has no element {item}")
 
     def __bytes__(self):
         offset = self.__buffer_offset
@@ -96,19 +96,15 @@ class Instance:
                 if isinstance(self.__subinstances[attribute], _InstanceList):
                     result.append(
                         self.__subinstances[attribute].__str__(
-                            "{}{} : ".format(prefix, attribute)
+                            f"{prefix}{attribute} : "
                         )
                     )
                 else:
                     result.append(
-                        self.__subinstances[attribute].__str__(
-                            "{}{}.".format(prefix, attribute)
-                        )
+                        self.__subinstances[attribute].__str__(f"{prefix}{attribute}.")
                     )
             else:
-                result.append(
-                    "{}{} : {}".format(prefix, attribute, self.__getattr__(attribute))
-                )
+                result.append(f"{prefix}{attribute} : {self.__getattr__(attribute)}")
         return "\n".join(result)
 
 
@@ -155,12 +151,10 @@ class _InstanceList:
 
     def __check_key(self, key):
         if not isinstance(key, int):
-            raise KeyError("Invalid index: {} - needs to be an integer".format(key))
+            raise KeyError(f"Invalid index: {key} - needs to be an integer")
         if key < 0 or key >= self.__arraytype.length:
             raise KeyError(
-                "Invalid index: {} - supported 0 - {}".format(
-                    key, self.__arraytype.length
-                )
+                f"Invalid index: {key} - supported 0 - {self.__arraytype.length}"
             )
 
     def __getitem__(self, key):
@@ -202,4 +196,4 @@ class _InstanceList:
                 elements.append(str(self.__getitem__(i)))
             elements_str = ", ".join(elements)
 
-        return "{}[{}]".format(prefix, elements_str)
+        return f"{prefix}[{elements_str}]"

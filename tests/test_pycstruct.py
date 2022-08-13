@@ -68,7 +68,7 @@ def check_struct(t, structdef_instance, filename):
 
     t.assertEqual(len(inbytes), len(outbytes))
     for i in range(0, len(inbytes)):
-        t.assertEqual(int(inbytes[i]), int(outbytes[i]), msg="Index {0}".format(i))
+        t.assertEqual(int(inbytes[i]), int(outbytes[i]), msg=f"Index {i}")
 
 
 def check_embedded_struct(t, structdef_instance, filename):
@@ -137,7 +137,7 @@ def check_embedded_struct(t, structdef_instance, filename):
 def bytes_equals(t, bytes1, bytes2):
     t.assertEqual(len(bytes1), len(bytes2))
     for i in range(0, len(bytes1)):
-        t.assertEqual(int(bytes1[i]), int(bytes2[i]), msg="Index {0}".format(i))
+        t.assertEqual(int(bytes1[i]), int(bytes2[i]), msg=f"Index {i}")
 
 
 class UnserializableDef(pycstruct.pycstruct._BaseDef):
@@ -440,7 +440,7 @@ class TestPyCStruct(unittest.TestCase):
         # Check
         for key, value in mydict.items():
             if key != "ps4":
-                self.assertEqual(value, mydict2[key], msg="Key {0}".format(key))
+                self.assertEqual(value, mydict2[key], msg=f"Key {key}")
 
     def test_struct_remove_from(self):
 
@@ -589,7 +589,7 @@ class TestPyCStruct(unittest.TestCase):
         #############################################
         # Load pre-stored binary data and deserialize
 
-        f = open(os.path.join(test_dir, "bitfield_{0}.dat".format(byteorder)), "rb")
+        f = open(os.path.join(test_dir, f"bitfield_{byteorder}.dat"), "rb")
         inbytes = f.read()
         result = b.deserialize(inbytes)
         f.close()
@@ -618,9 +618,7 @@ class TestPyCStruct(unittest.TestCase):
 
         self.assertEqual(len(inbytes), len(outbytes))
         for i in range(0, len(inbytes)):
-            self.assertEqual(
-                int(inbytes[i]), int(outbytes[i]), msg="Index {0}".format(i)
-            )
+            self.assertEqual(int(inbytes[i]), int(outbytes[i]), msg=f"Index {i}")
 
     def test_bitfield_deserialize_serialize_little(self):
         self.deserialize_serialize_bitfield("little")
