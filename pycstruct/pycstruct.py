@@ -1167,7 +1167,6 @@ class BitfieldDef(_BaseDef):
         :return: The subvalue
         :rtype: int
         """
-        # pylint: disable=no-self-use
         shifted_value = value >> start_bit
         mask = 0xFFFFFFFFFFFFFFFF >> (64 - nbr_of_bits)
         non_signed_value = shifted_value & mask
@@ -1186,7 +1185,7 @@ class BitfieldDef(_BaseDef):
         :return: New value where subvalue is included
         :rtype: int
         """
-        # pylint: disable=too-many-arguments,no-self-use
+        # pylint: disable=too-many-arguments
         # Validate size according to nbr_of_bits
         max_value = 2**nbr_of_bits - 1
         min_value = 0

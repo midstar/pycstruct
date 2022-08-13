@@ -298,7 +298,6 @@ class _CastXmlParser:
             dict_output["members"].append(member)
 
     def _get_attrib(self, elem, attrib, default):
-        # pylint: disable=no-self-use
         if attrib in elem.attrib:
             return elem.attrib[attrib]
         return default
@@ -339,7 +338,6 @@ class _CastXmlParser:
 
     def _fundamental_type_to_pycstruct_type(self, elem, is_array):
         """Map the fundamental type to pycstruct type"""
-        # pylint: disable=no-self-use
         typename = elem.attrib["name"]
         typesize = elem.attrib["size"]
         pycstruct_type_name = "int"
@@ -365,7 +363,7 @@ class _CastXmlParser:
     def _get_basic_type_element(self, type_id):
         """Finds the basic type element possible hidden behind TypeDef's or ElaboratedType's"""
         elem = self._get_elem_with_id(type_id)
-        while elem.tag == "Typedef" or elem.tag == "ElaboratedType":
+        while elem.tag in ("Typedef", "ElaboratedType"):
             elem = self._get_elem_with_id(elem.attrib["type"])
         return elem
 
@@ -679,7 +677,7 @@ def parse_str(
     c_filename = _get_hash([c_str]) + ".c"
     c_path = os.path.join(cache_path, c_filename)
 
-    with open(c_path, "w") as file:
+    with open(c_path, "w", encoding="utf-8") as file:
         file.write(c_str)
 
     return parse_file(
