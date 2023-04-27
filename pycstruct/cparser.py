@@ -37,7 +37,7 @@ def _run_castxml(
 ):
     """Run castcml as a 'shell command'"""
     if shutil.which(castxml_cmd) is None:
-        raise Exception(
+        raise RuntimeError(
             f'Executable "{castxml_cmd}" not found.\n'
             + "External software castxml is not installed.\n"
             + "You need to install it and put it in your PATH."
@@ -59,7 +59,7 @@ def _run_castxml(
     try:
         output = subprocess.check_output(args, **subprocess_kwargs)
     except subprocess.CalledProcessError as exception:
-        raise Exception(
+        raise RuntimeError(
             "Unable to run:\n"
             + f"{' '.join(args)}\n\n"
             + "Output:\n"
@@ -67,7 +67,7 @@ def _run_castxml(
         ) from exception
 
     if not os.path.isfile(xml_filename):
-        raise Exception(
+        raise RuntimeError(
             "castxml did not report any error but "
             + f"{xml_filename} was never produced.\n\n"
             + f"castxml output was:\n{output.decode()}"
@@ -314,13 +314,13 @@ class _CastXmlParser:
     def _get_elem_with_id(self, typeid):
         elem = self.root.find(f"*[@id='{typeid}']")
         if elem is None:
-            raise Exception(f"No XML element with id attribute {typeid} identified")
+            raise RuntimeError(f"No XML element with id attribute {typeid} identified")
         return elem
 
     def _get_elem_with_attrib(self, tag, attrib, value):
         elem = self.root.find(f"{tag}[@{attrib}='{value}']")
         if elem is None:
-            raise Exception(
+            raise RuntimeError(
                 f"No {tag} XML element with {attrib} attribute {value} identified"
             )
         return elem
@@ -412,7 +412,7 @@ class _CastXmlParser:
             member_type["type_name"] = "enum"
             member_type["reference"] = elem.attrib["id"]
         else:
-            raise Exception(f"Member type {elem.tag} is not supported.")
+            raise RuntimeError(f"Member type {elem.tag} is not supported.")
 
         return member_type
 
@@ -477,7 +477,7 @@ class _TypeMetaParser:
                 if "reference" in member:
                     other_instance = self._to_instance(member["reference"])
                     if other_instance is None:
-                        raise Exception(
+                        raise RuntimeError(
                             f"Member {member['name']} is of type {member['type']} "
                             f"{member['reference']} that is not supported"
                         )
