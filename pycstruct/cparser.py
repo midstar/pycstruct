@@ -29,7 +29,11 @@ logger = logging.getLogger("pycstruct")
 
 
 def _run_castxml(
-    input_files, xml_filename, castxml_cmd="castxml", castxml_extra_args=None
+    input_files,
+    xml_filename,
+    castxml_cmd="castxml",
+    castxml_extra_args=None,
+    **subprocess_kwargs,
 ):
     """Run castcml as a 'shell command'"""
     if shutil.which(castxml_cmd) is None:
@@ -47,8 +51,13 @@ def _run_castxml(
     args.append("-o")
     args.append(xml_filename)
 
+    # to preserve behavior before subprocess_kwargs were allowed to be passed
+    # in, default to redirecting stderr to STDOUT.
+    if "stderr" not in subprocess_kwargs:
+        subprocess_kwargs["stderr"] = subprocess.STDOUT
+
     try:
-        output = subprocess.check_output(args, stderr=subprocess.STDOUT)
+        output = subprocess.check_output(args, **subprocess_kwargs)
     except subprocess.CalledProcessError as exception:
         raise Exception(
             "Unable to run:\n"
@@ -482,7 +491,6 @@ class _TypeMetaParser:
                         same_level=same_level,
                     )
                 else:
-
                     instance.add(member["type"], member["name"], shape=shape)
 
         # Enum
@@ -531,6 +539,7 @@ def parse_file(
     castxml_extra_args=None,
     cache_path="",
     use_cached=False,
+    **subprocess_kwargs,
 ):
     """Parse one or more C source files (C or C++) and generate pycstruct
     instances as a result.
@@ -576,6 +585,11 @@ def parse_file(
                        castxml (since it could be time consuming).
                        Default is False.
     :type use_cached: boolean, optional
+    :param subprocess_kwargs: keyword arguments that will be passed down to the
+                              `subprocess.check_outputs()` call used to run
+                              castxml. By default, stderr will be redirected to
+                              stdout. To get the subprocess default behavior,
+                              pass `stderr=None`.
     :return: A dictionary keyed on names of the structs, unions
              etc. The values are the actual pycstruct instances.
     :rtype: dict
@@ -596,7 +610,9 @@ def parse_file(
 
     # Generate XML
     if not use_cached or not os.path.isfile(xml_path):
-        _run_castxml(input_files, xml_path, castxml_cmd, castxml_extra_args)
+        _run_castxml(
+            input_files, xml_path, castxml_cmd, castxml_extra_args, **subprocess_kwargs
+        )
 
     # Parse XML
     castxml_parser = _CastXmlParser(xml_path)
