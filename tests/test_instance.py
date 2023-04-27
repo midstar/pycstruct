@@ -4,7 +4,6 @@ import pycstruct
 
 class TestInstance(unittest.TestCase):
     def test_instance(self):
-
         # First define a complex definition structure
         car_type = pycstruct.EnumDef(size=4)
         car_type.add("Sedan", 0)
