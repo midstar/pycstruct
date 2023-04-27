@@ -816,7 +816,6 @@ class StructDef(_BaseDef):
         return "struct"
 
     def remove_from(self, name):
-
         """Remove all elements from a specific element
 
         This function is useful to create a sub-set of a struct.
@@ -827,7 +826,6 @@ class StructDef(_BaseDef):
         self._remove_from_or_to(name, to_criteria=False)
 
     def remove_to(self, name):
-
         """Remove all elements from beginning to a specific element
 
         This function is useful to create a sub-set of a struct.
