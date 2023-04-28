@@ -8,7 +8,7 @@ except:
 
 setup(
     name="pycstruct",
-    version="0.11.1",
+    version="0.12.0",
     description="Binary data handling in Python using dictionaries",
     long_description=long_description,
     long_description_content_type="text/markdown",
