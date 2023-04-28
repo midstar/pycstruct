@@ -29,11 +29,15 @@ logger = logging.getLogger("pycstruct")
 
 
 def _run_castxml(
-    input_files, xml_filename, castxml_cmd="castxml", castxml_extra_args=None
+    input_files,
+    xml_filename,
+    castxml_cmd="castxml",
+    castxml_extra_args=None,
+    **subprocess_kwargs,
 ):
     """Run castcml as a 'shell command'"""
     if shutil.which(castxml_cmd) is None:
-        raise Exception(
+        raise RuntimeError(
             f'Executable "{castxml_cmd}" not found.\n'
             + "External software castxml is not installed.\n"
             + "You need to install it and put it in your PATH."
@@ -47,10 +51,15 @@ def _run_castxml(
     args.append("-o")
     args.append(xml_filename)
 
+    # to preserve behavior before subprocess_kwargs were allowed to be passed
+    # in, default to redirecting stderr to STDOUT.
+    if "stderr" not in subprocess_kwargs:
+        subprocess_kwargs["stderr"] = subprocess.STDOUT
+
     try:
-        output = subprocess.check_output(args, stderr=subprocess.STDOUT)
+        output = subprocess.check_output(args, **subprocess_kwargs)
     except subprocess.CalledProcessError as exception:
-        raise Exception(
+        raise RuntimeError(
             "Unable to run:\n"
             + f"{' '.join(args)}\n\n"
             + "Output:\n"
@@ -58,7 +67,7 @@ def _run_castxml(
         ) from exception
 
     if not os.path.isfile(xml_filename):
-        raise Exception(
+        raise RuntimeError(
             "castxml did not report any error but "
             + f"{xml_filename} was never produced.\n\n"
             + f"castxml output was:\n{output.decode()}"
@@ -305,13 +314,13 @@ class _CastXmlParser:
     def _get_elem_with_id(self, typeid):
         elem = self.root.find(f"*[@id='{typeid}']")
         if elem is None:
-            raise Exception(f"No XML element with id attribute {typeid} identified")
+            raise RuntimeError(f"No XML element with id attribute {typeid} identified")
         return elem
 
     def _get_elem_with_attrib(self, tag, attrib, value):
         elem = self.root.find(f"{tag}[@{attrib}='{value}']")
         if elem is None:
-            raise Exception(
+            raise RuntimeError(
                 f"No {tag} XML element with {attrib} attribute {value} identified"
             )
         return elem
@@ -403,7 +412,7 @@ class _CastXmlParser:
             member_type["type_name"] = "enum"
             member_type["reference"] = elem.attrib["id"]
         else:
-            raise Exception(f"Member type {elem.tag} is not supported.")
+            raise RuntimeError(f"Member type {elem.tag} is not supported.")
 
         return member_type
 
@@ -468,7 +477,7 @@ class _TypeMetaParser:
                 if "reference" in member:
                     other_instance = self._to_instance(member["reference"])
                     if other_instance is None:
-                        raise Exception(
+                        raise RuntimeError(
                             f"Member {member['name']} is of type {member['type']} "
                             f"{member['reference']} that is not supported"
                         )
@@ -482,7 +491,6 @@ class _TypeMetaParser:
                         same_level=same_level,
                     )
                 else:
-
                     instance.add(member["type"], member["name"], shape=shape)
 
         # Enum
@@ -531,6 +539,7 @@ def parse_file(
     castxml_extra_args=None,
     cache_path="",
     use_cached=False,
+    **subprocess_kwargs,
 ):
     """Parse one or more C source files (C or C++) and generate pycstruct
     instances as a result.
@@ -576,6 +585,11 @@ def parse_file(
                        castxml (since it could be time consuming).
                        Default is False.
     :type use_cached: boolean, optional
+    :param subprocess_kwargs: keyword arguments that will be passed down to the
+                              `subprocess.check_outputs()` call used to run
+                              castxml. By default, stderr will be redirected to
+                              stdout. To get the subprocess default behavior,
+                              pass `stderr=None`.
     :return: A dictionary keyed on names of the structs, unions
              etc. The values are the actual pycstruct instances.
     :rtype: dict
@@ -596,7 +610,9 @@ def parse_file(
 
     # Generate XML
     if not use_cached or not os.path.isfile(xml_path):
-        _run_castxml(input_files, xml_path, castxml_cmd, castxml_extra_args)
+        _run_castxml(
+            input_files, xml_path, castxml_cmd, castxml_extra_args, **subprocess_kwargs
+        )
 
     # Parse XML
     castxml_parser = _CastXmlParser(xml_path)

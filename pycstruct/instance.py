@@ -40,7 +40,7 @@ class Instance:
 
     def __init__(self, datatype, buffer=None, buffer_offset=0):
         if not isinstance(datatype, (pycstruct.StructDef, pycstruct.BitfieldDef)):
-            raise Exception("top_class needs to be of type StructDef or BitfieldDef")
+            raise RuntimeError("top_class needs to be of type StructDef or BitfieldDef")
 
         if buffer is None:
             buffer = bytearray(datatype.size())
