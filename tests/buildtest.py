@@ -3,6 +3,7 @@ import json
 
 appveyor_name = "appveyor.yml"
 setup_name = "setup.py"
+doc_conf_name = "doc/source/conf.py"
 
 ###############################################################################
 # Get version specified in appveyor.yml file
@@ -26,6 +27,15 @@ with open(setup_name, "r") as f:
             setup_version = line.split('"')[1]
 
 ###############################################################################
+# Get version specified in conf.py file
+doc_conf_version = "conf?"
+with open(doc_conf_name, "r") as f:
+    lines = f.readlines()
+    for line in lines:
+        if line.strip().startswith("version ="):
+            doc_conf_version = line.split("'")[1]
+
+###############################################################################
 # Compare
 if appveyor_version == setup_version:
     print(f"PASS: Version {setup_version} match in {appveyor_name} and {setup_name}")
@@ -35,6 +45,11 @@ else:
         f"match {setup_name} version {setup_version}"
     )
     exit(1)
+if doc_conf_version == setup_version:
+    print(f"PASS: Doc version {doc_conf_version} match in {doc_conf_name}")
+else:
+    print(f"WARN: Doc version {doc_conf_version} don't match in {doc_conf_name}")
+    print("      If document or interace was updated please update this version.")
 
 ###############################################################################
 # Fetch versions from PyPI and check if it already exists
