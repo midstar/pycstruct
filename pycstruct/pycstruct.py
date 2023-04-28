@@ -138,7 +138,7 @@ class _BaseDef:
 
     def dtype(self):
         """Returns the numpy dtype of this definition"""
-        raise Exception(f"dtype not implemented for {type(self)}")
+        raise RuntimeError(f"dtype not implemented for {type(self)}")
 
 
 ###############################################################################
@@ -217,11 +217,11 @@ class StringDef(_BaseDef):
             assert len(buffer) >= offset + self.size(), "Specified buffer too small"
 
         if not isinstance(data, str):
-            raise Exception(f"Not a valid string: {data}")
+            raise RuntimeError(f"Not a valid string: {data}")
 
         utf8_bytes = data.encode("utf-8")
         if len(utf8_bytes) > self.length:
-            raise Exception(
+            raise RuntimeError(
                 f"String overflow. Produced size {len(utf8_bytes)} but max is {self.length}"
             )
 
@@ -268,9 +268,9 @@ class ArrayDef(_BaseDef):
     def serialize(self, data, buffer=None, offset=0):
         """Serialize a python type into a binary type following this array type"""
         if not isinstance(data, collections.abc.Iterable):
-            raise Exception("Data shall be a list")
+            raise RuntimeError("Data shall be a list")
         if len(data) > self.length:
-            raise Exception(f"List is larger than {self.length}")
+            raise RuntimeError(f"List is larger than {self.length}")
 
         if buffer is None:
             assert offset == 0, "When buffer is None, offset have to be unset"
@@ -400,7 +400,7 @@ class StructDef(_BaseDef):
     def __init__(self, default_byteorder="native", alignment=1, union=False):
         """Constructor method"""
         if default_byteorder not in _BYTEORDER:
-            raise Exception(f"Invalid byteorder: {default_byteorder}.")
+            raise RuntimeError(f"Invalid byteorder: {default_byteorder}.")
         self.__default_byteorder = default_byteorder
         self.__alignment = alignment
         self.__union = union
@@ -529,15 +529,17 @@ class StructDef(_BaseDef):
         # Sanity checks
         shape = self._normalize_shape(length, shape)
         if name in self.__fields:
-            raise Exception(f"Field name already exist: {name}.")
+            raise RuntimeError(f"Field name already exist: {name}.")
         if byteorder == "":
             byteorder = self.__default_byteorder
         elif byteorder not in _BYTEORDER:
-            raise Exception(f"Invalid byteorder: {byteorder}.")
+            raise RuntimeError(f"Invalid byteorder: {byteorder}.")
         if same_level and len(shape) != 0:
-            raise Exception("same_level not allowed in combination with arrays")
+            raise RuntimeError("same_level not allowed in combination with arrays")
         if same_level and not isinstance(datatype, BitfieldDef):
-            raise Exception("same_level only allowed in combination with BitfieldDef")
+            raise RuntimeError(
+                "same_level only allowed in combination with BitfieldDef"
+            )
 
         # Invalidate the dtype cache
         self.__dtype = None
@@ -552,7 +554,7 @@ class StructDef(_BaseDef):
         elif datatype in _TYPE:
             datatype = BasicTypeDef(datatype, byteorder)
         elif not isinstance(datatype, _BaseDef):
-            raise Exception(f"Invalid datatype: {datatype}.")
+            raise RuntimeError(f"Invalid datatype: {datatype}.")
 
         if len(shape) > 0:
             for dim in reversed(shape):
@@ -641,7 +643,7 @@ class StructDef(_BaseDef):
         result = {}
 
         if len(buffer) < self.size() + offset:
-            raise Exception(
+            raise RuntimeError(
                 f"Invalid buffer size: {len(buffer)}. Expected: {self.size()}"
             )
 
@@ -682,7 +684,7 @@ class StructDef(_BaseDef):
         try:
             value = datatype.deserialize(buffer, buffer_offset + offset)
         except Exception as exception:
-            raise Exception(
+            raise RuntimeError(
                 f"Unable to deserialize {datatype._type_name()} {name}. "
                 f"Reason:\n{exception.args[0]}"
             ) from exception
@@ -747,7 +749,7 @@ class StructDef(_BaseDef):
         try:
             datatype.serialize(value, buffer, next_offset)
         except Exception as exception:
-            raise Exception(
+            raise RuntimeError(
                 f"Unable to serialize {datatype._type_name()} {name}. Reason:\n{exception.args[0]}"
             ) from exception
 
@@ -816,7 +818,6 @@ class StructDef(_BaseDef):
         return "struct"
 
     def remove_from(self, name):
-
         """Remove all elements from a specific element
 
         This function is useful to create a sub-set of a struct.
@@ -827,7 +828,6 @@ class StructDef(_BaseDef):
         self._remove_from_or_to(name, to_criteria=False)
 
     def remove_to(self, name):
-
         """Remove all elements from beginning to a specific element
 
         This function is useful to create a sub-set of a struct.
@@ -839,7 +839,7 @@ class StructDef(_BaseDef):
 
     def _remove_from_or_to(self, name, to_criteria=True):
         if name not in self.__fields:
-            raise Exception(f"Element {name} does not exist")
+            raise RuntimeError(f"Element {name} does not exist")
 
         # Invalidate the dtype cache
         self.__dtype = None
@@ -897,7 +897,7 @@ class StructDef(_BaseDef):
         """
         if name in self.__fields:
             return self.__fields[name]["offset"]
-        raise Exception(f"Invalid element {name}")
+        raise RuntimeError(f"Invalid element {name}")
 
     def get_field_type(self, name):
         """Returns the type of a field of this struct.
@@ -977,7 +977,7 @@ class BitfieldDef(_BaseDef):
 
     def __init__(self, byteorder="native", size=-1):
         if byteorder not in _BYTEORDER:
-            raise Exception(f"Invalid byteorder: {byteorder}.")
+            raise RuntimeError(f"Invalid byteorder: {byteorder}.")
         if byteorder == "native":
             byteorder = sys.byteorder
         self.__byteorder = byteorder
@@ -999,13 +999,13 @@ class BitfieldDef(_BaseDef):
         :type signed: bool, optional"""
         # Check for same bitfield name
         if name in self.__fields:
-            raise Exception(f"Field with name {name} already exists.")
+            raise RuntimeError(f"Field with name {name} already exists.")
 
         # Check that new size is not too large
         assigned_bits = self.assigned_bits()
         total_nbr_of_bits = assigned_bits + nbr_of_bits
         if total_nbr_of_bits > self._max_bits():
-            raise Exception(
+            raise RuntimeError(
                 f"Maximum number of bits ({self._max_bits()}) exceeded: {total_nbr_of_bits}."
             )
 
@@ -1027,7 +1027,7 @@ class BitfieldDef(_BaseDef):
         """
         result = {}
         if len(buffer) < self.size() + offset:
-            raise Exception(
+            raise RuntimeError(
                 f"Invalid buffer size: {len(buffer)}. Expected at least: {self.size()}"
             )
 
@@ -1198,12 +1198,12 @@ class BitfieldDef(_BaseDef):
             signed_str = "Signed"
 
         if subvalue > max_value:
-            raise Exception(
+            raise RuntimeError(
                 f"{signed_str} value {subvalue} is too large to fit in "
                 f"{nbr_of_bits} bits. Max value is {max_value}."
             )
         if subvalue < min_value:
-            raise Exception(
+            raise RuntimeError(
                 f"{signed_str} value {subvalue} is too small to fit in "
                 f"{nbr_of_bits} bits. Min value is {min_value}."
             )
@@ -1283,7 +1283,7 @@ class EnumDef(_BaseDef):
 
     def __init__(self, byteorder="native", size=-1, signed=False):
         if byteorder not in _BYTEORDER:
-            raise Exception(f"Invalid byteorder: {byteorder}.")
+            raise RuntimeError(f"Invalid byteorder: {byteorder}.")
         if byteorder == "native":
             byteorder = sys.byteorder
         self.__byteorder = byteorder
@@ -1306,7 +1306,7 @@ class EnumDef(_BaseDef):
         # pylint: disable=bare-except
         # Check for same bitfield name
         if name in self.__constants:
-            raise Exception(f"Constant with name {name} already exists.")
+            raise RuntimeError(f"Constant with name {name} already exists.")
 
         # Automatically assigned to next available value
         index = 0
@@ -1319,13 +1319,13 @@ class EnumDef(_BaseDef):
 
         # Secure that no negative number are added to signed enum
         if not self.__signed and value < 0:
-            raise Exception(
+            raise RuntimeError(
                 f"Negative value, {value}, not supported in unsigned enums."
             )
 
         # Check that new size is not too large
         if self._bit_length(value) > self._max_bits():
-            raise Exception(
+            raise RuntimeError(
                 f"Maximum number of bits ({self._max_bits()}) exceeded: {self._bit_length(value)}."
             )
 
@@ -1347,7 +1347,7 @@ class EnumDef(_BaseDef):
         """
         # pylint: disable=bare-except
         if len(buffer) < self.size() + offset:
-            raise Exception(
+            raise RuntimeError(
                 f"Invalid buffer size: {len(buffer)}. Expected: {self.size()}"
             )
 
@@ -1423,7 +1423,7 @@ class EnumDef(_BaseDef):
         for constant, item_value in self.__constants.items():
             if value == item_value:
                 return constant
-        raise Exception(f"Value {value} is not a valid value for this enum.")
+        raise RuntimeError(f"Value {value} is not a valid value for this enum.")
 
     def get_value(self, name):
         """Get the value representation of the name
@@ -1432,7 +1432,7 @@ class EnumDef(_BaseDef):
         :rtype: int
         """
         if name not in self.__constants:
-            raise Exception(f"{name} is not a valid name in this enum.")
+            raise RuntimeError(f"{name} is not a valid name in this enum.")
         return self.__constants[name]
 
     def _type_name(self):

@@ -161,7 +161,6 @@ class UnserializableDef(pycstruct.pycstruct._BaseDef):
 
 class TestPyCStruct(unittest.TestCase):
     def test_invalid_baseclass(self):
-
         b = pycstruct.pycstruct._BaseDef()
 
         self.assertRaises(NotImplementedError, b.size)
@@ -180,7 +179,6 @@ class TestPyCStruct(unittest.TestCase):
             struct["a"]
 
     def test_invalid_add(self):
-
         m = pycstruct.StructDef()
 
         # Invalid type
@@ -210,7 +208,6 @@ class TestPyCStruct(unittest.TestCase):
         self.assertRaises(Exception, m.add, "int8", "same_level_err1", same_level=True)
 
     def test_invalid_deserialize(self):
-
         m = pycstruct.StructDef()
         m.add("int8", "name1")
 
@@ -218,7 +215,6 @@ class TestPyCStruct(unittest.TestCase):
         self.assertRaises(Exception, m.deserialize, buffer)
 
     def test_invalid_serialize(self):
-
         m = pycstruct.StructDef()
         m.add("utf-8", "astring", length=5)
 
@@ -321,7 +317,6 @@ class TestPyCStruct(unittest.TestCase):
         return m
 
     def deserialize_serialize(self, byteorder, alignment, filename):
-
         #############################################
         # Define PyCStruct
         m = self.create_struct(byteorder, alignment)
@@ -443,7 +438,6 @@ class TestPyCStruct(unittest.TestCase):
                 self.assertEqual(value, mydict2[key], msg=f"Key {key}")
 
     def test_struct_remove_from(self):
-
         m = pycstruct.StructDef()
         m.add("int8", "e1")
         m.add("int8", "e2")
@@ -466,7 +460,6 @@ class TestPyCStruct(unittest.TestCase):
         self.assertFalse("e6" in d)
 
     def test_struct_remove_to(self):
-
         m = pycstruct.StructDef()
         m.add("int8", "e1")
         m.add("int8", "e2")
@@ -581,7 +574,6 @@ class TestPyCStruct(unittest.TestCase):
         return b
 
     def deserialize_serialize_bitfield(self, byteorder):
-
         #############################################
         # Define Bitfield
         b = self.create_bitfield(byteorder)
@@ -627,7 +619,6 @@ class TestPyCStruct(unittest.TestCase):
         self.deserialize_serialize_bitfield("big")
 
     def test_bitfield_invalid_deserialize(self):
-
         b = pycstruct.BitfieldDef()
         b.add("afield")
 
@@ -909,7 +900,6 @@ class TestPyCStruct(unittest.TestCase):
         self.assertTrue("three" in stringrep)
 
     def test_union_no_pad(self):
-
         u = pycstruct.StructDef(union=True, default_byteorder="big")
         self.assertEqual(u._type_name(), "union")
         u.add("uint8", "small")
@@ -946,7 +936,6 @@ class TestPyCStruct(unittest.TestCase):
         self.assertEqual(output3["larger"], 0x11220000)
 
     def test_enum_invalid_deserialize(self):
-
         e = pycstruct.EnumDef()
         e.add("zero")
 
