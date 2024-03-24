@@ -1,15 +1,18 @@
-version: 0.12.1.{build}
+version: 0.12.2.{build}
+
+image:
+  - Visual Studio 2022
 
 environment:
   PYTHONUNBUFFERED: 1
   matrix:
     - PYTHON_VERSION: "38"
-    - PYTHON_VERSION: "37"
       POST_COMMAND: "coveralls" # Only export coverage in this version
+    - PYTHON_VERSION: "311"
 
 init:
 - SET PYTHON=Python%PYTHON_VERSION%
-- SET PATH=C:\%PYTHON%;C:\Users\appveyor\AppData\Roaming\Python\%PYTHON%\Scripts;%PATH%
+- SET PATH=C:\%PYTHON%-x64;C:\Users\appveyor\AppData\Roaming\Python\%PYTHON%\Scripts;%PATH%
 - python -V
 
 build: off
@@ -24,7 +27,7 @@ test_script:
 
 deploy_script:
 - ps: |
-      if($env:PYTHON_VERSION -eq "37" -And $env:APPVEYOR_REPO_BRANCH -eq "master") {
+      if($env:PYTHON_VERSION -eq "38" -And $env:APPVEYOR_REPO_BRANCH -eq "master") {
         Write-Output "Deploying for this build"
         python -m pip install -U --user setuptools wheel twine
         python setup.py sdist bdist_wheel

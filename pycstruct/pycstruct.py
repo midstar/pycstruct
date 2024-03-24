@@ -633,8 +633,7 @@ class StructDef(_BaseDef):
         largest = 0
         for field in self.__fields.values():
             current_largest = field["type"]._largest_member()
-            if current_largest > largest:
-                largest = current_largest
+            largest = max(largest, current_largest)
 
         return largest
 
@@ -1396,8 +1395,7 @@ class EnumDef(_BaseDef):
         max_length = 1  # To avoid 0 size
         for _, value in self.__constants.items():
             bit_length = self._bit_length(value)
-            if bit_length > max_length:
-                max_length = bit_length
+            max_length = max(max_length, bit_length)
 
         return int(math.ceil(max_length / 8.0))
 

@@ -75,8 +75,11 @@ def _run_castxml(
 
 
 def _get_hash(list_of_strings):
-    """Get a reproducible short name of a list of strings"""
-    long_string = "".join(list_of_strings)
+    """Get a reproducible short name of a list of strings. The hash also
+    includes the user name (from OS) to avoid name conflicts in multi
+    user environments.
+    """
+    long_string = "".join(list_of_strings) + os.getlogin()
     sha256 = hashlib.sha256(long_string.encode())
     hexdigest = sha256.hexdigest()
     return hexdigest[:10]
