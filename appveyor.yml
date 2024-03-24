@@ -7,8 +7,8 @@ environment:
   PYTHONUNBUFFERED: 1
   matrix:
     - PYTHON_VERSION: "38"
-    - PYTHON_VERSION: "311"
       POST_COMMAND: "coveralls" # Only export coverage in this version
+    - PYTHON_VERSION: "311"
 
 init:
 - SET PYTHON=Python%PYTHON_VERSION%
@@ -27,7 +27,7 @@ test_script:
 
 deploy_script:
 - ps: |
-      if($env:PYTHON_VERSION -eq "311" -And $env:APPVEYOR_REPO_BRANCH -eq "master") {
+      if($env:PYTHON_VERSION -eq "38" -And $env:APPVEYOR_REPO_BRANCH -eq "master") {
         Write-Output "Deploying for this build"
         python -m pip install -U --user setuptools wheel twine
         python setup.py sdist bdist_wheel
