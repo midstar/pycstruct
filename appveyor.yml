@@ -4,7 +4,7 @@ environment:
   PYTHONUNBUFFERED: 1
   matrix:
     - PYTHON_VERSION: "38"
-    - PYTHON_VERSION: "311"
+    - PYTHON_VERSION: "3.11"
       POST_COMMAND: "coveralls" # Only export coverage in this version
 
 init:
