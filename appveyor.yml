@@ -4,13 +4,14 @@ environment:
   PYTHONUNBUFFERED: 1
   matrix:
     - PYTHON_VERSION: "38"
-    - PYTHON_VERSION: "3.11"
+    - PYTHON_VERSION: "311"
       POST_COMMAND: "coveralls" # Only export coverage in this version
 
 init:
 - SET PYTHON=Python%PYTHON_VERSION%
 - SET PATH=C:\%PYTHON%;C:\Users\appveyor\AppData\Roaming\Python\%PYTHON%\Scripts;%PATH%
 - python -V
+- dir C:\
 
 build: off
 
