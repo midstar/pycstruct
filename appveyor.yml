@@ -1,5 +1,8 @@
 version: 0.12.2.{build}
 
+image:
+  - Visual Studio 2022
+
 environment:
   PYTHONUNBUFFERED: 1
   matrix:
